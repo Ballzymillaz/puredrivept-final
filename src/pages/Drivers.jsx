@@ -136,12 +136,16 @@ export default function Drivers() {
         emptyMessage="Aucun chauffeur trouvé"
       />
 
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      <Dialog open={showForm} onOpenChange={(open) => {
+        setShowForm(open);
+        if (!open) setEditingDriver(null);
+      }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingDriver ? 'Modifier le chauffeur' : 'Nouveau chauffeur'}</DialogTitle>
           </DialogHeader>
           <DriverForm
+            key={editingDriver?.id || 'new'}
             driver={editingDriver}
             onSubmit={handleSubmit}
             isLoading={createMutation.isPending || updateMutation.isPending}
