@@ -50,6 +50,11 @@
 import Dashboard from './pages/Dashboard';
 import Drivers from './pages/Drivers';
 import Vehicles from './pages/Vehicles';
+import FleetManagers from './pages/FleetManagers';
+import Commercials from './pages/Commercials';
+import Documents from './pages/Documents';
+import Applications from './pages/Applications';
+import Payments from './pages/Payments';
 import __Layout from './Layout.jsx';
 
 
@@ -57,6 +62,11 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "Drivers": Drivers,
     "Vehicles": Vehicles,
+    "FleetManagers": FleetManagers,
+    "Commercials": Commercials,
+    "Documents": Documents,
+    "Applications": Applications,
+    "Payments": Payments,
 }
 
 export const pagesConfig = {
