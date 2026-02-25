@@ -15,8 +15,6 @@ export default function DriverForm({ driver, onSubmit, isLoading }) {
     date_of_birth: driver?.date_of_birth || '',
     status: driver?.status || 'pending',
     contract_type: driver?.contract_type || '',
-    slot_fee: driver?.slot_fee || '',
-    commission_rate: driver?.commission_rate || '',
     iva_regime: driver?.iva_regime || 'exempt',
     irs_retention_rate: driver?.irs_retention_rate || '',
     iban: driver?.iban || '',
@@ -25,12 +23,25 @@ export default function DriverForm({ driver, onSubmit, isLoading }) {
     notes: driver?.notes || '',
   });
 
+  // Frais et commission automatiques selon le type de contrat
+  const CONTRACT_CONFIG = {
+    slot_standard: { slot_fee: 35, commission_rate: 0 },
+    slot_premium: { slot_fee: 45, commission_rate: 0 },
+    slot_black: { slot_fee: 99, commission_rate: 0 },
+    location: { slot_fee: 0, commission_rate: 20 },
+  };
+
   const handleChange = (field, value) => setForm(f => ({ ...f, [field]: value }));
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = { ...form };
-    if (data.slot_fee) data.slot_fee = parseFloat(data.slot_fee);
-    if (data.commission_rate) data.commission_rate = parseFloat(data.commission_rate);
+    
+    // Auto-assign slot_fee et commission_rate selon contract_type
+    if (data.contract_type && CONTRACT_CONFIG[data.contract_type]) {
+      data.slot_fee = CONTRACT_CONFIG[data.contract_type].slot_fee;
+      data.commission_rate = CONTRACT_CONFIG[data.contract_type].commission_rate;
+    }
+    
     if (data.irs_retention_rate) data.irs_retention_rate = parseFloat(data.irs_retention_rate);
     onSubmit(data);
   };
@@ -75,25 +86,24 @@ export default function DriverForm({ driver, onSubmit, isLoading }) {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 sm:col-span-2">
           <Label className="text-xs">Type de contrat</Label>
           <Select value={form.contract_type} onValueChange={(v) => handleChange('contract_type', v)}>
             <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="slot_standard">Slot Standard (35€)</SelectItem>
-              <SelectItem value="slot_premium">Slot Premium (45€)</SelectItem>
-              <SelectItem value="slot_black">Slot Black (99€)</SelectItem>
-              <SelectItem value="location">Location véhicule</SelectItem>
+              <SelectItem value="slot_standard">Slot Standard (35€/sem)</SelectItem>
+              <SelectItem value="slot_premium">Slot Premium (45€/sem)</SelectItem>
+              <SelectItem value="slot_black">Slot Black (99€/sem)</SelectItem>
+              <SelectItem value="location">Location véhicule (20% commission)</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Frais de slot (€/sem)</Label>
-          <Input type="number" step="0.01" value={form.slot_fee} onChange={(e) => handleChange('slot_fee', e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Taux de commission (%)</Label>
-          <Input type="number" step="0.01" value={form.commission_rate} onChange={(e) => handleChange('commission_rate', e.target.value)} />
+          {form.contract_type && CONTRACT_CONFIG[form.contract_type] && (
+            <p className="text-xs text-gray-500 mt-1">
+              {CONTRACT_CONFIG[form.contract_type].slot_fee > 0 
+                ? `Frais de slot: ${CONTRACT_CONFIG[form.contract_type].slot_fee}€/semaine`
+                : `Commission: ${CONTRACT_CONFIG[form.contract_type].commission_rate}%`}
+            </p>
+          )}
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Régime IVA</Label>
