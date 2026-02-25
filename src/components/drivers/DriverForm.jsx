@@ -42,7 +42,10 @@ export default function DriverForm({ driver, onSubmit, isLoading }) {
       data.commission_rate = CONTRACT_CONFIG[data.contract_type].commission_rate;
     }
     
-    if (data.irs_retention_rate) data.irs_retention_rate = parseFloat(data.irs_retention_rate);
+    // Supprimer les champs numériques vides
+    if (!data.irs_retention_rate) delete data.irs_retention_rate;
+    else data.irs_retention_rate = parseFloat(data.irs_retention_rate);
+    
     onSubmit(data);
   };
 
