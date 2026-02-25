@@ -64,6 +64,7 @@ import Goals from './pages/Goals';
 import Rankings from './pages/Rankings';
 import UPI from './pages/UPI';
 import Apply from './pages/Apply';
+import PublicSite from './pages/PublicSite';
 import __Layout from './Layout.jsx';
 
 
@@ -85,6 +86,7 @@ export const PAGES = {
     "Rankings": Rankings,
     "UPI": UPI,
     "Apply": Apply,
+    "PublicSite": PublicSite,
 }
 
 export const pagesConfig = {
