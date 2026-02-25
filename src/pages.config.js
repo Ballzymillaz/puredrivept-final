@@ -55,6 +55,12 @@ import Commercials from './pages/Commercials';
 import Documents from './pages/Documents';
 import Applications from './pages/Applications';
 import Payments from './pages/Payments';
+import CashFlow from './pages/CashFlow';
+import Loans from './pages/Loans';
+import Reimbursements from './pages/Reimbursements';
+import Referrals from './pages/Referrals';
+import VehiclePurchases from './pages/VehiclePurchases';
+import Goals from './pages/Goals';
 import __Layout from './Layout.jsx';
 
 
@@ -67,6 +73,12 @@ export const PAGES = {
     "Documents": Documents,
     "Applications": Applications,
     "Payments": Payments,
+    "CashFlow": CashFlow,
+    "Loans": Loans,
+    "Reimbursements": Reimbursements,
+    "Referrals": Referrals,
+    "VehiclePurchases": VehiclePurchases,
+    "Goals": Goals,
 }
 
 export const pagesConfig = {
