@@ -61,6 +61,9 @@ import Reimbursements from './pages/Reimbursements';
 import Referrals from './pages/Referrals';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Goals from './pages/Goals';
+import Rankings from './pages/Rankings';
+import UPI from './pages/UPI';
+import Apply from './pages/Apply';
 import __Layout from './Layout.jsx';
 
 
@@ -79,6 +82,9 @@ export const PAGES = {
     "Referrals": Referrals,
     "VehiclePurchases": VehiclePurchases,
     "Goals": Goals,
+    "Rankings": Rankings,
+    "UPI": UPI,
+    "Apply": Apply,
 }
 
 export const pagesConfig = {
