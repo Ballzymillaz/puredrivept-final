@@ -43,7 +43,7 @@ export default function IVA() {
 
   const totalIVA = total6IVA + total23IVA;
 
-  const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
+  const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
     <div className="space-y-6">
@@ -61,14 +61,29 @@ export default function IVA() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('6iva')}>
-          <StatCard title="6% IVA Estado" value={fmt(total6IVA)} subtitle="Receita Bruta Frota" icon={TrendingUp} color="blue" />
+        <div>
+          <div className="cursor-pointer" onClick={() => setDetailsDialog('6iva')}>
+            <StatCard title="6% IVA Estado" value={fmt(total6IVA)} subtitle="Receita Bruta Frota" icon={TrendingUp} color="blue" />
+          </div>
+          <div className="mt-2 text-center text-xs text-gray-600 font-medium">
+            Totalité des IVA collectés: {fmt(total6IVA)}
+          </div>
         </div>
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('23iva')}>
-          <StatCard title="23% IVA (IVA recuperável)" value={fmt(total23IVA)} subtitle="Receitas Empresa" icon={Euro} color="green" />
+        <div>
+          <div className="cursor-pointer" onClick={() => setDetailsDialog('23iva')}>
+            <StatCard title="23% IVA (IVA recuperável)" value={fmt(total23IVA)} subtitle="Receitas Empresa" icon={Euro} color="green" />
+          </div>
+          <div className="mt-2 text-center text-xs text-gray-600 font-medium">
+            Totalité des IVA collectés: {fmt(total23IVA)}
+          </div>
         </div>
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('total')}>
-          <StatCard title="IVA Total" value={fmt(totalIVA)} icon={Euro} color="indigo" />
+        <div>
+          <div className="cursor-pointer" onClick={() => setDetailsDialog('total')}>
+            <StatCard title="IVA Total" value={fmt(totalIVA)} icon={Euro} color="indigo" />
+          </div>
+          <div className="mt-2 text-center text-xs text-gray-600 font-medium">
+            Totalité des IVA collectés: {fmt(totalIVA)}
+          </div>
         </div>
       </div>
 

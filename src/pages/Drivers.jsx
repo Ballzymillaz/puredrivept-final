@@ -104,6 +104,14 @@ export default function Drivers() {
       render: (row) => <span className="text-sm">{row.assigned_vehicle_plate || '—'}</span>,
     },
     {
+      header: 'Caução paga',
+      render: (row) => (
+        <span className={`text-sm font-medium ${row.vehicle_deposit_paid ? 'text-emerald-600' : 'text-red-500'}`}>
+          {row.vehicle_deposit_paid ? 'Sim' : 'Não'}
+        </span>
+      ),
+    },
+    {
       header: 'Estado',
       render: (row) => <StatusBadge status={row.status} />,
     },
