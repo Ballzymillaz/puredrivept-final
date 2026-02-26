@@ -14,7 +14,6 @@ export default function Commercials({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const qc = useQueryClient();
-  const isLoading = false;
 
   const { data: commercials = [], isLoading } = useQuery({
     queryKey: ['commercials'],
