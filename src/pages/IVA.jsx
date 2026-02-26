@@ -87,6 +87,36 @@ export default function IVA() {
         </div>
       </div>
 
+      <Card className="mt-6">
+        <div className="p-4">
+          <h3 className="text-sm font-semibold mb-3">Détails des IVA collectés</h3>
+          <div className="space-y-2">
+            {filteredPayments.length === 0 ? (
+              <p className="text-center py-4 text-gray-400 text-sm">Aucun IVA collecté</p>
+            ) : (
+              filteredPayments.map(p => {
+                const iva6 = p.iva_amount || 0;
+                const iva23 = ((p.via_verde_amount || 0) + (p.myprio_amount || 0) + (p.miio_amount || 0)) * 0.23;
+                const totalIVA = iva6 + iva23;
+                if (totalIVA === 0) return null;
+                return (
+                  <div key={p.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
+                    <div>
+                      <p className="font-medium text-sm">{p.driver_name}</p>
+                      <p className="text-xs text-gray-500">{p.period_label}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-sm">{fmt(totalIVA)}</p>
+                      <p className="text-xs text-gray-500">6%: {fmt(iva6)} | 23%: {fmt(iva23)}</p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </Card>
+
       <Dialog open={!!detailsDialog} onOpenChange={(open) => !open && setDetailsDialog(null)}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>

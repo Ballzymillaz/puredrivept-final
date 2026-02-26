@@ -408,6 +408,11 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
     notes: '',
   });
 
+  const { data: contracts = [] } = useQuery({
+    queryKey: ['contracts'],
+    queryFn: () => base44.entities.Contract.list(),
+  });
+
   const weeks = Array.from({ length: 8 }, (_, i) => {
     const date = addWeeks(new Date(), -i);
     const start = startOfWeek(date, { weekStartsOn: 1 });
@@ -420,6 +425,37 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
   });
 
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleDriverChange = (driverId) => {
+    const driver = drivers.find(d => d.id === driverId);
+    if (!driver) {
+      handleChange('driver_id', driverId);
+      return;
+    }
+
+    // Trouver le contrat actif du chauffeur
+    const activeContract = contracts.find(c => 
+      c.driver_id === driverId && 
+      c.status === 'active' && 
+      c.contract_type === 'location'
+    );
+
+    let updates = { driver_id: driverId };
+
+    // Si location, remplir le montant d'aluguer
+    if (activeContract && activeContract.weekly_rental_price) {
+      updates.vehicle_rental = activeContract.weekly_rental_price;
+    }
+
+    // Si location et caução non payée, ajouter 50€
+    if (activeContract && !driver.vehicle_deposit_paid) {
+      updates.irs_retention = 50;
+    } else {
+      updates.irs_retention = 0;
+    }
+
+    setForm(f => ({ ...f, ...updates }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -480,7 +516,7 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5 sm:col-span-2">
           <Label className="text-xs">Motorista *</Label>
-          <Select value={form.driver_id} onValueChange={(v) => handleChange('driver_id', v)}>
+          <Select value={form.driver_id} onValueChange={handleDriverChange}>
             <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
             <SelectContent>
               {drivers.map(d => (

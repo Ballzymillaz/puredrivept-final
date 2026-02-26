@@ -57,6 +57,7 @@ import Documents from './pages/Documents';
 import Drivers from './pages/Drivers';
 import FleetManagers from './pages/FleetManagers';
 import Goals from './pages/Goals';
+import IVA from './pages/IVA';
 import Loans from './pages/Loans';
 import Payments from './pages/Payments';
 import PublicSite from './pages/PublicSite';
@@ -66,7 +67,6 @@ import Reimbursements from './pages/Reimbursements';
 import UPI from './pages/UPI';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import IVA from './pages/IVA';
 import __Layout from './Layout.jsx';
 
 
@@ -81,6 +81,7 @@ export const PAGES = {
     "Drivers": Drivers,
     "FleetManagers": FleetManagers,
     "Goals": Goals,
+    "IVA": IVA,
     "Loans": Loans,
     "Payments": Payments,
     "PublicSite": PublicSite,
@@ -90,7 +91,6 @@ export const PAGES = {
     "UPI": UPI,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "IVA": IVA,
 }
 
 export const pagesConfig = {
