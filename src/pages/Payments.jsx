@@ -51,6 +51,38 @@ export default function Payments() {
         } catch (error) {
           console.error('Error syncing payment:', error);
         }
+        
+        // Create referral payment for commercial/fleet manager
+        const driver = drivers.find(d => d.id === oldPayment.driver_id);
+        if (driver && (driver.commercial_id || driver.fleet_manager_id)) {
+          const referrerType = driver.commercial_id ? 'commercial' : 'fleet_manager';
+          const referrerId = driver.commercial_id || driver.fleet_manager_id;
+          const referrerName = driver.commercial_name || driver.fleet_manager_name;
+          
+          // Calculate weekly amount based on contract type
+          const weeklyAmount = driver.contract_type === 'slot_standard' ? 5 :
+                              driver.contract_type === 'slot_premium' ? 5 :
+                              driver.contract_type === 'slot_black' ? 10 :
+                              driver.contract_type === 'location' ? 15 : 0;
+          
+          if (weeklyAmount > 0) {
+            try {
+              await base44.entities.ReferralPayment.create({
+                referrer_type: referrerType,
+                referrer_id: referrerId,
+                referrer_name: referrerName,
+                driver_id: driver.id,
+                driver_name: driver.full_name,
+                driver_contract_type: driver.contract_type,
+                weekly_amount: weeklyAmount,
+                week_label: oldPayment.period_label,
+                status: 'pending',
+              });
+            } catch (error) {
+              console.error('Error creating referral payment:', error);
+            }
+          }
+        }
       }
       
       return result;
@@ -60,6 +92,7 @@ export default function Payments() {
       await qc.invalidateQueries({ queryKey: ['expenses-all'] });
       await qc.invalidateQueries({ queryKey: ['upi-transactions'] });
       await qc.invalidateQueries({ queryKey: ['drivers'] });
+      await qc.invalidateQueries({ queryKey: ['referralPayments'] });
       setEditMode(false);
       setSelected(null);
     },
