@@ -31,7 +31,11 @@ export default function VehiclePurchases() {
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.VehiclePurchase.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); setSelected(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); setSelected(null); setEditForm(null); },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.VehiclePurchase.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); setSelected(null); setEditForm(null); },
   });
 
   const [form, setForm] = useState({ driver_name: '', vehicle_id: '', duration_months: '' });
@@ -88,6 +92,7 @@ export default function VehiclePurchases() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setEditForm({ ...selected })}>Editar</Button>
+                <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar compra de veículo?')) deleteMutation.mutate(selected.id); }}>Eliminar</Button>
                 {selected.status === 'requested' && (
                   <>
                     <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'active', start_date: new Date().toISOString().split('T')[0] } })}>Aprovar</Button>

@@ -131,7 +131,10 @@ export default function Goals() {
                 </div>
               )}
             </div>
-            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">{editing ? 'Atualizar' : 'Criar'}</Button>
+            <div className="flex gap-2">
+              {editing && <Button type="button" variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar objetivo?')) deleteMutation.mutate(editing.id); }}>Eliminar</Button>}
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className={editing ? "flex-1 bg-indigo-600 hover:bg-indigo-700" : "w-full bg-indigo-600 hover:bg-indigo-700"}>{editing ? 'Atualizar' : 'Criar'}</Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
