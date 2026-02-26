@@ -28,12 +28,53 @@ export default function Loans() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['loans'] }); setShowForm(false); },
   });
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Loan.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['loans'] }); setSelected(null); setEditForm(null); },
+    mutationFn: async ({ id, data, oldData }) => {
+      const result = await base44.entities.Loan.update(id, data);
+      
+      // Si on change le montant payé, ajuster le restant
+      if (data.paid_amount !== undefined && oldData) {
+        const newRemaining = oldData.total_with_interest - data.paid_amount;
+        if (newRemaining !== data.remaining_balance) {
+          await base44.entities.Loan.update(id, { remaining_balance: Math.max(0, newRemaining) });
+        }
+      }
+      
+      return result;
+    },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ['loans'] }); 
+      qc.invalidateQueries({ queryKey: ['expenses-all'] });
+      setSelected(null); 
+      setEditForm(null); 
+    },
   });
+  
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Loan.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['loans'] }); setSelected(null); setEditForm(null); },
+    mutationFn: async (loan) => {
+      // Supprimer les dépenses liées au prêt
+      await base44.functions.invoke('deleteLoanExpense', { loanId: loan.id });
+      return await base44.entities.Loan.delete(loan.id);
+    },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ['loans'] }); 
+      qc.invalidateQueries({ queryKey: ['expenses-all'] });
+      setSelected(null); 
+      setEditForm(null); 
+    },
+  });
+  
+  const approveMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const result = await base44.entities.Loan.update(id, data);
+      // Créer une dépense pour le prêt accordé
+      await base44.functions.invoke('createLoanExpense', { loanId: id });
+      return result;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['loans'] });
+      qc.invalidateQueries({ queryKey: ['expenses-all'] });
+      setSelected(null);
+    },
   });
 
   const [form, setForm] = useState({ driver_id: '', amount: '', duration_weeks: '' });
@@ -108,17 +149,17 @@ export default function Loans() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setEditForm({ ...selected })}>Editar</Button>
-                <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar empréstimo?')) deleteMutation.mutate(selected.id); }}>Eliminar</Button>
+                <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar empréstimo?')) deleteMutation.mutate(selected); }}>Eliminar</Button>
                 {selected.status === 'requested' && (
                   <>
-                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'active', approval_date: new Date().toISOString().split('T')[0] } })}>Aprovar</Button>
-                    <Button variant="outline" className="flex-1 text-red-600" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' } })}>Rejeitar</Button>
+                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => approveMutation.mutate({ id: selected.id, data: { status: 'active', approval_date: new Date().toISOString().split('T')[0] } })}>Aprovar</Button>
+                    <Button variant="outline" className="flex-1 text-red-600" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' }, oldData: selected })}>Rejeitar</Button>
                   </>
                 )}
               </div>
             </div>
           )}
-          {selected && editForm && <LoanEditForm loan={editForm} onSave={(data) => { updateMutation.mutate({ id: selected.id, data }); setEditForm(null); }} onCancel={() => setEditForm(null)} />}
+          {selected && editForm && <LoanEditForm loan={editForm} onSave={(data) => { updateMutation.mutate({ id: selected.id, data, oldData: selected }); setEditForm(null); }} onCancel={() => setEditForm(null)} />}
         </DialogContent>
       </Dialog>
 
