@@ -52,7 +52,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    return Response.json({ success: true, message: 'Payment expenses deleted' });
+    // 3. Delete referral payments associated with this payment
+    const referralPayments = await base44.asServiceRole.entities.ReferralPayment.filter({
+      driver_id,
+      week_label: payment.period_label,
+    });
+
+    for (const refPayment of referralPayments) {
+      await base44.asServiceRole.entities.ReferralPayment.delete(refPayment.id);
+    }
+
+    return Response.json({ success: true, message: 'Payment expenses and referrals deleted' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

@@ -30,6 +30,7 @@ const CONTRACT_LABELS = {
 export default function Referrals() {
   const [editing, setEditing] = useState(null);
   const [detailsDialog, setDetailsDialog] = useState(null);
+  const [referrerFilter, setReferrerFilter] = useState('all');
   const qc = useQueryClient();
 
   const { data: payments = [], isLoading } = useQuery({
@@ -58,8 +59,15 @@ export default function Referrals() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['referral-payments'] }); setEditing(null); },
   });
 
-  const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + (p.weekly_amount || 0) + (p.bonus_amount || 0), 0);
-  const totalPending = payments.filter(p => p.status === 'pending').reduce((s, p) => s + (p.weekly_amount || 0), 0);
+  const filteredPayments = referrerFilter === 'all' 
+    ? payments 
+    : referrerFilter === 'none'
+    ? payments.filter(p => !p.referrer_id)
+    : payments.filter(p => p.referrer_id === referrerFilter);
+
+  const totalPaid = filteredPayments.filter(p => p.status === 'paid').reduce((s, p) => s + (p.weekly_amount || 0) + (p.bonus_amount || 0), 0);
+  const totalPending = filteredPayments.filter(p => p.status === 'pending').reduce((s, p) => s + (p.weekly_amount || 0), 0);
+  const totalSemanal = filteredPayments.reduce((s, p) => s + (p.weekly_amount || 0), 0);
   
   const activeReferrals = drivers.filter(d => d.fleet_manager_id || d.commercial_id).map(d => ({
     driver_name: d.full_name,
@@ -69,6 +77,10 @@ export default function Referrals() {
     referrer_name: d.fleet_manager_name || d.commercial_name,
     contract_type: d.contract_type,
   }));
+
+  // Get all unique referrers for filter
+  const allReferrers = [...fleetManagers.map(f => ({ id: f.id, name: f.full_name, type: 'fleet_manager' })), 
+                        ...commercials.map(c => ({ id: c.id, name: c.full_name, type: 'commercial' }))];
 
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
 
@@ -84,6 +96,20 @@ export default function Referrals() {
   return (
     <div className="space-y-4">
       <PageHeader title="Indicações" subtitle="Pagamentos a comerciais e gestores" />
+      
+      <div className="flex gap-3">
+        <Select value={referrerFilter} onValueChange={setReferrerFilter}>
+          <SelectTrigger className="w-64"><SelectValue placeholder="Filtrar por indicador..." /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="none">Nenhum</SelectItem>
+            {allReferrers.map(r => (
+              <SelectItem key={r.id} value={r.id}>{r.name} ({r.type === 'fleet_manager' ? 'Gestor' : 'Comercial'})</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="cursor-pointer" onClick={() => setDetailsDialog('paid')}>
           <StatCard title="Total pago" value={fmt(totalPaid)} icon={HandCoins} color="green" />
@@ -115,7 +141,14 @@ export default function Referrals() {
         </CardContent>
       </Card>
 
-      <DataTable columns={columns} data={payments} isLoading={isLoading} onRowClick={setEditing} />
+      <DataTable columns={columns} data={filteredPayments} isLoading={isLoading} onRowClick={setEditing} />
+
+      <div className="flex justify-end p-4 bg-indigo-50 rounded-lg">
+        <div className="text-right">
+          <p className="text-xs text-gray-600">Total Semanal</p>
+          <p className="text-xl font-bold text-indigo-700">{fmt(totalSemanal)}</p>
+        </div>
+      </div>
 
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="max-w-sm">
