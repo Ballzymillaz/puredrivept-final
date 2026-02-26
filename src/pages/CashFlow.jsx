@@ -246,18 +246,11 @@ function DetailsDialogContent({ type, payments, expenses, totalCommissions, tota
         <div className="p-3 bg-rose-50 rounded-lg">
           <p className="text-sm font-semibold text-gray-700">Total: {fmt(expenses.reduce((s, e) => s + (e.amount || 0), 0))}</p>
         </div>
-        <div className="space-y-3">
-          {Object.entries(byCategory).map(([cat, items]) => (
-            <div key={cat}>
-              <p className="text-xs font-semibold text-gray-600 mb-2 capitalize">
-                {cat.replace(/_/g, ' ')}: {fmt(items.reduce((s, e) => s + (e.amount || 0), 0))}
-              </p>
-              {items.slice(0, 10).map(e => (
-                <div key={e.id} className="flex justify-between text-sm py-1">
-                  <span className="text-xs">{e.description}</span>
-                  <span>{fmt(e.amount)}</span>
-                </div>
-              ))}
+        <div className="space-y-2">
+          {expenses.slice(0, 50).map(e => (
+            <div key={e.id} className="flex justify-between text-sm border-b py-2">
+              <span>{e.description}</span>
+              <span className="font-medium">{fmt(e.amount)}</span>
             </div>
           ))}
         </div>
@@ -266,22 +259,51 @@ function DetailsDialogContent({ type, payments, expenses, totalCommissions, tota
   }
 
   if (type === 'profit') {
-    const profit = (totalCommissions + totalSlotFees + totalRentals) - expenses.reduce((s, e) => s + (e.amount || 0), 0);
+    const totalIncome = totalCommissions + totalSlotFees + totalRentals;
+    const totalExpenseAmount = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+    const profit = totalIncome - totalExpenseAmount;
+    
     return (
       <div className="space-y-3">
         <div className={`p-3 rounded-lg ${profit >= 0 ? 'bg-green-50' : 'bg-rose-50'}`}>
           <p className="text-sm font-semibold text-gray-700">Lucro: {fmt(profit)}</p>
         </div>
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm py-2 border-b">
-            <span className="font-medium">Receitas totais:</span>
-            <span className="text-green-600">{fmt(totalCommissions + totalSlotFees + totalRentals)}</span>
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Receitas totais: {fmt(totalIncome)}</p>
+            <div className="space-y-1 ml-2">
+              <div className="flex justify-between text-sm py-1">
+                <span className="text-xs">Comissões</span>
+                <span>{fmt(totalCommissions)}</span>
+              </div>
+              <div className="flex justify-between text-sm py-1">
+                <span className="text-xs">Taxas slot</span>
+                <span>{fmt(totalSlotFees)}</span>
+              </div>
+              <div className="flex justify-between text-sm py-1">
+                <span className="text-xs">Aluguéis</span>
+                <span>{fmt(totalRentals)}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex justify-between text-sm py-2 border-b">
-            <span className="font-medium">Despesas totais:</span>
-            <span className="text-red-600">{fmt(expenses.reduce((s, e) => s + (e.amount || 0), 0))}</span>
+          
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Despesas totais: {fmt(totalExpenseAmount)}</p>
+            <div className="space-y-1 ml-2">
+              {Object.entries(expenses.reduce((acc, e) => {
+                const cat = e.category || 'other';
+                acc[cat] = (acc[cat] || 0) + (e.amount || 0);
+                return acc;
+              }, {})).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([cat, amount]) => (
+                <div key={cat} className="flex justify-between text-sm py-1">
+                  <span className="text-xs capitalize">{cat.replace(/_/g, ' ')}</span>
+                  <span>{fmt(amount)}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="flex justify-between text-base font-semibold py-2">
+          
+          <div className="flex justify-between text-base font-semibold py-2 border-t-2 border-gray-200">
             <span>Lucro líquido:</span>
             <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>{fmt(profit)}</span>
           </div>

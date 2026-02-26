@@ -54,8 +54,8 @@ export default function UPI() {
     },
   });
 
-  const totalUPI = drivers.reduce((s, d) => s + (d.upi_balance || 0), 0);
-  const totalEarned = transactions.filter(t => t.type === 'earned').reduce((s, t) => s + (t.amount || 0), 0);
+  const totalUPI = Math.round(drivers.reduce((s, d) => s + (d.upi_balance || 0), 0) * 100) / 100;
+  const totalEarned = Math.round(transactions.filter(t => t.type === 'earned').reduce((s, t) => s + (t.amount || 0), 0) * 100) / 100;
 
   const [form, setForm] = useState(editing || { driver_id: '', type: 'credit', amount: '', notes: '' });
 

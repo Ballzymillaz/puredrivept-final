@@ -196,7 +196,7 @@ function PurchaseEditForm({ purchase, onSave, onCancel }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5"><Label className="text-xs">Restante</Label><Input type="number" step="0.01" value={form.remaining_balance} onChange={(e) => setForm(f => ({ ...f, remaining_balance: e.target.value }))} /></div>
       <div className="space-y-1.5"><Label className="text-xs">Pago</Label><Input type="number" step="0.01" value={form.paid_amount} onChange={(e) => setForm(f => ({ ...f, paid_amount: e.target.value }))} /></div>
-      <div className="space-y-1.5"><Label className="text-xs">Pago - Paiement anticipé</Label><Input type="number" step="0.01" value={form.prepayment_amount} onChange={(e) => setForm(f => ({ ...f, prepayment_amount: e.target.value }))} /></div>
+      <div className="space-y-1.5"><Label className="text-xs">Pagamento antecipado</Label><Input type="number" step="0.01" value={form.prepayment_amount} onChange={(e) => setForm(f => ({ ...f, prepayment_amount: e.target.value }))} /></div>
       <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
         <Select value={form.status} onValueChange={(v) => setForm(f => ({ ...f, status: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>

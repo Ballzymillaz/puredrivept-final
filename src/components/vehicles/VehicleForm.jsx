@@ -19,6 +19,7 @@ export default function VehicleForm({ vehicle, onSubmit, isLoading, drivers }) {
     mileage: vehicle?.mileage || '',
     weekly_rental_price: vehicle?.weekly_rental_price || '',
     base_purchase_price: vehicle?.base_purchase_price || '',
+    market_price: vehicle?.market_price || '',
     insurance_expiry: vehicle?.insurance_expiry || '',
     inspection_expiry: vehicle?.inspection_expiry || '',
     notes: vehicle?.notes || '',
@@ -31,7 +32,7 @@ export default function VehicleForm({ vehicle, onSubmit, isLoading, drivers }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = { ...form };
-    ['year', 'mileage', 'weekly_rental_price', 'base_purchase_price'].forEach(k => {
+    ['year', 'mileage', 'weekly_rental_price', 'base_purchase_price', 'market_price'].forEach(k => {
       if (data[k]) data[k] = parseFloat(data[k]);
     });
 
@@ -69,6 +70,7 @@ export default function VehicleForm({ vehicle, onSubmit, isLoading, drivers }) {
         <div className="space-y-1.5"><Label className="text-xs">Quilometragem</Label><Input type="number" value={form.mileage} onChange={(e) => handleChange('mileage', e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">Aluguer/sem (€)</Label><Input type="number" step="0.01" value={form.weekly_rental_price} onChange={(e) => handleChange('weekly_rental_price', e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">Preço base compra (€)</Label><Input type="number" step="0.01" value={form.base_purchase_price} onChange={(e) => handleChange('base_purchase_price', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Preço mercado (€)</Label><Input type="number" step="0.01" value={form.market_price} onChange={(e) => handleChange('market_price', e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">Expiração seguro</Label><Input type="date" value={form.insurance_expiry} onChange={(e) => handleChange('insurance_expiry', e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">Expiração inspeção</Label><Input type="date" value={form.inspection_expiry} onChange={(e) => handleChange('inspection_expiry', e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
@@ -85,11 +87,11 @@ export default function VehicleForm({ vehicle, onSubmit, isLoading, drivers }) {
         </div>
         <div className="space-y-1.5 sm:col-span-2">
           <Label className="text-xs">Motorista (opcional)</Label>
-          <Select value={form.assigned_driver_id} onValueChange={(v) => handleChange('assigned_driver_id', v)}>
+          <Select value={form.assigned_driver_id || ""} onValueChange={(v) => handleChange('assigned_driver_id', v || null)}>
             <SelectTrigger><SelectValue placeholder="Sem motorista ou selecionar..." /></SelectTrigger>
             <SelectContent>
               <SelectItem value={null}>Nenhum</SelectItem>
-              {availableDrivers.map(d => (
+              {drivers?.map(d => (
                 <SelectItem key={d.id} value={d.id}>{d.full_name} ({d.email})</SelectItem>
               ))}
             </SelectContent>
