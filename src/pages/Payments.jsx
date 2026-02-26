@@ -52,8 +52,23 @@ export default function Payments() {
           console.error('Error syncing payment:', error);
         }
         
-        // Create referral payment for commercial/fleet manager
+        // Update driver caução if applicable
         const driver = drivers.find(d => d.id === oldPayment.driver_id);
+        if (driver && oldPayment.irs_retention > 0 && !driver.vehicle_deposit_paid) {
+          const newDepositAmount = (driver.vehicle_deposit || 0) + oldPayment.irs_retention;
+          const depositPaid = newDepositAmount >= 500;
+          
+          try {
+            await base44.entities.Driver.update(driver.id, {
+              vehicle_deposit: newDepositAmount,
+              vehicle_deposit_paid: depositPaid,
+            });
+          } catch (error) {
+            console.error('Error updating driver deposit:', error);
+          }
+        }
+        
+        // Create referral payment for commercial/fleet manager
         if (driver && (driver.commercial_id || driver.fleet_manager_id)) {
           const referrerType = driver.commercial_id ? 'commercial' : 'fleet_manager';
           const referrerId = driver.commercial_id || driver.fleet_manager_id;
