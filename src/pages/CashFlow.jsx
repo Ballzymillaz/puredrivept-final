@@ -325,6 +325,7 @@ function ExpenseForm({ expense, onSubmit, isLoading }) {
             <SelectItem value="maintenance">Manutenção</SelectItem>
             <SelectItem value="via_verde">Via Verde</SelectItem>
             <SelectItem value="loans">Empréstimos</SelectItem>
+            <SelectItem value="combustible">Combustível</SelectItem>
             <SelectItem value="other">Outro</SelectItem>
           </SelectContent>
         </Select>

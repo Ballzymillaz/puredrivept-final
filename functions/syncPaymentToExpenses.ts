@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     const miioExists = existingExpenses.some(e => e.description.includes('Miio'));
     if (miio_amount > 0 && !miioExists) {
       await base44.asServiceRole.entities.Expense.create({
-        category: 'via_verde',
+        category: 'combustible',
         description: `Miio - ${driver_name} - ${payment.period_label}`,
         amount: miio_amount,
         date: expenseDate,

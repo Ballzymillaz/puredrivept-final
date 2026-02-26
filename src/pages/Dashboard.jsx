@@ -58,17 +58,17 @@ export default function Dashboard({ currentUser }) {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Chauffeurs actifs" value={activeDrivers} subtitle={`${drivers.length} total`} icon={Users} color="indigo" />
-        <StatCard title="Véhicules attribués" value={assignedVehicles} subtitle={`${vehicles.length} total`} icon={Car} color="blue" />
-        <StatCard title="Revenu brut" value={`€${totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`} subtitle="Périodes récentes" icon={TrendingUp} color="green" />
-        <StatCard title="Candidatures" value={applications.length} subtitle="En attente" icon={UserPlus} color="amber" />
+        <StatCard title="Motoristas ativos" value={activeDrivers} subtitle={`${drivers.length} total`} icon={Users} color="indigo" />
+        <StatCard title="Veículos atribuídos" value={assignedVehicles} subtitle={`${vehicles.length} total`} icon={Car} color="blue" />
+        <StatCard title="Receita bruta" value={`€${totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`} subtitle="Períodos recentes" icon={TrendingUp} color="green" />
+        <StatCard title="Candidaturas" value={applications.length} subtitle="Em espera" icon={UserPlus} color="amber" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Contract distribution */}
         <Card className="border-0 shadow-sm lg:col-span-1">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">Répartition des contrats</CardTitle>
+            <CardTitle className="text-sm font-semibold text-gray-700">Repartição dos contratos</CardTitle>
           </CardHeader>
           <CardContent>
             {contractData.length > 0 ? (
@@ -101,7 +101,7 @@ export default function Dashboard({ currentUser }) {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-500" />
-              Documents à échéance proche ({expiringDocs.length})
+              Documentos a vencer em breve ({expiringDocs.length})
             </CardTitle>
           </CardHeader>
           <CardContent>

@@ -154,8 +154,8 @@ export default function VehiclePurchases() {
               <Select value={form.vehicle_id} onValueChange={(v) => setForm(f => ({...f, vehicle_id: v}))}>
                 <SelectTrigger><SelectValue placeholder="Escolher veículo..." /></SelectTrigger>
                 <SelectContent>
-                  {vehicles.filter(v => v.market_price > 0).map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate} ({fmt(v.market_price)})</SelectItem>
+                  {vehicles.map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate}{v.market_price ? ` (${fmt(v.market_price)})` : ''}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
