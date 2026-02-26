@@ -34,8 +34,37 @@ export default function VehiclePurchases() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); setShowForm(false); },
   });
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.VehiclePurchase.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); setSelected(null); setEditForm(null); },
+    mutationFn: async ({ id, data, oldPurchase }) => {
+      // Si paiement anticipé, créer une recette
+      if (data.prepayment_amount && data.prepayment_amount !== oldPurchase.prepayment_amount) {
+        const prepaymentDiff = data.prepayment_amount - (oldPurchase.prepayment_amount || 0);
+        if (prepaymentDiff > 0) {
+          await base44.entities.Expense.create({
+            category: 'vehicle_costs',
+            description: `Pago - Paiement anticipé: ${oldPurchase.driver_name} - ${oldPurchase.vehicle_info}`,
+            amount: -prepaymentDiff,
+            date: new Date().toISOString().split('T')[0],
+            driver_id: oldPurchase.driver_id,
+            notes: `VehiclePurchase ID: ${id}`,
+          });
+          
+          // Recalculer le weekly installment
+          const newRemainingBalance = oldPurchase.total_price - data.prepayment_amount - (oldPurchase.paid_amount || 0);
+          const remainingWeeks = Math.max(1, oldPurchase.duration_months * 4.33 - ((oldPurchase.paid_amount || 0) / oldPurchase.weekly_installment));
+          const newWeeklyInstallment = Math.round((newRemainingBalance / remainingWeeks) * 100) / 100;
+          data.weekly_installment = newWeeklyInstallment;
+          data.remaining_balance = Math.max(0, newRemainingBalance);
+        }
+      }
+      
+      return await base44.entities.VehiclePurchase.update(id, data);
+    },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); 
+      qc.invalidateQueries({ queryKey: ['expenses-all'] });
+      setSelected(null); 
+      setEditForm(null); 
+    },
   });
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.VehiclePurchase.delete(id),
@@ -45,10 +74,10 @@ export default function VehiclePurchases() {
   const [form, setForm] = useState({ driver_id: '', driver_name: '', vehicle_id: '', duration_months: '' });
 
   const selectedVehicle = vehicles.find(v => v.id === form.vehicle_id);
-  const basePrice = selectedVehicle?.base_purchase_price || 0;
-  const totalPrice = basePrice * 1.25;
+  const marketPrice = selectedVehicle?.market_price || 0;
+  const totalPrice = Math.round(marketPrice * 1.25 * 100) / 100;
   const months = parseInt(form.duration_months) || 0;
-  const weeklyInstallment = months > 0 ? totalPrice / (months * 4.33) : 0;
+  const weeklyInstallment = months > 0 ? Math.round((totalPrice / (months * 4.33)) * 100) / 100 : 0;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -58,7 +87,7 @@ export default function VehiclePurchases() {
       driver_id: form.driver_id,
       vehicle_id: form.vehicle_id,
       vehicle_info: selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model} - ${selectedVehicle.license_plate}` : '',
-      base_price: basePrice,
+      base_price: marketPrice,
       total_price: totalPrice,
       duration_months: months,
       weekly_installment: weeklyInstallment,
@@ -107,7 +136,7 @@ export default function VehiclePurchases() {
               </div>
             </div>
           )}
-          {selected && editForm && <PurchaseEditForm purchase={editForm} onSave={(data) => { updateMutation.mutate({ id: selected.id, data }); setEditForm(null); }} onCancel={() => setEditForm(null)} />}
+          {selected && editForm && <PurchaseEditForm purchase={editForm} onSave={(data) => { updateMutation.mutate({ id: selected.id, data, oldPurchase: selected }); setEditForm(null); }} onCancel={() => setEditForm(null)} />}
         </DialogContent>
       </Dialog>
 
@@ -125,8 +154,8 @@ export default function VehiclePurchases() {
               <Select value={form.vehicle_id} onValueChange={(v) => setForm(f => ({...f, vehicle_id: v}))}>
                 <SelectTrigger><SelectValue placeholder="Escolher veículo..." /></SelectTrigger>
                 <SelectContent>
-                  {vehicles.filter(v => v.base_purchase_price > 0).map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate} ({fmt(v.base_purchase_price)})</SelectItem>
+                  {vehicles.filter(v => v.market_price > 0).map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate} ({fmt(v.market_price)})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -134,7 +163,7 @@ export default function VehiclePurchases() {
             <div className="space-y-1.5"><Label className="text-xs">Duração (meses)</Label><Input type="number" value={form.duration_months} onChange={(e) => setForm(f => ({...f, duration_months: e.target.value}))} required /></div>
             {form.vehicle_id && form.duration_months && (
               <div className="bg-indigo-50 p-3 rounded-lg space-y-1 text-sm">
-                <p>Preço base: <strong>{fmt(basePrice)}</strong></p>
+                <p>Preço mercado: <strong>{fmt(marketPrice)}</strong></p>
                 <p>Preço total (+25%): <strong className="text-indigo-700">{fmt(totalPrice)}</strong></p>
                 <p>Pagamento semanal: <strong className="text-indigo-700">{fmt(weeklyInstallment)}</strong></p>
               </div>
@@ -148,16 +177,26 @@ export default function VehiclePurchases() {
 }
 
 function PurchaseEditForm({ purchase, onSave, onCancel }) {
-  const [form, setForm] = useState({ ...purchase });
+  const [form, setForm] = useState({ 
+    ...purchase, 
+    prepayment_amount: purchase.prepayment_amount || 0 
+  });
+  
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ remaining_balance: parseFloat(form.remaining_balance), paid_amount: parseFloat(form.paid_amount), status: form.status });
+    onSave({ 
+      remaining_balance: parseFloat(form.remaining_balance) || 0,
+      paid_amount: parseFloat(form.paid_amount) || 0,
+      prepayment_amount: parseFloat(form.prepayment_amount) || 0,
+      status: form.status 
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5"><Label className="text-xs">Restante</Label><Input type="number" step="0.01" value={form.remaining_balance} onChange={(e) => setForm(f => ({ ...f, remaining_balance: e.target.value }))} /></div>
       <div className="space-y-1.5"><Label className="text-xs">Pago</Label><Input type="number" step="0.01" value={form.paid_amount} onChange={(e) => setForm(f => ({ ...f, paid_amount: e.target.value }))} /></div>
+      <div className="space-y-1.5"><Label className="text-xs">Pago - Paiement anticipé</Label><Input type="number" step="0.01" value={form.prepayment_amount} onChange={(e) => setForm(f => ({ ...f, prepayment_amount: e.target.value }))} /></div>
       <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
         <Select value={form.status} onValueChange={(v) => setForm(f => ({ ...f, status: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>

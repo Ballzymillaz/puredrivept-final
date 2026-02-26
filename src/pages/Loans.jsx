@@ -31,11 +31,24 @@ export default function Loans() {
     mutationFn: async ({ id, data, oldData }) => {
       const result = await base44.entities.Loan.update(id, data);
       
-      // Si on change le montant payé, ajuster le restant
+      // Si on change le montant payé, ajuster le restant et créer une recette
       if (data.paid_amount !== undefined && oldData) {
         const newRemaining = oldData.total_with_interest - data.paid_amount;
         if (newRemaining !== data.remaining_balance) {
           await base44.entities.Loan.update(id, { remaining_balance: Math.max(0, newRemaining) });
+        }
+        
+        // Si le montant payé a augmenté, créer une recette
+        const paidDiff = data.paid_amount - (oldData.paid_amount || 0);
+        if (paidDiff > 0) {
+          await base44.entities.Expense.create({
+            category: 'loans',
+            description: `Remboursement prêt - ${oldData.driver_name}`,
+            amount: -paidDiff,
+            date: new Date().toISOString().split('T')[0],
+            driver_id: oldData.driver_id,
+            notes: `Loan ID: ${id} - Paiement anticipé`,
+          });
         }
       }
       

@@ -24,7 +24,10 @@ export default function CashFlow() {
 
   const { data: payments = [] } = useQuery({
     queryKey: ['payments-all'],
-    queryFn: () => base44.entities.WeeklyPayment.list('-week_start', 200),
+    queryFn: async () => {
+      const allPayments = await base44.entities.WeeklyPayment.list('-week_start', 200);
+      return allPayments.filter(p => p.status === 'paid');
+    },
   });
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses-all'],
