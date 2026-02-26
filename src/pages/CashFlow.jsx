@@ -147,14 +147,27 @@ export default function CashFlow() {
       <Card className="border-0 shadow-sm">
         <CardHeader><CardTitle className="text-sm font-semibold">Despesas recentes</CardTitle></CardHeader>
         <CardContent>
-          <DataTable columns={expenseColumns} data={expenses.slice(0, 10)} onRowClick={(r) => { setEditing(r); setShowForm(true); }} />
+          <DataTable columns={expenseColumns} data={expenses.slice(0, 20)} onRowClick={(r) => { setEditing(r); setShowForm(true); }} />
         </CardContent>
       </Card>
 
       <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setEditing(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{editing ? 'Editar despesa' : 'Nova despesa'}</DialogTitle></DialogHeader>
-          <ExpenseForm expense={editing} onSubmit={(data) => editing ? updateMutation.mutate({ id: editing.id, data }) : createMutation.mutate(data)} isLoading={createMutation.isPending || updateMutation.isPending} />
+          <ExpenseForm 
+            expense={editing} 
+            onSubmit={(data) => editing ? updateMutation.mutate({ id: editing.id, data }) : createMutation.mutate(data)} 
+            onDelete={editing ? () => { 
+              if (confirm('Eliminar despesa?')) {
+                base44.entities.Expense.delete(editing.id).then(() => {
+                  qc.invalidateQueries({ queryKey: ['expenses-all'] });
+                  setEditing(null);
+                  setShowForm(false);
+                });
+              }
+            } : null}
+            isLoading={createMutation.isPending || updateMutation.isPending} 
+          />
         </DialogContent>
       </Dialog>
 
@@ -315,7 +328,7 @@ function DetailsDialogContent({ type, payments, expenses, totalCommissions, tota
   return null;
 }
 
-function ExpenseForm({ expense, onSubmit, isLoading }) {
+function ExpenseForm({ expense, onSubmit, onDelete, isLoading }) {
   const [form, setForm] = useState({
     category: expense?.category || 'other',
     description: expense?.description || '',
@@ -346,8 +359,8 @@ function ExpenseForm({ expense, onSubmit, isLoading }) {
             <SelectItem value="taxes">Impostos</SelectItem>
             <SelectItem value="maintenance">Manutenção</SelectItem>
             <SelectItem value="via_verde">Via Verde</SelectItem>
-            <SelectItem value="loans">Empréstimos</SelectItem>
-            <SelectItem value="combustible">Combustível</SelectItem>
+            <SelectItem value="financiamento">Financiamento</SelectItem>
+            <SelectItem value="combustivel">Combustível</SelectItem>
             <SelectItem value="other">Outro</SelectItem>
           </SelectContent>
         </Select>
@@ -358,7 +371,16 @@ function ExpenseForm({ expense, onSubmit, isLoading }) {
         <div className="space-y-1.5"><Label className="text-xs">Data</Label><Input type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} required /></div>
       </div>
       <div className="space-y-1.5"><Label className="text-xs">Notas</Label><Textarea value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} /></div>
-      <Button type="submit" disabled={isLoading} className="w-full bg-indigo-600 hover:bg-indigo-700">{isLoading ? 'A guardar...' : expense ? 'Atualizar' : 'Criar'}</Button>
+      <div className="flex gap-2">
+        {onDelete && (
+          <Button type="button" variant="outline" onClick={onDelete} className="flex-1 text-red-600 hover:bg-red-50">
+            Eliminar
+          </Button>
+        )}
+        <Button type="submit" disabled={isLoading} className={`${onDelete ? 'flex-1' : 'w-full'} bg-indigo-600 hover:bg-indigo-700`}>
+          {isLoading ? 'A guardar...' : expense ? 'Atualizar' : 'Criar'}
+        </Button>
+      </div>
     </form>
   );
 }
