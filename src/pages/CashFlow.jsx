@@ -20,6 +20,7 @@ export default function CashFlow() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [detailsDialog, setDetailsDialog] = useState(null);
+  const [driverFilter, setDriverFilter] = useState('all');
   const qc = useQueryClient();
 
   const { data: payments = [] } = useQuery({
@@ -29,10 +30,20 @@ export default function CashFlow() {
       return allPayments.filter(p => p.status === 'paid');
     },
   });
-  const { data: expenses = [] } = useQuery({
+  const { data: allExpenses = [] } = useQuery({
     queryKey: ['expenses-all'],
     queryFn: () => base44.entities.Expense.list('-date', 200),
   });
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
+
+  const expenses = driverFilter === 'all' 
+    ? allExpenses 
+    : driverFilter === 'none'
+    ? allExpenses.filter(e => !e.driver_id)
+    : allExpenses.filter(e => e.driver_id === driverFilter);
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.Expense.create(d),
@@ -48,8 +59,12 @@ export default function CashFlow() {
   const totalCommissions = payments.reduce((s, p) => s + (p.commission_amount || 0), 0);
   const totalSlotFees = payments.reduce((s, p) => s + (p.slot_fee || 0), 0);
   const totalRentals = payments.reduce((s, p) => s + (p.vehicle_rental || 0), 0);
+  const totalViaVerde = payments.reduce((s, p) => s + (p.via_verde_amount || 0), 0);
+  const totalMyPrio = payments.reduce((s, p) => s + (p.myprio_amount || 0), 0);
+  const totalMiio = payments.reduce((s, p) => s + (p.miio_amount || 0), 0);
+  const totalCaucao = payments.reduce((s, p) => s + (p.irs_retention || 0), 0);
   const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
-  const income = totalCommissions + totalSlotFees + totalRentals;
+  const income = totalCommissions + totalSlotFees + totalRentals + totalViaVerde + totalMyPrio + totalMiio + totalCaucao;
   const profit = income - totalExpenses;
 
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
@@ -69,6 +84,10 @@ export default function CashFlow() {
     { name: 'Comissões', value: totalCommissions },
     { name: 'Taxas slot', value: totalSlotFees },
     { name: 'Aluguéis', value: totalRentals },
+    { name: 'Via Verde', value: totalViaVerde },
+    { name: 'MyPrio', value: totalMyPrio },
+    { name: 'Miio', value: totalMiio },
+    { name: 'Caução', value: totalCaucao },
   ].filter(d => d.value > 0);
 
   const expenseColumns = [
@@ -80,6 +99,17 @@ export default function CashFlow() {
   return (
     <div className="space-y-6">
       <PageHeader title="Fluxo de caixa" actionLabel="Adicionar despesa" onAction={() => { setEditing(null); setShowForm(true); }} />
+      
+      <div className="flex gap-3">
+        <Select value={driverFilter} onValueChange={setDriverFilter}>
+          <SelectTrigger className="w-56"><SelectValue placeholder="Filtrar por motorista..." /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os motoristas</SelectItem>
+            <SelectItem value="none">Sem motorista</SelectItem>
+            {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="cursor-pointer" onClick={() => setDetailsDialog('revenue')}>
@@ -180,14 +210,14 @@ export default function CashFlow() {
               {detailsDialog === 'profit' && 'Detalhes: Lucro'}
             </DialogTitle>
           </DialogHeader>
-          <DetailsDialogContent type={detailsDialog} payments={payments} expenses={expenses} totalCommissions={totalCommissions} totalSlotFees={totalSlotFees} totalRentals={totalRentals} fmt={fmt} />
+          <DetailsDialogContent type={detailsDialog} payments={payments} expenses={expenses} totalCommissions={totalCommissions} totalSlotFees={totalSlotFees} totalRentals={totalRentals} totalViaVerde={totalViaVerde} totalMyPrio={totalMyPrio} totalMiio={totalMiio} totalCaucao={totalCaucao} fmt={fmt} />
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function DetailsDialogContent({ type, payments, expenses, totalCommissions, totalSlotFees, totalRentals, fmt }) {
+function DetailsDialogContent({ type, payments, expenses, totalCommissions, totalSlotFees, totalRentals, totalViaVerde, totalMyPrio, totalMiio, totalCaucao, fmt }) {
   if (type === 'revenue') {
     return (
       <div className="space-y-3">
@@ -207,16 +237,17 @@ function DetailsDialogContent({ type, payments, expenses, totalCommissions, tota
   }
 
   if (type === 'income') {
+    const totalIncome = totalCommissions + totalSlotFees + totalRentals + totalViaVerde + totalMyPrio + totalMiio + totalCaucao;
     return (
       <div className="space-y-3">
         <div className="p-3 bg-green-50 rounded-lg">
-          <p className="text-sm font-semibold text-gray-700">Total: {fmt(totalCommissions + totalSlotFees + totalRentals)}</p>
+          <p className="text-sm font-semibold text-gray-700">Total: {fmt(totalIncome)}</p>
         </div>
         <div className="space-y-3">
           <div>
             <p className="text-xs font-semibold text-gray-600 mb-2">Comissões: {fmt(totalCommissions)}</p>
             {payments.filter(p => p.commission_amount > 0).slice(0, 20).map(p => (
-              <div key={p.id} className="flex justify-between text-sm py-1">
+              <div key={`comm-${p.id}`} className="flex justify-between text-sm py-1">
                 <span className="text-xs">{p.driver_name}</span>
                 <span>{fmt(p.commission_amount)}</span>
               </div>
@@ -225,7 +256,7 @@ function DetailsDialogContent({ type, payments, expenses, totalCommissions, tota
           <div>
             <p className="text-xs font-semibold text-gray-600 mb-2">Taxas slot: {fmt(totalSlotFees)}</p>
             {payments.filter(p => p.slot_fee > 0).slice(0, 20).map(p => (
-              <div key={p.id} className="flex justify-between text-sm py-1">
+              <div key={`slot-${p.id}`} className="flex justify-between text-sm py-1">
                 <span className="text-xs">{p.driver_name}</span>
                 <span>{fmt(p.slot_fee)}</span>
               </div>
@@ -234,9 +265,45 @@ function DetailsDialogContent({ type, payments, expenses, totalCommissions, tota
           <div>
             <p className="text-xs font-semibold text-gray-600 mb-2">Aluguéis: {fmt(totalRentals)}</p>
             {payments.filter(p => p.vehicle_rental > 0).slice(0, 20).map(p => (
-              <div key={p.id} className="flex justify-between text-sm py-1">
+              <div key={`rent-${p.id}`} className="flex justify-between text-sm py-1">
                 <span className="text-xs">{p.driver_name}</span>
                 <span>{fmt(p.vehicle_rental)}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Via Verde: {fmt(totalViaVerde)}</p>
+            {payments.filter(p => p.via_verde_amount > 0).slice(0, 20).map(p => (
+              <div key={`vv-${p.id}`} className="flex justify-between text-sm py-1">
+                <span className="text-xs">{p.driver_name}</span>
+                <span>{fmt(p.via_verde_amount)}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">MyPrio: {fmt(totalMyPrio)}</p>
+            {payments.filter(p => p.myprio_amount > 0).slice(0, 20).map(p => (
+              <div key={`mp-${p.id}`} className="flex justify-between text-sm py-1">
+                <span className="text-xs">{p.driver_name}</span>
+                <span>{fmt(p.myprio_amount)}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Miio: {fmt(totalMiio)}</p>
+            {payments.filter(p => p.miio_amount > 0).slice(0, 20).map(p => (
+              <div key={`miio-${p.id}`} className="flex justify-between text-sm py-1">
+                <span className="text-xs">{p.driver_name}</span>
+                <span>{fmt(p.miio_amount)}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Caução: {fmt(totalCaucao)}</p>
+            {payments.filter(p => p.irs_retention > 0).slice(0, 20).map(p => (
+              <div key={`caucao-${p.id}`} className="flex justify-between text-sm py-1">
+                <span className="text-xs">{p.driver_name}</span>
+                <span>{fmt(p.irs_retention)}</span>
               </div>
             ))}
           </div>
@@ -271,7 +338,7 @@ function DetailsDialogContent({ type, payments, expenses, totalCommissions, tota
   }
 
   if (type === 'profit') {
-    const totalIncome = totalCommissions + totalSlotFees + totalRentals;
+    const totalIncome = totalCommissions + totalSlotFees + totalRentals + totalViaVerde + totalMyPrio + totalMiio + totalCaucao;
     const totalExpenseAmount = expenses.reduce((s, e) => s + (e.amount || 0), 0);
     const profit = totalIncome - totalExpenseAmount;
     
@@ -295,6 +362,22 @@ function DetailsDialogContent({ type, payments, expenses, totalCommissions, tota
               <div className="flex justify-between text-sm py-1">
                 <span className="text-xs">Aluguéis</span>
                 <span>{fmt(totalRentals)}</span>
+              </div>
+              <div className="flex justify-between text-sm py-1">
+                <span className="text-xs">Via Verde</span>
+                <span>{fmt(totalViaVerde)}</span>
+              </div>
+              <div className="flex justify-between text-sm py-1">
+                <span className="text-xs">MyPrio</span>
+                <span>{fmt(totalMyPrio)}</span>
+              </div>
+              <div className="flex justify-between text-sm py-1">
+                <span className="text-xs">Miio</span>
+                <span>{fmt(totalMiio)}</span>
+              </div>
+              <div className="flex justify-between text-sm py-1">
+                <span className="text-xs">Caução</span>
+                <span>{fmt(totalCaucao)}</span>
               </div>
             </div>
           </div>

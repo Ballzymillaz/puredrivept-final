@@ -29,11 +29,24 @@ const CONTRACT_LABELS = {
 
 export default function Referrals() {
   const [editing, setEditing] = useState(null);
+  const [detailsDialog, setDetailsDialog] = useState(null);
   const qc = useQueryClient();
 
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ['referral-payments'],
     queryFn: () => base44.entities.ReferralPayment.list('-created_date', 200),
+  });
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
+  const { data: fleetManagers = [] } = useQuery({
+    queryKey: ['fleet-managers'],
+    queryFn: () => base44.entities.FleetManager.list(),
+  });
+  const { data: commercials = [] } = useQuery({
+    queryKey: ['commercials'],
+    queryFn: () => base44.entities.Commercial.list(),
   });
 
   const updateMutation = useMutation({
@@ -47,6 +60,15 @@ export default function Referrals() {
 
   const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + (p.weekly_amount || 0) + (p.bonus_amount || 0), 0);
   const totalPending = payments.filter(p => p.status === 'pending').reduce((s, p) => s + (p.weekly_amount || 0), 0);
+  
+  const activeReferrals = drivers.filter(d => d.fleet_manager_id || d.commercial_id).map(d => ({
+    driver_name: d.full_name,
+    driver_id: d.id,
+    referrer_type: d.fleet_manager_id ? 'fleet_manager' : 'commercial',
+    referrer_id: d.fleet_manager_id || d.commercial_id,
+    referrer_name: d.fleet_manager_name || d.commercial_name,
+    contract_type: d.contract_type,
+  }));
 
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
 
@@ -63,9 +85,15 @@ export default function Referrals() {
     <div className="space-y-4">
       <PageHeader title="Indicações" subtitle="Pagamentos a comerciais e gestores" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total pago" value={fmt(totalPaid)} icon={HandCoins} color="green" />
-        <StatCard title="Pendente" value={fmt(totalPending)} icon={HandCoins} color="amber" />
-        <StatCard title="Indicações ativas" value={payments.length} icon={Users} color="indigo" />
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('paid')}>
+          <StatCard title="Total pago" value={fmt(totalPaid)} icon={HandCoins} color="green" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('pending')}>
+          <StatCard title="Pendente" value={fmt(totalPending)} icon={HandCoins} color="amber" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('active')}>
+          <StatCard title="Indicações ativas" value={activeReferrals.length} icon={Users} color="indigo" />
+        </div>
       </div>
 
       <Card className="border-0 shadow-sm p-4">
@@ -100,8 +128,100 @@ export default function Referrals() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!detailsDialog} onOpenChange={(open) => !open && setDetailsDialog(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailsDialog === 'paid' && 'Detalhes: Total Pago'}
+              {detailsDialog === 'pending' && 'Detalhes: Pendente'}
+              {detailsDialog === 'active' && 'Detalhes: Indicações Ativas'}
+            </DialogTitle>
+          </DialogHeader>
+          <ReferralDetailsContent type={detailsDialog} payments={payments} activeReferrals={activeReferrals} fmt={fmt} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function ReferralDetailsContent({ type, payments, activeReferrals, fmt }) {
+  if (type === 'paid') {
+    const paidPayments = payments.filter(p => p.status === 'paid');
+    const total = paidPayments.reduce((s, p) => s + (p.weekly_amount || 0) + (p.bonus_amount || 0), 0);
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-green-50 rounded-lg">
+          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
+        </div>
+        <div className="space-y-2">
+          {paidPayments.map(p => (
+            <div key={p.id} className="flex justify-between items-center p-3 border-b">
+              <div>
+                <p className="font-medium">{p.referrer_name}</p>
+                <p className="text-sm text-gray-500">{p.driver_name} - {p.week_label}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">{fmt((p.weekly_amount || 0) + (p.bonus_amount || 0))}</p>
+                <p className="text-sm text-gray-500">Pago</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'pending') {
+    const pendingPayments = payments.filter(p => p.status === 'pending');
+    const total = pendingPayments.reduce((s, p) => s + (p.weekly_amount || 0), 0);
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-amber-50 rounded-lg">
+          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
+        </div>
+        <div className="space-y-2">
+          {pendingPayments.map(p => (
+            <div key={p.id} className="flex justify-between items-center p-3 border-b">
+              <div>
+                <p className="font-medium">{p.referrer_name}</p>
+                <p className="text-sm text-gray-500">{p.driver_name} - {p.week_label}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium text-amber-600">{fmt(p.weekly_amount)}</p>
+                <p className="text-sm text-gray-500">Pendente</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'active') {
+    return (
+      <div className="space-y-2">
+        {activeReferrals.length === 0 ? (
+          <p className="text-center py-4 text-gray-400">Nenhuma indicação ativa</p>
+        ) : (
+          activeReferrals.map((r, idx) => (
+            <div key={idx} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
+              <div>
+                <p className="font-medium">{r.driver_name}</p>
+                <p className="text-sm text-gray-500 capitalize">{r.referrer_type?.replace('_', ' ')}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">{r.referrer_name}</p>
+                <p className="text-sm text-gray-500">{CONTRACT_LABELS[r.contract_type] || '—'}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function ReferralEditForm({ referral, onSave, onCancel }) {

@@ -16,6 +16,8 @@ export default function Loans() {
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
   const [editForm, setEditForm] = useState(null);
+  const [driverFilter, setDriverFilter] = useState('all');
+  const [detailsDialog, setDetailsDialog] = useState(null);
   const qc = useQueryClient();
 
   const { data: loans = [], isLoading } = useQuery({
@@ -123,8 +125,15 @@ export default function Loans() {
     });
   };
 
+  const filteredLoans = driverFilter === 'all' 
+    ? loans 
+    : driverFilter === 'none'
+    ? loans.filter(l => !l.driver_id)
+    : loans.filter(l => l.driver_id === driverFilter);
+
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
-  const activeLoans = loans.filter(l => l.status === 'active');
+  const activeLoans = filteredLoans.filter(l => l.status === 'active');
+  const completedLoans = filteredLoans.filter(l => l.status === 'completed');
   const totalOutstanding = activeLoans.reduce((s, l) => s + (l.remaining_balance || 0), 0);
 
   const columns = [
@@ -141,12 +150,30 @@ export default function Loans() {
   return (
     <div className="space-y-4">
       <PageHeader title="Empréstimos & Adiantamentos" subtitle={`${loans.length} empréstimos`} actionLabel="Novo empréstimo" onAction={() => setShowForm(true)} />
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Empréstimos ativos" value={activeLoans.length} icon={Clock} color="amber" />
-        <StatCard title="Saldo restante" value={fmt(totalOutstanding)} icon={Wallet} color="rose" />
-        <StatCard title="Empréstimos quitados" value={loans.filter(l => l.status === 'completed').length} icon={CheckCircle2} color="green" />
+      
+      <div className="flex gap-3">
+        <Select value={driverFilter} onValueChange={setDriverFilter}>
+          <SelectTrigger className="w-56"><SelectValue placeholder="Filtrar por motorista..." /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os motoristas</SelectItem>
+            <SelectItem value="none">Sem motorista</SelectItem>
+            {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
-      <DataTable columns={columns} data={loans} isLoading={isLoading} onRowClick={setSelected} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('active')}>
+          <StatCard title="Empréstimos ativos" value={activeLoans.length} icon={Clock} color="amber" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('outstanding')}>
+          <StatCard title="Saldo restante" value={fmt(totalOutstanding)} icon={Wallet} color="rose" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('completed')}>
+          <StatCard title="Empréstimos quitados" value={completedLoans.length} icon={CheckCircle2} color="green" />
+        </div>
+      </div>
+      <DataTable columns={columns} data={filteredLoans} isLoading={isLoading} onRowClick={setSelected} />
 
       {/* Approve/Complete dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditForm(null); } }}>
@@ -204,8 +231,96 @@ export default function Loans() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!detailsDialog} onOpenChange={(open) => !open && setDetailsDialog(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailsDialog === 'active' && 'Detalhes: Empréstimos Ativos'}
+              {detailsDialog === 'outstanding' && 'Detalhes: Saldo Restante'}
+              {detailsDialog === 'completed' && 'Detalhes: Empréstimos Quitados'}
+            </DialogTitle>
+          </DialogHeader>
+          <LoanDetailsContent type={detailsDialog} activeLoans={activeLoans} completedLoans={completedLoans} fmt={fmt} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function LoanDetailsContent({ type, activeLoans, completedLoans, fmt }) {
+  if (type === 'active') {
+    return (
+      <div className="space-y-2">
+        {activeLoans.length === 0 ? (
+          <p className="text-center py-4 text-gray-400">Nenhum empréstimo ativo</p>
+        ) : (
+          activeLoans.map(l => (
+            <div key={l.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
+              <div>
+                <p className="font-medium">{l.driver_name}</p>
+                <p className="text-sm text-gray-500">Duração: {l.duration_weeks} semanas</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">{fmt(l.amount)}</p>
+                <p className="text-sm text-gray-500">Total: {fmt(l.total_with_interest)}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  if (type === 'outstanding') {
+    const total = activeLoans.reduce((s, l) => s + (l.remaining_balance || 0), 0);
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-rose-50 rounded-lg">
+          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
+        </div>
+        <div className="space-y-2">
+          {activeLoans.map(l => (
+            <div key={l.id} className="flex justify-between items-center p-3 border-b">
+              <div>
+                <p className="font-medium">{l.driver_name}</p>
+                <p className="text-sm text-gray-500">Pago: {fmt(l.paid_amount || 0)}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium text-red-600">{fmt(l.remaining_balance)}</p>
+                <p className="text-sm text-gray-500">Semanal: {fmt(l.weekly_installment)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'completed') {
+    return (
+      <div className="space-y-2">
+        {completedLoans.length === 0 ? (
+          <p className="text-center py-4 text-gray-400">Nenhum empréstimo quitado</p>
+        ) : (
+          completedLoans.map(l => (
+            <div key={l.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
+              <div>
+                <p className="font-medium">{l.driver_name}</p>
+                <p className="text-sm text-gray-500">Duração: {l.duration_weeks} semanas</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium text-green-600">{fmt(l.total_with_interest)}</p>
+                <p className="text-sm text-gray-500">Quitado</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function LoanEditForm({ loan, onSave, onCancel }) {

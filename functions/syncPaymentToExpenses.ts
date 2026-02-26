@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Payment not found or not paid' }, { status: 400 });
     }
 
-    const { driver_id, driver_name, week_start, upi_earned, via_verde_amount, myprio_amount, miio_amount } = payment;
+    const { driver_id, driver_name, week_start, upi_earned, via_verde_amount, myprio_amount, miio_amount, irs_retention } = payment;
 
     // Check if already synced (to avoid duplicates)
     const existingTransactions = await base44.asServiceRole.entities.UPITransaction.filter({
@@ -108,6 +108,18 @@ Deno.serve(async (req) => {
         category: 'combustivel',
         description: `Recebido Miio - ${driver_name} - ${payment.period_label}`,
         amount: -miio_amount,
+        date: expenseDate,
+        driver_id,
+      });
+    }
+
+    // Caução - recette pour l'entreprise
+    const caucaoExists = existingExpenses.some(e => e.description.includes('Caução'));
+    if (irs_retention > 0 && !caucaoExists) {
+      await base44.asServiceRole.entities.Expense.create({
+        category: 'other',
+        description: `Caução - ${driver_name} - ${payment.period_label}`,
+        amount: -irs_retention,
         date: expenseDate,
         driver_id,
       });

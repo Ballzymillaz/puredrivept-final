@@ -371,6 +371,7 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
     vehicle_purchase_installment: 0,
     reimbursement_credit: 0,
     goal_bonus: 0,
+    irs_retention: 0,
     notes: '',
   });
 
@@ -405,6 +406,7 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
       (parseFloat(form.loan_installment) || 0) +
       (parseFloat(form.vehicle_purchase_installment) || 0) +
       ivaAmount +
+      (parseFloat(form.irs_retention) || 0) +
       upiEarned;
 
     const netAmount = totalGross - totalDeductions + (parseFloat(form.reimbursement_credit) || 0) + (parseFloat(form.goal_bonus) || 0);
@@ -428,6 +430,7 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
       reimbursement_credit: parseFloat(form.reimbursement_credit) || 0,
       goal_bonus: parseFloat(form.goal_bonus) || 0,
       iva_amount: ivaAmount,
+      irs_retention: parseFloat(form.irs_retention) || 0,
       upi_earned: upiEarned,
       total_deductions: totalDeductions,
       net_amount: netAmount,
@@ -486,6 +489,7 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
         <div className="space-y-1.5"><Label className="text-xs">Compra veículo (€)</Label><Input type="number" step="0.01" value={form.vehicle_purchase_installment} onChange={(e) => handleChange('vehicle_purchase_installment', e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">Reembolsos (€)</Label><Input type="number" step="0.01" value={form.reimbursement_credit} onChange={(e) => handleChange('reimbursement_credit', e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">Bónus objetivos (€)</Label><Input type="number" step="0.01" value={form.goal_bonus} onChange={(e) => handleChange('goal_bonus', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Caução (€)</Label><Input type="number" step="0.01" value={form.irs_retention} onChange={(e) => handleChange('irs_retention', e.target.value)} /></div>
       </div>
 
       <div className="flex gap-2">
