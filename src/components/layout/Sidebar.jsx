@@ -63,26 +63,24 @@ export default function Sidebar({ currentPage, userRole }) {
     <div className="flex flex-col h-full">
       <div className={cn("flex items-center gap-3 px-5 py-6 border-b border-indigo-500/20", collapsed && "justify-center px-3")}>
         {collapsed ? (
-          <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm">PD</span>
-          </div>
+          <img 
+            src="/uploads/Logo%20PureDriveWhite.png" 
+            alt="PureDrive" 
+            className="h-9 w-auto object-contain"
+            onError={(e) => {
+              e.target.outerHTML = '<div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-sm">PD</span></div>';
+            }}
+          />
         ) : (
           <>
-            <div className="flex items-center gap-2">
-              <img 
-                src="/uploads/Logo%20PureDriveWhite.png" 
-                alt="PureDrive" 
-                className="h-10 w-auto object-contain"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  const fallback = e.target.parentElement.querySelector('.fallback-logo');
-                  if (fallback) fallback.style.display = 'flex';
-                }}
-              />
-              <div className="w-9 h-9 rounded-lg bg-white/10 items-center justify-center flex-shrink-0 hidden fallback-logo">
-                <span className="text-white font-bold text-sm">PD</span>
-              </div>
-            </div>
+            <img 
+              src="/uploads/Logo%20PureDriveWhite.png" 
+              alt="PureDrive" 
+              className="h-10 w-auto object-contain"
+              onError={(e) => {
+                e.target.outerHTML = '<div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-sm">PD</span></div>';
+              }}
+            />
             <div>
               <h1 className="text-white font-semibold text-base tracking-tight">PureDrive<sup className="text-[10px]">PT</sup></h1>
               <p className="text-indigo-300 text-[11px]">Gestão de Frota</p>
