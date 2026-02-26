@@ -27,11 +27,15 @@ export default function Reimbursements() {
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.Reimbursement.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reimbursements'] }); setShowForm(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reimbursements'] }); setShowForm(false); setEditing(null); },
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Reimbursement.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['reimbursements'] }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reimbursements'] }); setShowForm(false); setEditing(null); },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Reimbursement.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reimbursements'] }); setShowForm(false); setEditing(null); },
   });
 
   const [form, setForm] = useState(editing || { driver_name: '', category: 'fuel', amount: '', description: '' });
@@ -112,7 +116,10 @@ export default function Reimbursements() {
             </div>
             <div className="space-y-1.5"><Label className="text-xs">Descrição</Label><Textarea value={form.description} onChange={(e) => setForm(f => ({...f, description: e.target.value}))} rows={2} /></div>
             <div className="space-y-1.5"><Label className="text-xs">Comprovativo</Label><Input type="file" onChange={(e) => setFile(e.target.files[0])} accept="image/*,.pdf" /></div>
-            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">{(createMutation.isPending || updateMutation.isPending) ? 'A guardar...' : editing ? 'Atualizar' : 'Criar'}</Button>
+            <div className="flex gap-2">
+              {editing && <Button type="button" variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar reembolso?')) deleteMutation.mutate(editing.id); }}>Eliminar</Button>}
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 bg-indigo-600 hover:bg-indigo-700">{(createMutation.isPending || updateMutation.isPending) ? 'A guardar...' : editing ? 'Atualizar' : 'Criar'}</Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

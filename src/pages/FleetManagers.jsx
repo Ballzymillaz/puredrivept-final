@@ -49,46 +49,46 @@ export default function FleetManagers() {
 
   const columns = [
     {
-      header: 'Gestionnaire', render: (r) => (
+      header: 'Gestor', render: (r) => (
         <div>
           <p className="font-medium text-gray-900 text-sm">{r.full_name}</p>
           <p className="text-xs text-gray-500">{r.email}</p>
         </div>
       ),
     },
-    { header: 'Téléphone', accessor: 'phone' },
-    { header: 'Code parrainage', render: (r) => <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{r.referral_code || '—'}</span> },
-    { header: 'Chauffeurs', render: (r) => r.total_drivers || 0 },
-    { header: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
+    { header: 'Telefone', accessor: 'phone' },
+    { header: 'Código indicação', render: (r) => <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{r.referral_code || '—'}</span> },
+    { header: 'Motoristas', render: (r) => r.total_drivers || 0 },
+    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Gestionnaires de flottes" subtitle={`${managers.length} gestionnaires`} actionLabel="Ajouter" onAction={() => openForm(null)} />
+      <PageHeader title="Gestores de frota" subtitle={`${managers.length} gestores`} actionLabel="Adicionar" onAction={() => openForm(null)} />
       <DataTable columns={columns} data={managers} isLoading={isLoading} onRowClick={openForm} />
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editing ? 'Modifier' : 'Nouveau gestionnaire'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo gestor'}</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-xs">Nom complet *</Label><Input value={form.full_name} onChange={(e) => setForm(f => ({...f, full_name: e.target.value}))} required /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Nome completo *</Label><Input value={form.full_name} onChange={(e) => setForm(f => ({...f, full_name: e.target.value}))} required /></div>
               <div className="space-y-1.5"><Label className="text-xs">Email *</Label><Input type="email" value={form.email} onChange={(e) => setForm(f => ({...f, email: e.target.value}))} required /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Téléphone *</Label><Input value={form.phone} onChange={(e) => setForm(f => ({...f, phone: e.target.value}))} required /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Telefone *</Label><Input value={form.phone} onChange={(e) => setForm(f => ({...f, phone: e.target.value}))} required /></div>
               <div className="space-y-1.5"><Label className="text-xs">NIF</Label><Input value={form.nif} onChange={(e) => setForm(f => ({...f, nif: e.target.value}))} /></div>
               <div className="space-y-1.5"><Label className="text-xs">IBAN</Label><Input value={form.iban} onChange={(e) => setForm(f => ({...f, iban: e.target.value}))} /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Statut</Label>
+              <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
                 <Select value={form.status} onValueChange={(v) => setForm(f => ({...f, status: v}))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">En attente</SelectItem>
-                    <SelectItem value="active">Actif</SelectItem>
-                    <SelectItem value="inactive">Inactif</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="inactive">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Textarea value={form.notes} onChange={(e) => setForm(f => ({...f, notes: e.target.value}))} rows={2} /></div>
-            <div className="flex justify-end"><Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700">{editing ? 'Modifier' : 'Créer'}</Button></div>
+            <div className="space-y-1.5"><Label className="text-xs">Notas</Label><Textarea value={form.notes} onChange={(e) => setForm(f => ({...f, notes: e.target.value}))} rows={2} /></div>
+            <div className="flex justify-end"><Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700">{editing ? 'Atualizar' : 'Criar'}</Button></div>
           </form>
         </DialogContent>
       </Dialog>

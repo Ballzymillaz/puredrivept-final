@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import StatCard from '../components/dashboard/StatCard';
 import { CreditCard, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import WeeklyPaymentForm from '../components/payments/WeeklyPaymentForm';
 
 export default function Payments() {
   const [selected, setSelected] = useState(null);
@@ -19,6 +20,7 @@ export default function Payments() {
   const [driverFilter, setDriverFilter] = useState('all');
   const [weekFilter, setWeekFilter] = useState('all');
   const [editMode, setEditMode] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const qc = useQueryClient();
 
   const { data: payments = [], isLoading } = useQuery({
@@ -29,6 +31,11 @@ export default function Payments() {
   const { data: drivers = [] } = useQuery({
     queryKey: ['drivers'],
     queryFn: () => base44.entities.Driver.list(),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (d) => base44.entities.WeeklyPayment.create(d),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['payments'] }); setShowForm(false); },
   });
 
   const updateMutation = useMutation({
@@ -80,7 +87,7 @@ export default function Payments() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Pagamentos semanais" subtitle={`${payments.length} pagamentos`} />
+      <PageHeader title="Pagamentos semanais" subtitle={`${payments.length} pagamentos`} actionLabel="Novo pagamento" onAction={() => { setShowForm(true); }} />
       
       <div className="flex flex-wrap gap-3">
         <Select value={driverFilter} onValueChange={setDriverFilter}>
@@ -172,6 +179,13 @@ export default function Payments() {
             </div>
           )}
           {selected && editMode && <PaymentEditForm payment={selected} onSave={(data) => updateMutation.mutate({ id: selected.id, data })} onCancel={() => setEditMode(false)} />}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Novo pagamento semanal</DialogTitle></DialogHeader>
+          <WeeklyPaymentForm drivers={drivers} onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} />
         </DialogContent>
       </Dialog>
     </div>

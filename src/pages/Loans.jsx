@@ -29,7 +29,11 @@ export default function Loans() {
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Loan.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['loans'] }); setSelected(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['loans'] }); setSelected(null); setEditForm(null); },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Loan.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['loans'] }); setSelected(null); setEditForm(null); },
   });
 
   const [form, setForm] = useState({ driver_id: '', amount: '', duration_weeks: '' });
@@ -104,6 +108,7 @@ export default function Loans() {
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setEditForm({ ...selected })}>Editar</Button>
+                <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar empréstimo?')) deleteMutation.mutate(selected.id); }}>Eliminar</Button>
                 {selected.status === 'requested' && (
                   <>
                     <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'active', approval_date: new Date().toISOString().split('T')[0] } })}>Aprovar</Button>
@@ -186,5 +191,18 @@ function LoanEditForm({ loan, onSave, onCancel }) {
         <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700">Guardar</Button>
       </div>
     </form>
+  );
+}
+
+function LoanDeleteButton({ loanId, onDelete }) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="text-red-600"
+      onClick={() => { if (confirm('Eliminar empréstimo?')) onDelete(loanId); }}
+    >
+      Eliminar
+    </Button>
   );
 }
