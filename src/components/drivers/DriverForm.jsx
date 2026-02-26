@@ -20,6 +20,8 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
     fleet_manager_id: driver?.fleet_manager_id || '',
     iva_regime: driver?.iva_regime || 'exempt',
     irs_retention_rate: driver?.irs_retention_rate || '',
+    vehicle_deposit: driver?.vehicle_deposit || 500,
+    vehicle_deposit_paid: driver?.vehicle_deposit_paid || false,
     iban: driver?.iban || '',
     uber_uuid: driver?.uber_uuid || '',
     bolt_id: driver?.bolt_id || '',
@@ -203,6 +205,16 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
         <div className="space-y-1.5">
           <Label className="text-xs">ID Bolt</Label>
           <Input value={form.bolt_id} onChange={(e) => handleChange('bolt_id', e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Caução do veículo (€)</Label>
+          <Input type="number" value={form.vehicle_deposit} onChange={(e) => handleChange('vehicle_deposit', e.target.value)} />
+        </div>
+        <div className="space-y-1.5 flex items-end">
+          <label className="flex items-center gap-2 cursor-pointer h-9">
+            <input type="checkbox" checked={form.vehicle_deposit_paid} onChange={(e) => handleChange('vehicle_deposit_paid', e.target.checked)} className="w-4 h-4" />
+            <span className="text-xs">Caução paga</span>
+          </label>
         </div>
       </div>
       <div className="space-y-1.5">
