@@ -14,6 +14,7 @@ const PAGE_TITLES = {
   Applications: 'Candidaturas',
   Payments: 'Pagamentos semanais',
   CashFlow: 'Fluxo de caixa',
+  IVA: 'IVA',
   Loans: 'Empréstimos & Adiantamentos',
   Reimbursements: 'Reembolsos',
   Referrals: 'Indicações',
@@ -23,6 +24,7 @@ const PAGE_TITLES = {
   UPI: 'Moeda UPI',
   PublicSite: 'Site público',
   Apply: 'Candidatura',
+  Contracts: 'Contratos',
 };
 
 // Public pages that don't need auth or sidebar
