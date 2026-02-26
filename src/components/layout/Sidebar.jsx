@@ -68,17 +68,20 @@ export default function Sidebar({ currentPage, userRole }) {
           </div>
         ) : (
           <>
-            <img 
-              src="/uploads/Logo%20PureDriveWhite.png" 
-              alt="PureDrive" 
-              className="h-8 object-contain"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            />
-            <div className="w-9 h-9 rounded-lg bg-white/10 items-center justify-center flex-shrink-0 hidden">
-              <span className="text-white font-bold text-sm">PD</span>
+            <div className="flex items-center gap-2">
+              <img 
+                src="/uploads/Logo%20PureDriveWhite.png" 
+                alt="PureDrive" 
+                className="h-8 object-contain"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  const fallback = e.target.parentElement.querySelector('.fallback-logo');
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+              <div className="w-9 h-9 rounded-lg bg-white/10 items-center justify-center flex-shrink-0 hidden fallback-logo">
+                <span className="text-white font-bold text-sm">PD</span>
+              </div>
             </div>
             <div>
               <h1 className="text-white font-semibold text-base tracking-tight">PureDrive<sup className="text-[10px]">PT</sup></h1>
