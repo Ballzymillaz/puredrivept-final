@@ -47,38 +47,38 @@ export default function Referrals() {
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
 
   const columns = [
-    { header: 'Parrain', render: (r) => (<div><p className="font-medium text-sm">{r.referrer_name}</p><p className="text-xs text-gray-500 capitalize">{r.referrer_type?.replace('_', ' ')}</p></div>) },
-    { header: 'Chauffeur', render: (r) => <span className="text-sm">{r.driver_name}</span> },
-    { header: 'Contrat', render: (r) => <span className="text-sm">{CONTRACT_LABELS[r.driver_contract_type] || '—'}</span> },
-    { header: 'Hebdo', render: (r) => <span className="font-medium text-indigo-600">{fmt(r.weekly_amount)}</span> },
-    { header: 'Bonus', render: (r) => r.bonus_amount > 0 ? <span className="font-medium text-emerald-600">{fmt(r.bonus_amount)}</span> : '—' },
-    { header: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
+    { header: 'Indicador', render: (r) => (<div><p className="font-medium text-sm">{r.referrer_name}</p><p className="text-xs text-gray-500 capitalize">{r.referrer_type?.replace('_', ' ')}</p></div>) },
+    { header: 'Motorista', render: (r) => <span className="text-sm">{r.driver_name}</span> },
+    { header: 'Contrato', render: (r) => <span className="text-sm">{CONTRACT_LABELS[r.driver_contract_type] || '—'}</span> },
+    { header: 'Semanal', render: (r) => <span className="font-medium text-indigo-600">{fmt(r.weekly_amount)}</span> },
+    { header: 'Bónus', render: (r) => r.bonus_amount > 0 ? <span className="font-medium text-emerald-600">{fmt(r.bonus_amount)}</span> : '—' },
+    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Parrainage" subtitle="Paiements aux commerciaux et gestionnaires" />
+      <PageHeader title="Indicações" subtitle="Pagamentos a comerciais e gestores" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total payé" value={fmt(totalPaid)} icon={HandCoins} color="green" />
-        <StatCard title="En attente" value={fmt(totalPending)} icon={HandCoins} color="amber" />
-        <StatCard title="Parrainages actifs" value={payments.length} icon={Users} color="indigo" />
+        <StatCard title="Total pago" value={fmt(totalPaid)} icon={HandCoins} color="green" />
+        <StatCard title="Pendente" value={fmt(totalPending)} icon={HandCoins} color="amber" />
+        <StatCard title="Indicações ativas" value={payments.length} icon={Users} color="indigo" />
       </div>
 
       <Card className="border-0 shadow-sm p-4">
-        <CardHeader className="p-0 pb-3"><CardTitle className="text-sm font-semibold text-gray-700">Barème des commissions</CardTitle></CardHeader>
+        <CardHeader className="p-0 pb-3"><CardTitle className="text-sm font-semibold text-gray-700">Tabela de comissões</CardTitle></CardHeader>
         <CardContent className="p-0">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {Object.entries(REFERRAL_RATES).map(([type, rate]) => (
               <div key={type} className="bg-gray-50 rounded-lg p-3 text-center">
                 <p className="text-xs text-gray-500">{CONTRACT_LABELS[type]}</p>
                 <p className="text-xl font-bold text-indigo-600">€{rate}</p>
-                <p className="text-[10px] text-gray-400">par semaine</p>
+                <p className="text-[10px] text-gray-400">por semana</p>
               </div>
             ))}
           </div>
           <div className="mt-3 p-3 bg-emerald-50 rounded-lg flex items-center gap-2">
             <Gift className="w-4 h-4 text-emerald-600" />
-            <p className="text-sm text-emerald-800"><strong>Bonus location :</strong> 60€ après 30 jours continus de location</p>
+            <p className="text-sm text-emerald-800"><strong>Bónus aluguer:</strong> 60€ após 30 dias contínuos</p>
           </div>
         </CardContent>
       </Card>

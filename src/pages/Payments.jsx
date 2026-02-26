@@ -113,9 +113,9 @@ export default function Payments() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total brut" value={fmt(totalGross)} icon={TrendingUp} color="green" />
-        <StatCard title="Déductions" value={fmt(totalDeductions)} icon={TrendingDown} color="rose" />
-        <StatCard title="Net à payer" value={fmt(totalNet)} icon={Wallet} color="indigo" />
+        <StatCard title="Total bruto" value={fmt(totalGross)} icon={TrendingUp} color="green" />
+        <StatCard title="Deduções" value={fmt(totalDeductions)} icon={TrendingDown} color="rose" />
+        <StatCard title="Líquido a pagar" value={fmt(totalNet)} icon={Wallet} color="indigo" />
       </div>
 
       <DataTable columns={columns} data={filtered} isLoading={isLoading} onRowClick={setSelected} />

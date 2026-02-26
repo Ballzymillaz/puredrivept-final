@@ -61,18 +61,18 @@ export default function VehiclePurchases() {
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
 
   const columns = [
-    { header: 'Chauffeur', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
-    { header: 'Véhicule', render: (r) => <span className="text-sm">{r.vehicle_info}</span> },
-    { header: 'Prix base', render: (r) => fmt(r.base_price) },
-    { header: 'Prix total (+25%)', render: (r) => fmt(r.total_price) },
-    { header: 'Hebdo', render: (r) => <span className="font-medium text-indigo-600">{fmt(r.weekly_installment)}</span> },
-    { header: 'Restant', render: (r) => <span className="text-red-600 font-medium">{fmt(r.remaining_balance)}</span> },
-    { header: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
+    { header: 'Motorista', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
+    { header: 'Veículo', render: (r) => <span className="text-sm">{r.vehicle_info}</span> },
+    { header: 'Preço base', render: (r) => fmt(r.base_price) },
+    { header: 'Preço total (+25%)', render: (r) => fmt(r.total_price) },
+    { header: 'Semanal', render: (r) => <span className="font-medium text-indigo-600">{fmt(r.weekly_installment)}</span> },
+    { header: 'Restante', render: (r) => <span className="text-red-600 font-medium">{fmt(r.remaining_balance)}</span> },
+    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Achat de véhicules" subtitle="Option d'achat pour les chauffeurs" actionLabel="Nouvelle demande" onAction={() => setShowForm(true)} />
+      <PageHeader title="Compra de veículos" subtitle="Opção de compra para motoristas" actionLabel="Novo pedido" onAction={() => setShowForm(true)} />
       <DataTable columns={columns} data={purchases} isLoading={isLoading} onRowClick={setSelected} />
 
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditForm(null); } }}>
@@ -103,12 +103,12 @@ export default function VehiclePurchases() {
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Nouvelle demande d'achat</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Novo pedido de compra</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5"><Label className="text-xs">Chauffeur</Label><Input value={form.driver_name} onChange={(e) => setForm(f => ({...f, driver_name: e.target.value}))} required /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Véhicule</Label>
+            <div className="space-y-1.5"><Label className="text-xs">Motorista</Label><Input value={form.driver_name} onChange={(e) => setForm(f => ({...f, driver_name: e.target.value}))} required /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Veículo</Label>
               <Select value={form.vehicle_id} onValueChange={(v) => setForm(f => ({...f, vehicle_id: v}))}>
-                <SelectTrigger><SelectValue placeholder="Choisir un véhicule..." /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Escolher veículo..." /></SelectTrigger>
                 <SelectContent>
                   {vehicles.filter(v => v.base_purchase_price > 0).map(v => (
                     <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate} ({fmt(v.base_purchase_price)})</SelectItem>
@@ -116,15 +116,15 @@ export default function VehiclePurchases() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5"><Label className="text-xs">Durée (mois)</Label><Input type="number" value={form.duration_months} onChange={(e) => setForm(f => ({...f, duration_months: e.target.value}))} required /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Duração (meses)</Label><Input type="number" value={form.duration_months} onChange={(e) => setForm(f => ({...f, duration_months: e.target.value}))} required /></div>
             {form.vehicle_id && form.duration_months && (
               <div className="bg-indigo-50 p-3 rounded-lg space-y-1 text-sm">
-                <p>Prix de base : <strong>{fmt(basePrice)}</strong></p>
-                <p>Prix total (+25%) : <strong className="text-indigo-700">{fmt(totalPrice)}</strong></p>
-                <p>Paiement hebdo : <strong className="text-indigo-700">{fmt(weeklyInstallment)}</strong></p>
+                <p>Preço base: <strong>{fmt(basePrice)}</strong></p>
+                <p>Preço total (+25%): <strong className="text-indigo-700">{fmt(totalPrice)}</strong></p>
+                <p>Pagamento semanal: <strong className="text-indigo-700">{fmt(weeklyInstallment)}</strong></p>
               </div>
             )}
-            <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">Créer la demande</Button>
+            <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">Criar pedido</Button>
           </form>
         </DialogContent>
       </Dialog>

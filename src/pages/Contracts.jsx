@@ -100,11 +100,11 @@ export default function Contracts() {
     },
     {
       header: 'Documento',
-      render: (r) => r.contract_file_url ? (
-        <a href={r.contract_file_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700">
-          <FileText className="w-4 h-4" />
-        </a>
-      ) : <span className="text-gray-400 text-xs">—</span>,
+      render: (r) => (
+        <span className={`text-sm font-medium ${r.contract_file_url ? 'text-emerald-600' : 'text-red-500'}`}>
+          {r.contract_file_url ? 'Sim' : 'Não'}
+        </span>
+      ),
     },
     {
       header: 'Estado',

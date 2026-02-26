@@ -73,33 +73,33 @@ export default function UPI() {
   const topDrivers = [...drivers].filter(d => d.upi_balance > 0).sort((a, b) => (b.upi_balance || 0) - (a.upi_balance || 0)).slice(0, 10);
 
   const columns = [
-    { header: 'Chauffeur', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
-    { header: 'Type', render: (r) => (
+    { header: 'Motorista', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
+    { header: 'Tipo', render: (r) => (
       <span className={`text-xs font-medium px-2 py-1 rounded-full ${r.type === 'earned' ? 'bg-indigo-50 text-indigo-700' : r.type === 'credit' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-        {r.type === 'earned' ? 'Gagné' : r.type === 'credit' ? 'Crédité' : 'Débité'}
+        {r.type === 'earned' ? 'Ganho' : r.type === 'credit' ? 'Creditado' : 'Debitado'}
       </span>
     )},
-    { header: 'Montant', render: (r) => <span className="font-medium">{r.amount} UPI</span> },
-    { header: 'Source', render: (r) => <span className="text-sm text-gray-500">{r.source}</span> },
-    { header: 'Date', render: (r) => <span className="text-xs text-gray-500">{format(new Date(r.created_date), 'dd/MM/yyyy')}</span> },
+    { header: 'Montante', render: (r) => <span className="font-medium">{r.amount} UPI</span> },
+    { header: 'Origem', render: (r) => <span className="text-sm text-gray-500">{r.source}</span> },
+    { header: 'Data', render: (r) => <span className="text-xs text-gray-500">{format(new Date(r.created_date), 'dd/MM/yyyy')}</span> },
   ];
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Monnaie UPI" subtitle="4% des rendements Uber + Bolt" actionLabel="Ajuster UPI" onAction={() => setShowForm(true)} />
+      <PageHeader title="Moeda UPI" subtitle="4% dos rendimentos Uber + Bolt" actionLabel="Ajustar UPI" onAction={() => setShowForm(true)} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="UPI total en circulation" value={`${totalUPI.toLocaleString()} UPI`} icon={Coins} color="violet" />
-        <StatCard title="UPI gagnés (auto)" value={`${totalEarned.toLocaleString()} UPI`} icon={TrendingUp} color="indigo" />
-        <StatCard title="Chauffeurs avec UPI" value={drivers.filter(d => d.upi_balance > 0).length} icon={Users} color="blue" />
+        <StatCard title="UPI total em circulação" value={`${totalUPI.toLocaleString()} UPI`} icon={Coins} color="violet" />
+        <StatCard title="UPI ganhos (auto)" value={`${totalEarned.toLocaleString()} UPI`} icon={TrendingUp} color="indigo" />
+        <StatCard title="Motoristas com UPI" value={drivers.filter(d => d.upi_balance > 0).length} icon={Users} color="blue" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="border-0 shadow-sm lg:col-span-1">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-gray-700">Top détenteurs UPI</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-gray-700">Top detentores UPI</CardTitle></CardHeader>
           <CardContent>
             {topDrivers.length === 0 ? (
-              <p className="text-center py-6 text-sm text-gray-400">Aucun UPI distribué</p>
+              <p className="text-center py-6 text-sm text-gray-400">Nenhum UPI distribuído</p>
             ) : (
               <div className="space-y-2">
                 {topDrivers.map((d, i) => (

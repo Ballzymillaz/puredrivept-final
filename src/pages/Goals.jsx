@@ -58,7 +58,7 @@ export default function Goals() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Objectifs" subtitle="Bonus par performance" actionLabel="Nouvel objectif" onAction={() => setShowForm(true)} />
+      <PageHeader title="Objetivos" subtitle="Bónus por desempenho" actionLabel="Novo objetivo" onAction={() => setShowForm(true)} />
 
       {isLoading ? (
         <div className="text-center py-12 text-gray-400">Chargement...</div>
@@ -89,7 +89,7 @@ export default function Goals() {
                     <Progress value={progress} className="h-2" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{goal.is_global ? 'Tous les chauffeurs' : goal.driver_name || 'Spécifique'}</span>
+                    <span className="text-xs text-gray-500">{goal.is_global ? 'Todos os motoristas' : goal.driver_name || 'Específico'}</span>
                     <div className="flex items-center gap-1 text-emerald-600">
                       <Trophy className="w-3.5 h-3.5" />
                       <span className="text-sm font-bold">€{goal.bonus_amount}</span>

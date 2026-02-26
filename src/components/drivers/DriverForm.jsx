@@ -47,7 +47,7 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
       data.commission_rate = CONTRACT_CONFIG[data.contract_type].commission_rate;
     }
 
-    // Assign vehicle info
+    // Assign vehicle info and update vehicle status
     if (data.assigned_vehicle_id) {
       const vehicle = vehicles?.find(v => v.id === data.assigned_vehicle_id);
       if (vehicle) {

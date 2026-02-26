@@ -77,6 +77,7 @@ export default function VehicleForm({ vehicle, onSubmit, isLoading, drivers }) {
             <SelectContent>
               <SelectItem value="available">Disponível</SelectItem>
               <SelectItem value="assigned">Atribuído</SelectItem>
+              <SelectItem value="alugado">Alugado</SelectItem>
               <SelectItem value="maintenance">Manutenção</SelectItem>
               <SelectItem value="inactive">Inativo</SelectItem>
             </SelectContent>

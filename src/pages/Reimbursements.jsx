@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Check, X, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 
-const CAT_LABELS = { fuel: 'Carburant', maintenance: 'Entretien', cleaning: 'Nettoyage', tolls: 'Péages', other: 'Autre' };
+const CAT_LABELS = { fuel: 'Combustível', maintenance: 'Manutenção', cleaning: 'Limpeza', tolls: 'Portagens', other: 'Outro' };
 
 export default function Reimbursements() {
   const [showForm, setShowForm] = useState(false);
@@ -60,13 +60,13 @@ export default function Reimbursements() {
   const fmt = (v) => `€${(v || 0).toFixed(2)}`;
 
   const columns = [
-    { header: 'Chauffeur', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
-    { header: 'Catégorie', render: (r) => <span className="text-sm">{CAT_LABELS[r.category] || r.category}</span> },
-    { header: 'Montant', render: (r) => <span className="font-medium">{fmt(r.amount)}</span> },
-    { header: 'Date', render: (r) => <span className="text-xs text-gray-500">{format(new Date(r.created_date), 'dd/MM/yyyy')}</span> },
-    { header: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
+    { header: 'Motorista', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
+    { header: 'Categoria', render: (r) => <span className="text-sm">{CAT_LABELS[r.category] || r.category}</span> },
+    { header: 'Montante', render: (r) => <span className="font-medium">{fmt(r.amount)}</span> },
+    { header: 'Data', render: (r) => <span className="text-xs text-gray-500">{format(new Date(r.created_date), 'dd/MM/yyyy')}</span> },
+    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
     {
-      header: 'Actions', render: (r) => (
+      header: 'Ações', render: (r) => (
         <div className="flex gap-1">
           {r.receipt_url && <a href={r.receipt_url} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-100 rounded"><Eye className="w-4 h-4 text-gray-500" /></a>}
           {r.status === 'pending' && (
@@ -82,7 +82,7 @@ export default function Reimbursements() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Remboursements" subtitle={`${reimbursements.length} demandes`} actionLabel="Nouvelle demande" onAction={() => setShowForm(true)} />
+      <PageHeader title="Reembolsos" subtitle={`${reimbursements.length} pedidos`} actionLabel="Novo pedido" onAction={() => setShowForm(true)} />
       <DataTable columns={columns} data={reimbursements} isLoading={isLoading} onRowClick={(r) => { setEditing(r); setShowForm(true); }} />
       <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setEditing(null); }}>
         <DialogContent className="max-w-md">

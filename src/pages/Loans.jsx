@@ -69,23 +69,23 @@ export default function Loans() {
   const totalOutstanding = activeLoans.reduce((s, l) => s + (l.remaining_balance || 0), 0);
 
   const columns = [
-    { header: 'Chauffeur', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
-    { header: 'Montant', render: (r) => fmt(r.amount) },
-    { header: 'Total avec intérêts', render: (r) => fmt(r.total_with_interest) },
-    { header: 'Hebdo', render: (r) => fmt(r.weekly_installment) },
-    { header: 'Restant', render: (r) => <span className="font-medium text-red-600">{fmt(r.remaining_balance)}</span> },
-    { header: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
+    { header: 'Motorista', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
+    { header: 'Montante', render: (r) => fmt(r.amount) },
+    { header: 'Total c/ juros', render: (r) => fmt(r.total_with_interest) },
+    { header: 'Semanal', render: (r) => fmt(r.weekly_installment) },
+    { header: 'Restante', render: (r) => <span className="font-medium text-red-600">{fmt(r.remaining_balance)}</span> },
+    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   const preview = calcTotal(form.amount, form.duration_weeks);
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Prêts & Avances" subtitle={`${loans.length} prêts`} actionLabel="Nouveau prêt" onAction={() => setShowForm(true)} />
+      <PageHeader title="Empréstimos & Adiantamentos" subtitle={`${loans.length} empréstimos`} actionLabel="Novo empréstimo" onAction={() => setShowForm(true)} />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Prêts actifs" value={activeLoans.length} icon={Clock} color="amber" />
-        <StatCard title="Solde restant" value={fmt(totalOutstanding)} icon={Wallet} color="rose" />
-        <StatCard title="Prêts soldés" value={loans.filter(l => l.status === 'completed').length} icon={CheckCircle2} color="green" />
+        <StatCard title="Empréstimos ativos" value={activeLoans.length} icon={Clock} color="amber" />
+        <StatCard title="Saldo restante" value={fmt(totalOutstanding)} icon={Wallet} color="rose" />
+        <StatCard title="Empréstimos quitados" value={loans.filter(l => l.status === 'completed').length} icon={CheckCircle2} color="green" />
       </div>
       <DataTable columns={columns} data={loans} isLoading={isLoading} onRowClick={setSelected} />
 
