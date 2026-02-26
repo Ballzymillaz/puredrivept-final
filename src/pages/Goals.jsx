@@ -21,6 +21,7 @@ const TYPE_LABELS = {
 
 export default function Goals() {
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
   const qc = useQueryClient();
 
   const { data: goals = [], isLoading } = useQuery({
@@ -33,15 +34,26 @@ export default function Goals() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['goals'] }); setShowForm(false); },
   });
 
-  const [form, setForm] = useState({ title: '', type: 'weekly_revenue', target_value: '', bonus_amount: '', driver_name: '', is_global: false });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Goal.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['goals'] }); setEditing(null); setShowForm(false); },
+  });
+
+  const [form, setForm] = useState(editing || { title: '', type: 'weekly_revenue', target_value: '', bonus_amount: '', driver_name: '', is_global: false });
+
+  React.useEffect(() => {
+    if (editing) setForm(editing);
+    else setForm({ title: '', type: 'weekly_revenue', target_value: '', bonus_amount: '', driver_name: '', is_global: false });
+  }, [editing]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    createMutation.mutate({
-      ...form,
-      target_value: parseFloat(form.target_value),
-      bonus_amount: parseFloat(form.bonus_amount),
-    });
+    const data = { ...form, target_value: parseFloat(form.target_value), bonus_amount: parseFloat(form.bonus_amount) };
+    if (editing) {
+      updateMutation.mutate({ id: editing.id, data });
+    } else {
+      createMutation.mutate(data);
+    }
   };
 
   return (
@@ -60,7 +72,7 @@ export default function Goals() {
           {goals.map(goal => {
             const progress = goal.target_value > 0 ? Math.min(100, ((goal.current_value || 0) / goal.target_value) * 100) : 0;
             return (
-              <Card key={goal.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
+              <Card key={goal.id} className="border-0 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setEditing(goal); setShowForm(true); }}>
                 <CardContent className="p-5 space-y-3">
                   <div className="flex items-start justify-between">
                     <div>
@@ -90,23 +102,36 @@ export default function Goals() {
         </div>
       )}
 
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setEditing(null); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Nouvel objectif</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo'} objetivo</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5"><Label className="text-xs">Titre</Label><Input value={form.title} onChange={(e) => setForm(f => ({...f, title: e.target.value}))} required /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Título</Label><Input value={form.title} onChange={(e) => setForm(f => ({...f, title: e.target.value}))} required /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-xs">Type</Label>
+              <div className="space-y-1.5"><Label className="text-xs">Tipo</Label>
                 <Select value={form.type} onValueChange={(v) => setForm(f => ({...f, type: v}))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{Object.entries(TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5"><Label className="text-xs">Objectif</Label><Input type="number" step="0.01" value={form.target_value} onChange={(e) => setForm(f => ({...f, target_value: e.target.value}))} required /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Bonus (€)</Label><Input type="number" step="0.01" value={form.bonus_amount} onChange={(e) => setForm(f => ({...f, bonus_amount: e.target.value}))} required /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Chauffeur (vide = global)</Label><Input value={form.driver_name} onChange={(e) => setForm(f => ({...f, driver_name: e.target.value, is_global: !e.target.value}))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Objetivo</Label><Input type="number" step="0.01" value={form.target_value} onChange={(e) => setForm(f => ({...f, target_value: e.target.value}))} required /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Bónus (€)</Label><Input type="number" step="0.01" value={form.bonus_amount} onChange={(e) => setForm(f => ({...f, bonus_amount: e.target.value}))} required /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Motorista (vazio = global)</Label><Input value={form.driver_name} onChange={(e) => setForm(f => ({...f, driver_name: e.target.value, is_global: !e.target.value}))} /></div>
+              {editing && (
+                <div className="space-y-1.5 col-span-2"><Label className="text-xs">Estado</Label>
+                  <Select value={form.status} onValueChange={(v) => setForm(f => ({...f, status: v}))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Ativo</SelectItem>
+                      <SelectItem value="achieved">Alcançado</SelectItem>
+                      <SelectItem value="failed">Falhado</SelectItem>
+                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
-            <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">Créer</Button>
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">{editing ? 'Atualizar' : 'Criar'}</Button>
           </form>
         </DialogContent>
       </Dialog>

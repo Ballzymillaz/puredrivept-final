@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function VehiclePurchases() {
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [editForm, setEditForm] = useState(null);
   const qc = useQueryClient();
 
   const { data: purchases = [], isLoading } = useQuery({
@@ -74,25 +75,29 @@ export default function VehiclePurchases() {
       <PageHeader title="Achat de véhicules" subtitle="Option d'achat pour les chauffeurs" actionLabel="Nouvelle demande" onAction={() => setShowForm(true)} />
       <DataTable columns={columns} data={purchases} isLoading={isLoading} onRowClick={setSelected} />
 
-      <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
+      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditForm(null); } }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Achat — {selected?.driver_name}</DialogTitle></DialogHeader>
-          {selected && (
+          <DialogHeader><DialogTitle>Compra — {selected?.driver_name}</DialogTitle></DialogHeader>
+          {selected && !editForm && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Véhicule</span><p className="font-medium">{selected.vehicle_info}</p></div>
-                <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Prix total</span><p className="font-medium">{fmt(selected.total_price)}</p></div>
-                <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Durée</span><p className="font-medium">{selected.duration_months} mois</p></div>
-                <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Restant</span><p className="font-medium text-red-600">{fmt(selected.remaining_balance)}</p></div>
+                <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Veículo</span><p className="font-medium">{selected.vehicle_info}</p></div>
+                <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Preço total</span><p className="font-medium">{fmt(selected.total_price)}</p></div>
+                <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Duração</span><p className="font-medium">{selected.duration_months} meses</p></div>
+                <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Restante</span><p className="font-medium text-red-600">{fmt(selected.remaining_balance)}</p></div>
               </div>
-              {selected.status === 'requested' && (
-                <div className="flex gap-2">
-                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'active', start_date: new Date().toISOString().split('T')[0] } })}>Approuver</Button>
-                  <Button variant="outline" className="flex-1 text-red-600" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' } })}>Rejeter</Button>
-                </div>
-              )}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setEditForm({ ...selected })}>Editar</Button>
+                {selected.status === 'requested' && (
+                  <>
+                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'active', start_date: new Date().toISOString().split('T')[0] } })}>Aprovar</Button>
+                    <Button variant="outline" className="flex-1 text-red-600" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' } })}>Rejeitar</Button>
+                  </>
+                )}
+              </div>
             </div>
           )}
+          {selected && editForm && <PurchaseEditForm purchase={editForm} onSave={(data) => { updateMutation.mutate({ id: selected.id, data }); setEditForm(null); }} onCancel={() => setEditForm(null)} />}
         </DialogContent>
       </Dialog>
 
@@ -124,5 +129,37 @@ export default function VehiclePurchases() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function PurchaseEditForm({ purchase, onSave, onCancel }) {
+  const [form, setForm] = useState({ ...purchase });
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({ remaining_balance: parseFloat(form.remaining_balance), paid_amount: parseFloat(form.paid_amount), status: form.status });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1.5"><Label className="text-xs">Restante</Label><Input type="number" step="0.01" value={form.remaining_balance} onChange={(e) => setForm(f => ({ ...f, remaining_balance: e.target.value }))} /></div>
+      <div className="space-y-1.5"><Label className="text-xs">Pago</Label><Input type="number" step="0.01" value={form.paid_amount} onChange={(e) => setForm(f => ({ ...f, paid_amount: e.target.value }))} /></div>
+      <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
+        <Select value={form.status} onValueChange={(v) => setForm(f => ({ ...f, status: v }))}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="requested">Solicitado</SelectItem>
+            <SelectItem value="approved">Aprovado</SelectItem>
+            <SelectItem value="active">Ativo</SelectItem>
+            <SelectItem value="completed">Concluído</SelectItem>
+            <SelectItem value="rejected">Rejeitado</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">Cancelar</Button>
+        <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700">Guardar</Button>
+      </div>
+    </form>
   );
 }

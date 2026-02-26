@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 
 export default function UPI() {
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
   const qc = useQueryClient();
 
   const { data: transactions = [], isLoading } = useQuery({
@@ -31,26 +32,40 @@ export default function UPI() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['upi-transactions'] }); setShowForm(false); },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.UPITransaction.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['upi-transactions'] }); setEditing(null); setShowForm(false); },
+  });
+
   const totalUPI = drivers.reduce((s, d) => s + (d.upi_balance || 0), 0);
   const totalEarned = transactions.filter(t => t.type === 'earned').reduce((s, t) => s + (t.amount || 0), 0);
 
-  const [form, setForm] = useState({ driver_id: '', type: 'credit', amount: '', notes: '' });
+  const [form, setForm] = useState(editing || { driver_id: '', type: 'credit', amount: '', notes: '' });
+
+  React.useEffect(() => {
+    if (editing) setForm(editing);
+    else setForm({ driver_id: '', type: 'credit', amount: '', notes: '' });
+  }, [editing]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const driver = drivers.find(d => d.id === form.driver_id);
-    await createMutation.mutateAsync({
-      ...form,
-      driver_name: driver?.full_name || '',
-      amount: parseFloat(form.amount),
-      source: 'admin_adjustment',
-      processed_by: 'admin',
-    });
-    // Update driver balance
-    if (driver) {
-      const delta = form.type === 'credit' ? parseFloat(form.amount) : -parseFloat(form.amount);
-      await base44.entities.Driver.update(driver.id, { upi_balance: (driver.upi_balance || 0) + delta });
-      qc.invalidateQueries({ queryKey: ['drivers'] });
+    if (editing) {
+      await updateMutation.mutateAsync({ id: editing.id, data: { amount: parseFloat(form.amount), notes: form.notes } });
+    } else {
+      const driver = drivers.find(d => d.id === form.driver_id);
+      await createMutation.mutateAsync({
+        ...form,
+        driver_name: driver?.full_name || '',
+        amount: parseFloat(form.amount),
+        source: 'admin_adjustment',
+        processed_by: 'admin',
+      });
+      // Update driver balance
+      if (driver) {
+        const delta = form.type === 'credit' ? parseFloat(form.amount) : -parseFloat(form.amount);
+        await base44.entities.Driver.update(driver.id, { upi_balance: (driver.upi_balance || 0) + delta });
+        qc.invalidateQueries({ queryKey: ['drivers'] });
+      }
     }
   };
 
@@ -102,34 +117,41 @@ export default function UPI() {
         </Card>
 
         <div className="lg:col-span-2">
-          <DataTable columns={columns} data={transactions} isLoading={isLoading} emptyMessage="Aucune transaction UPI" />
+          <DataTable columns={columns} data={transactions} isLoading={isLoading} emptyMessage="Nenhuma transação UPI" onRowClick={(t) => { setEditing(t); setShowForm(true); }} />
         </div>
       </div>
 
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+      <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setEditing(null); }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Ajuster UPI</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Ajustar'} UPI</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5"><Label className="text-xs">Chauffeur</Label>
-              <Select value={form.driver_id} onValueChange={(v) => setForm(f => ({...f, driver_id: v}))}>
-                <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name} ({d.upi_balance || 0} UPI)</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-xs">Type</Label>
-                <Select value={form.type} onValueChange={(v) => setForm(f => ({...f, type: v}))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="credit">Créditer</SelectItem>
-                    <SelectItem value="debit">Débiter</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5"><Label className="text-xs">Montant UPI</Label><Input type="number" value={form.amount} onChange={(e) => setForm(f => ({...f, amount: e.target.value}))} required /></div>
-            </div>
-            <div className="space-y-1.5"><Label className="text-xs">Notes</Label><Input value={form.notes} onChange={(e) => setForm(f => ({...f, notes: e.target.value}))} /></div>
-            <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">Confirmer</Button>
+            {!editing && (
+              <>
+                <div className="space-y-1.5"><Label className="text-xs">Motorista</Label>
+                  <Select value={form.driver_id} onValueChange={(v) => setForm(f => ({...f, driver_id: v}))}>
+                    <SelectTrigger><SelectValue placeholder="Escolher..." /></SelectTrigger>
+                    <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name} ({d.upi_balance || 0} UPI)</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5"><Label className="text-xs">Tipo</Label>
+                    <Select value={form.type} onValueChange={(v) => setForm(f => ({...f, type: v}))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="credit">Creditar</SelectItem>
+                        <SelectItem value="debit">Debitar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5"><Label className="text-xs">Montante UPI</Label><Input type="number" value={form.amount} onChange={(e) => setForm(f => ({...f, amount: e.target.value}))} required /></div>
+                </div>
+              </>
+            )}
+            {editing && (
+              <div className="space-y-1.5"><Label className="text-xs">Montante UPI</Label><Input type="number" value={form.amount} onChange={(e) => setForm(f => ({...f, amount: e.target.value}))} required /></div>
+            )}
+            <div className="space-y-1.5"><Label className="text-xs">Notas</Label><Input value={form.notes} onChange={(e) => setForm(f => ({...f, notes: e.target.value}))} /></div>
+            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">{editing ? 'Atualizar' : 'Confirmar'}</Button>
           </form>
         </DialogContent>
       </Dialog>

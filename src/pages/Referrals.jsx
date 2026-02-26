@@ -1,10 +1,15 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import PageHeader from '../components/shared/PageHeader';
 import DataTable from '../components/shared/DataTable';
 import StatusBadge from '../components/shared/StatusBadge';
 import StatCard from '../components/dashboard/StatCard';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { HandCoins, Users, Gift } from 'lucide-react';
 
@@ -23,9 +28,17 @@ const CONTRACT_LABELS = {
 };
 
 export default function Referrals() {
+  const [editing, setEditing] = useState(null);
+  const qc = useQueryClient();
+
   const { data: payments = [], isLoading } = useQuery({
     queryKey: ['referral-payments'],
     queryFn: () => base44.entities.ReferralPayment.list('-created_date', 200),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.ReferralPayment.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['referral-payments'] }); setEditing(null); },
   });
 
   const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + (p.weekly_amount || 0) + (p.bonus_amount || 0), 0);
@@ -70,7 +83,42 @@ export default function Referrals() {
         </CardContent>
       </Card>
 
-      <DataTable columns={columns} data={payments} isLoading={isLoading} />
+      <DataTable columns={columns} data={payments} isLoading={isLoading} onRowClick={setEditing} />
+
+      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Editar indicação</DialogTitle></DialogHeader>
+          {editing && <ReferralEditForm referral={editing} onSave={(data) => updateMutation.mutate({ id: editing.id, data })} onCancel={() => setEditing(null)} />}
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+}
+
+function ReferralEditForm({ referral, onSave, onCancel }) {
+  const [form, setForm] = useState({ ...referral });
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({ weekly_amount: parseFloat(form.weekly_amount), bonus_amount: parseFloat(form.bonus_amount), status: form.status, bonus_paid: form.bonus_paid });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-1.5"><Label className="text-xs">Valor semanal</Label><Input type="number" step="0.01" value={form.weekly_amount} onChange={(e) => setForm(f => ({ ...f, weekly_amount: e.target.value }))} /></div>
+      <div className="space-y-1.5"><Label className="text-xs">Bónus</Label><Input type="number" step="0.01" value={form.bonus_amount} onChange={(e) => setForm(f => ({ ...f, bonus_amount: e.target.value }))} /></div>
+      <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
+        <Select value={form.status} onValueChange={(v) => setForm(f => ({ ...f, status: v }))}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pendente</SelectItem>
+            <SelectItem value="paid">Pago</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">Cancelar</Button>
+        <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700">Guardar</Button>
+      </div>
+    </form>
   );
 }
