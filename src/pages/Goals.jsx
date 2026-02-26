@@ -38,6 +38,10 @@ export default function Goals() {
     mutationFn: ({ id, data }) => base44.entities.Goal.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['goals'] }); setEditing(null); setShowForm(false); },
   });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Goal.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['goals'] }); setShowForm(false); setEditing(null); },
+  });
 
   const [form, setForm] = useState(editing || { title: '', type: 'weekly_revenue', target_value: '', bonus_amount: '', driver_name: '', is_global: false });
 
