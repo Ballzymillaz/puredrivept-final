@@ -196,6 +196,9 @@ export default function Loans() {
                     <Button variant="outline" className="flex-1 text-red-600" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' }, oldData: selected })}>Rejeitar</Button>
                   </>
                 )}
+                {selected.status === 'active' && (
+                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'completed', remaining_balance: 0 }, oldData: selected })}>Finalizar</Button>
+                )}
               </div>
             </div>
           )}

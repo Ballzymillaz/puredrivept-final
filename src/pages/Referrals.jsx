@@ -208,11 +208,11 @@ function ReferralDetailsContent({ type, payments, activeReferrals, fmt }) {
             <div key={idx} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
               <div>
                 <p className="font-medium">{r.driver_name}</p>
-                <p className="text-sm text-gray-500 capitalize">{r.referrer_type?.replace('_', ' ')}</p>
+                <p className="text-sm text-gray-500">{CONTRACT_LABELS[r.contract_type] || '—'}</p>
               </div>
               <div className="text-right">
                 <p className="font-medium">{r.referrer_name}</p>
-                <p className="text-sm text-gray-500">{CONTRACT_LABELS[r.contract_type] || '—'}</p>
+                <p className="text-sm text-gray-500 capitalize">{r.referrer_type?.replace('_', ' ')}</p>
               </div>
             </div>
           ))

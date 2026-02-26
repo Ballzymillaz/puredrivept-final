@@ -55,14 +55,20 @@ export default function CashFlow() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses-all'] }); setEditing(null); setShowForm(false); },
   });
 
-  const totalRevenue = payments.reduce((s, p) => s + (p.total_gross || 0), 0);
-  const totalCommissions = payments.reduce((s, p) => s + (p.commission_amount || 0), 0);
-  const totalSlotFees = payments.reduce((s, p) => s + (p.slot_fee || 0), 0);
-  const totalRentals = payments.reduce((s, p) => s + (p.vehicle_rental || 0), 0);
-  const totalViaVerde = payments.reduce((s, p) => s + (p.via_verde_amount || 0), 0);
-  const totalMyPrio = payments.reduce((s, p) => s + (p.myprio_amount || 0), 0);
-  const totalMiio = payments.reduce((s, p) => s + (p.miio_amount || 0), 0);
-  const totalCaucao = payments.reduce((s, p) => s + (p.irs_retention || 0), 0);
+  const filteredPayments = driverFilter === 'all' 
+    ? payments 
+    : driverFilter === 'none'
+    ? payments.filter(p => !p.driver_id)
+    : payments.filter(p => p.driver_id === driverFilter);
+
+  const totalRevenue = filteredPayments.reduce((s, p) => s + (p.total_gross || 0), 0);
+  const totalCommissions = filteredPayments.reduce((s, p) => s + (p.commission_amount || 0), 0);
+  const totalSlotFees = filteredPayments.reduce((s, p) => s + (p.slot_fee || 0), 0);
+  const totalRentals = filteredPayments.reduce((s, p) => s + (p.vehicle_rental || 0), 0);
+  const totalViaVerde = filteredPayments.reduce((s, p) => s + (p.via_verde_amount || 0), 0);
+  const totalMyPrio = filteredPayments.reduce((s, p) => s + (p.myprio_amount || 0), 0);
+  const totalMiio = filteredPayments.reduce((s, p) => s + (p.miio_amount || 0), 0);
+  const totalCaucao = filteredPayments.reduce((s, p) => s + (p.irs_retention || 0), 0);
   const totalExpenses = expenses.reduce((s, e) => s + (e.amount || 0), 0);
   const income = totalCommissions + totalSlotFees + totalRentals + totalViaVerde + totalMyPrio + totalMiio + totalCaucao;
   const profit = income - totalExpenses;
@@ -210,7 +216,7 @@ export default function CashFlow() {
               {detailsDialog === 'profit' && 'Detalhes: Lucro'}
             </DialogTitle>
           </DialogHeader>
-          <DetailsDialogContent type={detailsDialog} payments={payments} expenses={expenses} totalCommissions={totalCommissions} totalSlotFees={totalSlotFees} totalRentals={totalRentals} totalViaVerde={totalViaVerde} totalMyPrio={totalMyPrio} totalMiio={totalMiio} totalCaucao={totalCaucao} fmt={fmt} />
+          <DetailsDialogContent type={detailsDialog} payments={filteredPayments} expenses={expenses} totalCommissions={totalCommissions} totalSlotFees={totalSlotFees} totalRentals={totalRentals} totalViaVerde={totalViaVerde} totalMyPrio={totalMyPrio} totalMiio={totalMiio} totalCaucao={totalCaucao} fmt={fmt} />
         </DialogContent>
       </Dialog>
     </div>
