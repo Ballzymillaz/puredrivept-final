@@ -40,11 +40,11 @@ export default function Vehicles() {
     v.license_plate?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const FUEL_LABELS = { gasoline: 'Essence', diesel: 'Diesel', hybrid: 'Hybride', electric: 'Électrique' };
+  const FUEL_LABELS = { gasoline: 'Gasolina', diesel: 'Diesel', hybrid: 'Híbrido', electric: 'Elétrico' };
 
   const columns = [
     {
-      header: 'Véhicule',
+      header: 'Veículo',
       render: (r) => (
         <div>
           <p className="font-medium text-gray-900 text-sm">{r.brand} {r.model}</p>
@@ -52,23 +52,23 @@ export default function Vehicles() {
         </div>
       ),
     },
-    { header: 'Immatriculation', render: (r) => <span className="font-mono text-sm font-medium">{r.license_plate}</span> },
-    { header: 'Chauffeur', render: (r) => <span className="text-sm">{r.assigned_driver_name || '—'}</span> },
-    { header: 'Location/sem', render: (r) => r.weekly_rental_price ? `€${r.weekly_rental_price}` : '—' },
-    { header: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
+    { header: 'Matrícula', render: (r) => <span className="font-mono text-sm font-medium">{r.license_plate}</span> },
+    { header: 'Motorista', render: (r) => <span className="text-sm">{r.assigned_driver_name || '—'}</span> },
+    { header: 'Aluguer/sem', render: (r) => r.weekly_rental_price ? `€${r.weekly_rental_price}` : '—' },
+    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Véhicules" subtitle={`${vehicles.length} véhicules`} actionLabel="Ajouter" onAction={() => { setEditing(null); setShowForm(true); }} />
+      <PageHeader title="Veículos" subtitle={`${vehicles.length} veículos`} actionLabel="Adicionar" onAction={() => { setEditing(null); setShowForm(true); }} />
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <Input placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <Input placeholder="Pesquisar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
       <DataTable columns={columns} data={filtered} isLoading={isLoading} onRowClick={(r) => { setEditing(r); setShowForm(true); }} />
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Modifier' : 'Nouveau véhicule'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Editar veículo' : 'Novo veículo'}</DialogTitle></DialogHeader>
           <VehicleForm vehicle={editing} onSubmit={handleSubmit} isLoading={createMutation.isPending || updateMutation.isPending} />
         </DialogContent>
       </Dialog>

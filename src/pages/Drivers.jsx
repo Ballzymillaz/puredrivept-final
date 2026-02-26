@@ -64,7 +64,7 @@ export default function Drivers() {
 
   const columns = [
     {
-      header: 'Chauffeur',
+      header: 'Motorista',
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-semibold text-indigo-700">
@@ -77,19 +77,19 @@ export default function Drivers() {
         </div>
       ),
     },
-    { header: 'Téléphone', accessor: 'phone' },
+    { header: 'Telefone', accessor: 'phone' },
     {
-      header: 'Contrat',
+      header: 'Contrato',
       render: (row) => (
         <span className="text-sm">{CONTRACT_LABELS[row.contract_type] || '—'}</span>
       ),
     },
     {
-      header: 'Véhicule',
+      header: 'Veículo',
       render: (row) => <span className="text-sm">{row.assigned_vehicle_plate || '—'}</span>,
     },
     {
-      header: 'Statut',
+      header: 'Estado',
       render: (row) => <StatusBadge status={row.status} />,
     },
   ];
@@ -97,9 +97,9 @@ export default function Drivers() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Chauffeurs"
-        subtitle={`${drivers.length} chauffeurs enregistrés`}
-        actionLabel="Ajouter"
+        title="Motoristas"
+        subtitle={`${drivers.length} motoristas registados`}
+        actionLabel="Adicionar"
         onAction={() => { setEditingDriver(null); setShowForm(true); }}
       />
 
@@ -107,7 +107,7 @@ export default function Drivers() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
-            placeholder="Rechercher un chauffeur..."
+            placeholder="Pesquisar motorista..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -118,12 +118,12 @@ export default function Drivers() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Tous les statuts</SelectItem>
-            <SelectItem value="active">Actif</SelectItem>
-            <SelectItem value="pending">En attente</SelectItem>
-            <SelectItem value="inactive">Inactif</SelectItem>
-            <SelectItem value="evaluation">Évaluation</SelectItem>
-            <SelectItem value="suspended">Suspendu</SelectItem>
+            <SelectItem value="all">Todos os estados</SelectItem>
+            <SelectItem value="active">Ativo</SelectItem>
+            <SelectItem value="pending">Pendente</SelectItem>
+            <SelectItem value="inactive">Inativo</SelectItem>
+            <SelectItem value="evaluation">Avaliação</SelectItem>
+            <SelectItem value="suspended">Suspenso</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -133,7 +133,7 @@ export default function Drivers() {
         data={filtered}
         isLoading={isLoading}
         onRowClick={(row) => { setEditingDriver(row); setShowForm(true); }}
-        emptyMessage="Aucun chauffeur trouvé"
+        emptyMessage="Nenhum motorista encontrado"
       />
 
       <Dialog open={showForm} onOpenChange={(open) => {
@@ -142,7 +142,7 @@ export default function Drivers() {
       }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingDriver ? 'Modifier le chauffeur' : 'Nouveau chauffeur'}</DialogTitle>
+            <DialogTitle>{editingDriver ? 'Editar motorista' : 'Novo motorista'}</DialogTitle>
           </DialogHeader>
           <DriverForm
             key={editingDriver?.id || 'new'}

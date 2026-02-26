@@ -12,27 +12,28 @@ import { Button } from '@/components/ui/button';
 
 const NAV_ITEMS = [
   { section: 'Principal', items: [
-    { name: 'Tableau de bord', icon: LayoutDashboard, page: 'Dashboard' },
+    { name: 'Painel', icon: LayoutDashboard, page: 'Dashboard' },
   ]},
-  { section: 'Gestion', items: [
-    { name: 'Chauffeurs', icon: Users, page: 'Drivers' },
-    { name: 'Véhicules', icon: Car, page: 'Vehicles' },
-    { name: 'Gestionnaires', icon: Building2, page: 'FleetManagers' },
-    { name: 'Commerciaux', icon: HandCoins, page: 'Commercials' },
-    { name: 'Documents', icon: FileText, page: 'Documents' },
-    { name: 'Candidatures', icon: UserPlus, page: 'Applications' },
+  { section: 'Gestão', items: [
+    { name: 'Motoristas', icon: Users, page: 'Drivers' },
+    { name: 'Veículos', icon: Car, page: 'Vehicles' },
+    { name: 'Contratos', icon: FileText, page: 'Contracts' },
+    { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
+    { name: 'Comerciais', icon: HandCoins, page: 'Commercials' },
+    { name: 'Documentos', icon: FileText, page: 'Documents' },
+    { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
   ]},
-  { section: 'Finances', items: [
-    { name: 'Paiements', icon: CreditCard, page: 'Payments' },
-    { name: 'Flux de trésorerie', icon: TrendingUp, page: 'CashFlow' },
-    { name: 'Prêts & Avances', icon: Wallet, page: 'Loans' },
-    { name: 'Remboursements', icon: Receipt, page: 'Reimbursements' },
-    { name: 'Parrainage', icon: HandCoins, page: 'Referrals' },
-    { name: 'Achat véhicules', icon: ShoppingCart, page: 'VehiclePurchases' },
+  { section: 'Finanças', items: [
+    { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
+    { name: 'Fluxo de caixa', icon: TrendingUp, page: 'CashFlow' },
+    { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
+    { name: 'Reembolsos', icon: Receipt, page: 'Reimbursements' },
+    { name: 'Indicações', icon: HandCoins, page: 'Referrals' },
+    { name: 'Compra veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
   ]},
-  { section: 'Performance', items: [
-    { name: 'Objectifs', icon: Target, page: 'Goals' },
-    { name: 'Classement', icon: FileBarChart, page: 'Rankings' },
+  { section: 'Desempenho', items: [
+    { name: 'Objetivos', icon: Target, page: 'Goals' },
+    { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
   ]},
 ];
@@ -61,13 +62,15 @@ export default function Sidebar({ currentPage, userRole }) {
   const sidebarContent = (
     <div className="flex flex-col h-full">
       <div className={cn("flex items-center gap-3 px-5 py-6 border-b border-indigo-500/20", collapsed && "justify-center px-3")}>
-        <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-          <span className="text-white font-bold text-sm">PD</span>
-        </div>
+        <img 
+          src="https://pure-drive-pt.base44.app/uploads/Logo PureDriveWhite.png" 
+          alt="PureDrive" 
+          className={cn("h-8 object-contain", collapsed ? "w-9" : "w-auto")}
+        />
         {!collapsed && (
           <div>
             <h1 className="text-white font-semibold text-base tracking-tight">PureDrive<sup className="text-[10px]">PT</sup></h1>
-            <p className="text-indigo-300 text-[11px]">Fleet Management</p>
+            <p className="text-indigo-300 text-[11px]">Gestão de Frota</p>
           </div>
         )}
       </div>
@@ -111,7 +114,7 @@ export default function Sidebar({ currentPage, userRole }) {
           onClick={() => setCollapsed(!collapsed)}
           className="hidden lg:flex items-center gap-2 px-3 py-2 text-indigo-300 hover:text-white text-sm transition-colors rounded-lg hover:bg-white/8 w-full"
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <><ChevronLeft className="w-4 h-4" /><span>Réduire</span></>}
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <><ChevronLeft className="w-4 h-4" /><span>Reduzir</span></>}
         </button>
       </div>
     </div>

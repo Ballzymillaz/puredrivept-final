@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function DataTable({ columns, data, isLoading, onRowClick, emptyMessage = "Aucune donnée" }) {
+export default function DataTable({ columns, data, isLoading, onRowClick, emptyMessage = "Nenhum dado disponível" }) {
   if (isLoading) {
     return (
       <Card className="border-0 shadow-sm overflow-hidden">
