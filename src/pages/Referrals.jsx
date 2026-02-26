@@ -134,9 +134,15 @@ export default function Referrals() {
               </div>
             ))}
           </div>
-          <div className="mt-3 p-3 bg-emerald-50 rounded-lg flex items-center gap-2">
-            <Gift className="w-4 h-4 text-emerald-600" />
-            <p className="text-sm text-emerald-800"><strong>Bónus aluguer:</strong> 60€ após 30 dias contínuos</p>
+          <div className="mt-3 space-y-2">
+            <div className="p-3 bg-emerald-50 rounded-lg flex items-center gap-2">
+              <Gift className="w-4 h-4 text-emerald-600" />
+              <p className="text-sm text-emerald-800"><strong>Bónus aluguer:</strong> 60€ após 30 dias contínuos</p>
+            </div>
+            <div className="p-3 bg-purple-50 rounded-lg flex items-center gap-2">
+              <Gift className="w-4 h-4 text-purple-600" />
+              <p className="text-sm text-purple-800"><strong>Bónus venda de carro:</strong> 250€ após 60 dias contínuos</p>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Payment not found' }, { status: 404 });
     }
 
-    const { driver_id, driver_name, upi_earned } = payment;
+    const { driver_id, driver_name, upi_earned, via_verde_amount, myprio_amount, miio_amount } = payment;
 
     // 1. Delete UPI transaction
     const upiTransactions = await base44.asServiceRole.entities.UPITransaction.filter({
@@ -38,17 +38,37 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Delete expense records
-    const expenseDescriptions = [
-      `Via Verde - ${driver_name} - ${payment.period_label}`,
-      `MyPRIO - ${driver_name} - ${payment.period_label}`,
-      `Miio - ${driver_name} - ${payment.period_label}`,
-    ];
+    // 2. Delete all company expenses (revenus) for Via Verde, MyPRIO, Miio
+    if (via_verde_amount > 0) {
+      const viaVerdeExpenses = await base44.asServiceRole.entities.Expense.filter({
+        driver_id,
+        category: 'via_verde',
+        amount: via_verde_amount,
+      });
+      for (const exp of viaVerdeExpenses) {
+        await base44.asServiceRole.entities.Expense.delete(exp.id);
+      }
+    }
 
-    for (const desc of expenseDescriptions) {
-      const expenses = await base44.asServiceRole.entities.Expense.filter({ description: desc });
-      for (const expense of expenses) {
-        await base44.asServiceRole.entities.Expense.delete(expense.id);
+    if (myprio_amount > 0) {
+      const myprioExpenses = await base44.asServiceRole.entities.Expense.filter({
+        driver_id,
+        description: { $regex: 'Combustivel' },
+        amount: myprio_amount,
+      });
+      for (const exp of myprioExpenses) {
+        await base44.asServiceRole.entities.Expense.delete(exp.id);
+      }
+    }
+
+    if (miio_amount > 0) {
+      const miioExpenses = await base44.asServiceRole.entities.Expense.filter({
+        driver_id,
+        description: { $regex: 'Miio' },
+        amount: miio_amount,
+      });
+      for (const exp of miioExpenses) {
+        await base44.asServiceRole.entities.Expense.delete(exp.id);
       }
     }
 
