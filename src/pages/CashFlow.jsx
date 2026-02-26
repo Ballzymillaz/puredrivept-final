@@ -66,13 +66,12 @@ export default function CashFlow() {
 
   // Income breakdown
   const incomeData = [
-    { name: 'Commissions', value: totalCommissions },
-    { name: 'Frais de slot', value: totalSlotFees },
-    { name: 'Locations', value: totalRentals },
+    { name: 'Comissões', value: totalCommissions },
+    { name: 'Taxas slot', value: totalSlotFees },
+    { name: 'Aluguéis', value: totalRentals },
   ].filter(d => d.value > 0);
 
   const expenseColumns = [
-    { header: 'Categoria', render: (r) => <span className="text-sm">{r.category}</span> },
     { header: 'Descrição', render: (r) => <span className="text-sm">{r.description}</span> },
     { header: 'Montante', render: (r) => fmt(r.amount) },
     { header: 'Data', render: (r) => <span className="text-xs">{r.date}</span> },
@@ -99,7 +98,7 @@ export default function CashFlow() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-gray-700">Composition des recettes</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-gray-700">Composição das receitas</CardTitle></CardHeader>
           <CardContent>
             {incomeData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
@@ -111,7 +110,7 @@ export default function CashFlow() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[220px] flex items-center justify-center text-sm text-gray-400">Aucune donnée</div>
+              <div className="h-[220px] flex items-center justify-center text-sm text-gray-400">Sem dados</div>
             )}
             <div className="flex flex-wrap gap-3 justify-center">
               {incomeData.map((d, i) => (
@@ -125,7 +124,7 @@ export default function CashFlow() {
         </Card>
 
         <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-gray-700">Dépenses par catégorie</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-gray-700">Despesas por categoria</CardTitle></CardHeader>
           <CardContent>
             {categoryData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>

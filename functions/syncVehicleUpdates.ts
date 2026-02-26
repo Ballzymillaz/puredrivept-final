@@ -27,6 +27,15 @@ Deno.serve(async (req) => {
         assigned_vehicle_id: vehicleId,
         assigned_vehicle_plate: vehicle.license_plate
       });
+    } else {
+      // If vehicle was unassigned, find the previous driver and clear their assignment
+      const drivers = await base44.asServiceRole.entities.Driver.filter({ assigned_vehicle_id: vehicleId });
+      for (const driver of drivers) {
+        await base44.asServiceRole.entities.Driver.update(driver.id, {
+          assigned_vehicle_id: null,
+          assigned_vehicle_plate: null
+        });
+      }
     }
 
     return Response.json({ success: true });

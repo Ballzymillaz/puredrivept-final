@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/card';
 import StatCard from '../components/dashboard/StatCard';
 import { CreditCard, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { startOfWeek, endOfWeek, format, addWeeks } from 'date-fns';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function Payments() {
   const [selected, setSelected] = useState(null);
@@ -21,6 +22,7 @@ export default function Payments() {
   const [weekFilter, setWeekFilter] = useState('all');
   const [editMode, setEditMode] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [detailsDialog, setDetailsDialog] = useState(null);
   const qc = useQueryClient();
 
   const { data: payments = [], isLoading } = useQuery({
@@ -137,9 +139,15 @@ export default function Payments() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Total bruto" value={fmt(totalGross)} icon={TrendingUp} color="green" />
-        <StatCard title="Deduções" value={fmt(totalDeductions)} icon={TrendingDown} color="rose" />
-        <StatCard title="Líquido a pagar" value={fmt(totalNet)} icon={Wallet} color="indigo" />
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('gross')}>
+          <StatCard title="Total bruto" value={fmt(totalGross)} icon={TrendingUp} color="green" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('deductions')}>
+          <StatCard title="Deduções" value={fmt(totalDeductions)} icon={TrendingDown} color="rose" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('net')}>
+          <StatCard title="Líquido a pagar" value={fmt(totalNet)} icon={Wallet} color="indigo" />
+        </div>
       </div>
 
       <DataTable columns={columns} data={filtered} isLoading={isLoading} onRowClick={setSelected} />
@@ -206,8 +214,109 @@ export default function Payments() {
           <NewPaymentForm drivers={drivers} onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} onCancel={() => setShowForm(false)} />
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!detailsDialog} onOpenChange={(open) => !open && setDetailsDialog(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailsDialog === 'gross' && 'Detalhes: Total Bruto'}
+              {detailsDialog === 'deductions' && 'Detalhes: Deduções'}
+              {detailsDialog === 'net' && 'Detalhes: Líquido a Pagar'}
+            </DialogTitle>
+          </DialogHeader>
+          <PaymentDetailsContent type={detailsDialog} payments={filtered} fmt={fmt} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function PaymentDetailsContent({ type, payments, fmt }) {
+  if (type === 'gross') {
+    const total = payments.reduce((s, p) => s + (p.total_gross || 0), 0);
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-green-50 rounded-lg">
+          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
+        </div>
+        <div className="space-y-2">
+          {payments.map(p => (
+            <div key={p.id} className="flex justify-between items-center p-2 border-b">
+              <div>
+                <p className="font-medium text-sm">{p.driver_name}</p>
+                <p className="text-xs text-gray-500">{p.period_label}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-medium">{fmt(p.total_gross)}</p>
+                <p className="text-xs text-gray-500">Uber: {fmt(p.uber_gross)} | Bolt: {fmt(p.bolt_gross)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'deductions') {
+    const total = payments.reduce((s, p) => s + (p.total_deductions || 0), 0);
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-rose-50 rounded-lg">
+          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
+        </div>
+        <div className="space-y-2">
+          {payments.map(p => (
+            <div key={p.id} className="p-3 border-b">
+              <div className="flex justify-between items-center mb-2">
+                <p className="font-medium text-sm">{p.driver_name}</p>
+                <p className="font-bold text-red-600">{fmt(p.total_deductions)}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+                {p.commission_amount > 0 && <p>Comissão: {fmt(p.commission_amount)}</p>}
+                {p.slot_fee > 0 && <p>Taxa slot: {fmt(p.slot_fee)}</p>}
+                {p.vehicle_rental > 0 && <p>Aluguer: {fmt(p.vehicle_rental)}</p>}
+                {p.via_verde_amount > 0 && <p>Via Verde: {fmt(p.via_verde_amount)}</p>}
+                {p.myprio_amount > 0 && <p>MyPRIO: {fmt(p.myprio_amount)}</p>}
+                {p.miio_amount > 0 && <p>Miio: {fmt(p.miio_amount)}</p>}
+                {p.loan_installment > 0 && <p>Empréstimo: {fmt(p.loan_installment)}</p>}
+                {p.vehicle_purchase_installment > 0 && <p>Compra: {fmt(p.vehicle_purchase_installment)}</p>}
+                {p.iva_amount > 0 && <p>IVA: {fmt(p.iva_amount)}</p>}
+                {p.irs_retention > 0 && <p>IRS: {fmt(p.irs_retention)}</p>}
+                {p.upi_earned > 0 && <p>UPI: {p.upi_earned}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'net') {
+    const total = payments.reduce((s, p) => s + (p.net_amount || 0), 0);
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-indigo-50 rounded-lg">
+          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
+        </div>
+        <div className="space-y-2">
+          {payments.map(p => (
+            <div key={p.id} className="flex justify-between items-center p-2 border-b">
+              <div>
+                <p className="font-medium text-sm">{p.driver_name}</p>
+                <p className="text-xs text-gray-500">{p.period_label}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-indigo-700">{fmt(p.net_amount)}</p>
+                <p className="text-xs text-gray-500">Bruto: {fmt(p.total_gross)} - Deduções: {fmt(p.total_deductions)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function PaymentEditForm({ payment, onSave, onCancel }) {
