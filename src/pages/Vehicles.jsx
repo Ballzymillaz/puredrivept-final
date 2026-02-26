@@ -20,6 +20,11 @@ export default function Vehicles() {
     queryFn: () => base44.entities.Vehicle.list('-created_date'),
   });
 
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
+
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.Vehicle.create(d),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicles'] }); setShowForm(false); },
@@ -69,7 +74,7 @@ export default function Vehicles() {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Editar veículo' : 'Novo veículo'}</DialogTitle></DialogHeader>
-          <VehicleForm vehicle={editing} onSubmit={handleSubmit} isLoading={createMutation.isPending || updateMutation.isPending} />
+          <VehicleForm vehicle={editing} drivers={drivers} onSubmit={handleSubmit} isLoading={createMutation.isPending || updateMutation.isPending} />
         </DialogContent>
       </Dialog>
     </div>

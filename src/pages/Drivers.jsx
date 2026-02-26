@@ -24,6 +24,21 @@ export default function Drivers() {
     queryFn: () => base44.entities.Driver.list('-created_date'),
   });
 
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: () => base44.entities.Vehicle.list(),
+  });
+
+  const { data: commercials = [] } = useQuery({
+    queryKey: ['commercials'],
+    queryFn: () => base44.entities.Commercial.list(),
+  });
+
+  const { data: fleetManagers = [] } = useQuery({
+    queryKey: ['fleetManagers'],
+    queryFn: () => base44.entities.FleetManager.list(),
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Driver.create(data),
     onSuccess: () => {
@@ -147,6 +162,9 @@ export default function Drivers() {
           <DriverForm
             key={editingDriver?.id || 'new'}
             driver={editingDriver}
+            vehicles={vehicles}
+            commercials={commercials}
+            fleetManagers={fleetManagers}
             onSubmit={handleSubmit}
             isLoading={createMutation.isPending || updateMutation.isPending}
           />
