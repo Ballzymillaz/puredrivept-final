@@ -295,7 +295,8 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
       (parseFloat(form.miio_amount) || 0) +
       (parseFloat(form.loan_installment) || 0) +
       (parseFloat(form.vehicle_purchase_installment) || 0) +
-      ivaAmount;
+      ivaAmount +
+      upiEarned;
 
     const netAmount = totalGross - totalDeductions + (parseFloat(form.reimbursement_credit) || 0) + (parseFloat(form.goal_bonus) || 0);
 

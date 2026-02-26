@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, PieChart as PieChartIcon, Euro } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const PIE_COLORS = ['#6366f1', '#f43f5e', '#f59e0b', '#10b981', '#8b5cf6', '#06b6d4'];
@@ -19,6 +19,7 @@ const PIE_COLORS = ['#6366f1', '#f43f5e', '#f59e0b', '#10b981', '#8b5cf6', '#06b
 export default function CashFlow() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [detailsDialog, setDetailsDialog] = useState(null);
   const qc = useQueryClient();
 
   const { data: payments = [] } = useQuery({
@@ -79,10 +80,18 @@ export default function CashFlow() {
       <PageHeader title="Fluxo de caixa" actionLabel="Adicionar despesa" onAction={() => { setEditing(null); setShowForm(true); }} />
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Revenu brut flotte" value={fmt(totalRevenue)} icon={TrendingUp} color="blue" />
-        <StatCard title="Recettes entreprise" value={fmt(income)} icon={Wallet} color="green" />
-        <StatCard title="Dépenses" value={fmt(totalExpenses)} icon={TrendingDown} color="rose" />
-        <StatCard title="Bénéfice" value={fmt(profit)} icon={PieChartIcon} color={profit >= 0 ? 'green' : 'rose'} />
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('revenue')}>
+          <StatCard title="Receita bruta frota" value={fmt(totalRevenue)} icon={TrendingUp} color="blue" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('income')}>
+          <StatCard title="Receitas empresa" value={fmt(income)} icon={Wallet} color="green" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('expenses')}>
+          <StatCard title="Despesas" value={fmt(totalExpenses)} icon={TrendingDown} color="rose" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('profit')}>
+          <StatCard title="Lucro" value={fmt(profit)} icon={PieChartIcon} color={profit >= 0 ? 'green' : 'rose'} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -145,8 +154,140 @@ export default function CashFlow() {
           <ExpenseForm expense={editing} onSubmit={(data) => editing ? updateMutation.mutate({ id: editing.id, data }) : createMutation.mutate(data)} isLoading={createMutation.isPending || updateMutation.isPending} />
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!detailsDialog} onOpenChange={(open) => !open && setDetailsDialog(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailsDialog === 'revenue' && 'Detalhes: Receita Bruta Frota'}
+              {detailsDialog === 'income' && 'Detalhes: Receitas Empresa'}
+              {detailsDialog === 'expenses' && 'Detalhes: Despesas'}
+              {detailsDialog === 'profit' && 'Detalhes: Lucro'}
+            </DialogTitle>
+          </DialogHeader>
+          <DetailsDialogContent type={detailsDialog} payments={payments} expenses={expenses} totalCommissions={totalCommissions} totalSlotFees={totalSlotFees} totalRentals={totalRentals} fmt={fmt} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function DetailsDialogContent({ type, payments, expenses, totalCommissions, totalSlotFees, totalRentals, fmt }) {
+  if (type === 'revenue') {
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-blue-50 rounded-lg">
+          <p className="text-sm font-semibold text-gray-700">Total: {fmt(payments.reduce((s, p) => s + (p.total_gross || 0), 0))}</p>
+        </div>
+        <div className="space-y-2">
+          {payments.slice(0, 50).map(p => (
+            <div key={p.id} className="flex justify-between text-sm border-b py-2">
+              <span>{p.driver_name} - {p.period_label}</span>
+              <span className="font-medium">{fmt(p.total_gross)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'income') {
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-green-50 rounded-lg">
+          <p className="text-sm font-semibold text-gray-700">Total: {fmt(totalCommissions + totalSlotFees + totalRentals)}</p>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Comissões: {fmt(totalCommissions)}</p>
+            {payments.filter(p => p.commission_amount > 0).slice(0, 20).map(p => (
+              <div key={p.id} className="flex justify-between text-sm py-1">
+                <span className="text-xs">{p.driver_name}</span>
+                <span>{fmt(p.commission_amount)}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Taxas slot: {fmt(totalSlotFees)}</p>
+            {payments.filter(p => p.slot_fee > 0).slice(0, 20).map(p => (
+              <div key={p.id} className="flex justify-between text-sm py-1">
+                <span className="text-xs">{p.driver_name}</span>
+                <span>{fmt(p.slot_fee)}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-600 mb-2">Aluguéis: {fmt(totalRentals)}</p>
+            {payments.filter(p => p.vehicle_rental > 0).slice(0, 20).map(p => (
+              <div key={p.id} className="flex justify-between text-sm py-1">
+                <span className="text-xs">{p.driver_name}</span>
+                <span>{fmt(p.vehicle_rental)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'expenses') {
+    const byCategory = {};
+    expenses.forEach(e => {
+      const cat = e.category || 'other';
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(e);
+    });
+
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-rose-50 rounded-lg">
+          <p className="text-sm font-semibold text-gray-700">Total: {fmt(expenses.reduce((s, e) => s + (e.amount || 0), 0))}</p>
+        </div>
+        <div className="space-y-3">
+          {Object.entries(byCategory).map(([cat, items]) => (
+            <div key={cat}>
+              <p className="text-xs font-semibold text-gray-600 mb-2 capitalize">
+                {cat.replace(/_/g, ' ')}: {fmt(items.reduce((s, e) => s + (e.amount || 0), 0))}
+              </p>
+              {items.slice(0, 10).map(e => (
+                <div key={e.id} className="flex justify-between text-sm py-1">
+                  <span className="text-xs">{e.description}</span>
+                  <span>{fmt(e.amount)}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'profit') {
+    const profit = (totalCommissions + totalSlotFees + totalRentals) - expenses.reduce((s, e) => s + (e.amount || 0), 0);
+    return (
+      <div className="space-y-3">
+        <div className={`p-3 rounded-lg ${profit >= 0 ? 'bg-green-50' : 'bg-rose-50'}`}>
+          <p className="text-sm font-semibold text-gray-700">Lucro: {fmt(profit)}</p>
+        </div>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm py-2 border-b">
+            <span className="font-medium">Receitas totais:</span>
+            <span className="text-green-600">{fmt(totalCommissions + totalSlotFees + totalRentals)}</span>
+          </div>
+          <div className="flex justify-between text-sm py-2 border-b">
+            <span className="font-medium">Despesas totais:</span>
+            <span className="text-red-600">{fmt(expenses.reduce((s, e) => s + (e.amount || 0), 0))}</span>
+          </div>
+          <div className="flex justify-between text-base font-semibold py-2">
+            <span>Lucro líquido:</span>
+            <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>{fmt(profit)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function ExpenseForm({ expense, onSubmit, isLoading }) {

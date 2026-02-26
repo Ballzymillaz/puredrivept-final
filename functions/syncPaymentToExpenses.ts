@@ -17,8 +17,20 @@ Deno.serve(async (req) => {
 
     const { driver_id, driver_name, week_start, upi_earned, via_verde_amount, myprio_amount, miio_amount } = payment;
 
-    // 1. Create UPI transaction for the driver
-    if (upi_earned > 0) {
+    // Check if already synced (to avoid duplicates)
+    const existingTransactions = await base44.asServiceRole.entities.UPITransaction.filter({
+      driver_id,
+      source: 'weekly_payment',
+      week_label: payment.period_label,
+    });
+
+    const existingExpenses = await base44.asServiceRole.entities.Expense.filter({
+      driver_id,
+      description: { $regex: payment.period_label }
+    });
+
+    // 1. Create UPI transaction for the driver (if not already exists)
+    if (upi_earned > 0 && existingTransactions.length === 0) {
       await base44.asServiceRole.entities.UPITransaction.create({
         driver_id,
         driver_name,
@@ -38,10 +50,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Create expense records for company costs
+    // 2. Create expense records for company costs (if not already exist)
     const expenseDate = week_start || new Date().toISOString().split('T')[0];
 
-    if (via_verde_amount > 0) {
+    const viaVerdeExists = existingExpenses.some(e => e.description.includes('Via Verde'));
+    if (via_verde_amount > 0 && !viaVerdeExists) {
       await base44.asServiceRole.entities.Expense.create({
         category: 'via_verde',
         description: `Via Verde - ${driver_name} - ${payment.period_label}`,
@@ -51,7 +64,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (myprio_amount > 0) {
+    const myprioExists = existingExpenses.some(e => e.description.includes('MyPRIO'));
+    if (myprio_amount > 0 && !myprioExists) {
       await base44.asServiceRole.entities.Expense.create({
         category: 'via_verde',
         description: `MyPRIO - ${driver_name} - ${payment.period_label}`,
@@ -61,7 +75,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (miio_amount > 0) {
+    const miioExists = existingExpenses.some(e => e.description.includes('Miio'));
+    if (miio_amount > 0 && !miioExists) {
       await base44.asServiceRole.entities.Expense.create({
         category: 'via_verde',
         description: `Miio - ${driver_name} - ${payment.period_label}`,
