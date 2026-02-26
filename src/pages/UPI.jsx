@@ -37,8 +37,21 @@ export default function UPI() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['upi-transactions'] }); setEditing(null); setShowForm(false); },
   });
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.UPITransaction.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['upi-transactions'] }); setEditing(null); setShowForm(false); },
+    mutationFn: async (transaction) => {
+      // Mettre à jour le solde du driver
+      const driver = drivers.find(d => d.id === transaction.driver_id);
+      if (driver) {
+        const delta = transaction.type === 'credit' ? -transaction.amount : transaction.type === 'debit' ? transaction.amount : -transaction.amount;
+        await base44.entities.Driver.update(driver.id, { upi_balance: Math.max(0, (driver.upi_balance || 0) + delta) });
+      }
+      return await base44.entities.UPITransaction.delete(transaction.id);
+    },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ['upi-transactions'] }); 
+      qc.invalidateQueries({ queryKey: ['drivers'] });
+      setEditing(null); 
+      setShowForm(false); 
+    },
   });
 
   const totalUPI = drivers.reduce((s, d) => s + (d.upi_balance || 0), 0);
@@ -156,7 +169,7 @@ export default function UPI() {
             )}
             <div className="space-y-1.5"><Label className="text-xs">Notas</Label><Input value={form.notes} onChange={(e) => setForm(f => ({...f, notes: e.target.value}))} /></div>
             <div className="flex gap-2">
-              {editing && <Button type="button" variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar transação UPI?')) deleteMutation.mutate(editing.id); }}>Eliminar</Button>}
+              {editing && <Button type="button" variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar transação UPI?')) deleteMutation.mutate(editing); }}>Eliminar</Button>}
               <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className={editing ? "flex-1 bg-indigo-600 hover:bg-indigo-700" : "w-full bg-indigo-600 hover:bg-indigo-700"}>{editing ? 'Atualizar' : 'Confirmar'}</Button>
             </div>
           </form>

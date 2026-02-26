@@ -39,11 +39,11 @@ export default function Payments() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
+    mutationFn: async ({ id, data, oldPayment }) => {
       const result = await base44.entities.WeeklyPayment.update(id, data);
       
       // If status changed to 'paid', sync to expenses and UPI
-      if (data.status === 'paid') {
+      if (data.status === 'paid' && oldPayment.status !== 'paid') {
         try {
           await base44.functions.invoke('syncPaymentToExpenses', { paymentId: id });
         } catch (error) {
@@ -59,6 +59,23 @@ export default function Payments() {
       await qc.invalidateQueries({ queryKey: ['upi-transactions'] });
       await qc.invalidateQueries({ queryKey: ['drivers'] });
       setEditMode(false);
+      setSelected(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (payment) => {
+      // Si le paiement était payé, supprimer les dépenses/UPI associés
+      if (payment.status === 'paid') {
+        await base44.functions.invoke('deletePaymentExpenses', { paymentId: payment.id });
+      }
+      return await base44.entities.WeeklyPayment.delete(payment.id);
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['payments'] });
+      await qc.invalidateQueries({ queryKey: ['expenses-all'] });
+      await qc.invalidateQueries({ queryKey: ['upi-transactions'] });
+      await qc.invalidateQueries({ queryKey: ['drivers'] });
       setSelected(null);
     },
   });
@@ -165,7 +182,8 @@ export default function Payments() {
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setEditMode(true)} variant="outline" className="flex-1">Editar</Button>
-                <Select value={selected.status} onValueChange={(v) => updateMutation.mutate({ id: selected.id, data: { status: v } })}>
+                <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar pagamento?')) deleteMutation.mutate(selected); }}>Eliminar</Button>
+                <Select value={selected.status} onValueChange={(v) => updateMutation.mutate({ id: selected.id, data: { status: v }, oldPayment: selected })}>
                   <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">Rascunho</SelectItem>
