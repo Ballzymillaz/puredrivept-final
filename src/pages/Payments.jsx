@@ -118,6 +118,24 @@ export default function Payments() {
       // Si le paiement était payé, supprimer les dépenses/UPI associés
       if (payment.status === 'paid') {
         await base44.functions.invoke('deletePaymentExpenses', { paymentId: payment.id });
+        
+        // Retirer la caução du driver si applicable
+        if (payment.irs_retention > 0) {
+          const driver = drivers.find(d => d.id === payment.driver_id);
+          if (driver) {
+            const newDepositAmount = Math.max(0, (driver.vehicle_deposit || 0) - payment.irs_retention);
+            const depositPaid = newDepositAmount >= 500;
+            
+            try {
+              await base44.entities.Driver.update(driver.id, {
+                vehicle_deposit: newDepositAmount,
+                vehicle_deposit_paid: depositPaid,
+              });
+            } catch (error) {
+              console.error('Error updating driver deposit:', error);
+            }
+          }
+        }
       }
       return await base44.entities.WeeklyPayment.delete(payment.id);
     },
