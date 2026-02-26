@@ -72,7 +72,7 @@ export default function Sidebar({ currentPage, userRole }) {
               <img 
                 src="/uploads/Logo%20PureDriveWhite.png" 
                 alt="PureDrive" 
-                className="h-8 object-contain"
+                className="h-10 w-auto object-contain"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   const fallback = e.target.parentElement.querySelector('.fallback-logo');
