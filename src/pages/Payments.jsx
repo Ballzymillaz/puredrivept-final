@@ -32,9 +32,25 @@ export default function Payments() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.WeeklyPayment.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const result = await base44.entities.WeeklyPayment.update(id, data);
+      
+      // If status changed to 'paid', sync to expenses and UPI
+      if (data.status === 'paid') {
+        try {
+          await base44.functions.invoke('syncPaymentToExpenses', { paymentId: id });
+        } catch (error) {
+          console.error('Error syncing payment:', error);
+        }
+      }
+      
+      return result;
+    },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['payments'] });
+      await qc.invalidateQueries({ queryKey: ['expenses-all'] });
+      await qc.invalidateQueries({ queryKey: ['upi-transactions'] });
+      await qc.invalidateQueries({ queryKey: ['drivers'] });
       setEditMode(false);
       setSelected(null);
     },

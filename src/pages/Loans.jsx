@@ -134,17 +134,25 @@ export default function Loans() {
 }
 
 function LoanEditForm({ loan, onSave, onCancel }) {
-  const [form, setForm] = useState({ ...loan });
+  const [form, setForm] = useState({ 
+    remaining_balance: loan?.remaining_balance || 0,
+    paid_amount: loan?.paid_amount || 0,
+    status: loan?.status || 'active'
+  });
+  
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { total, weekly } = { total: parseFloat(form.total_with_interest), weekly: parseFloat(form.weekly_installment) };
-    onSave({ ...form, remaining_balance: parseFloat(form.remaining_balance), paid_amount: parseFloat(form.paid_amount) });
+    onSave({ 
+      remaining_balance: parseFloat(form.remaining_balance) || 0, 
+      paid_amount: parseFloat(form.paid_amount) || 0,
+      status: form.status
+    });
   };
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5"><Label className="text-xs">Restante</Label><Input type="number" step="0.01" value={form.remaining_balance} onChange={(e) => setForm(f => ({ ...f, remaining_balance: e.target.value }))} /></div>
-      <div className="space-y-1.5"><Label className="text-xs">Pago</Label><Input type="number" step="0.01" value={form.paid_amount} onChange={(e) => setForm(f => ({ ...f, paid_amount: e.target.value }))} /></div>
+      <div className="space-y-1.5"><Label className="text-xs">Restante</Label><Input type="number" step="0.01" value={form.remaining_balance || 0} onChange={(e) => setForm(f => ({ ...f, remaining_balance: e.target.value }))} /></div>
+      <div className="space-y-1.5"><Label className="text-xs">Pago</Label><Input type="number" step="0.01" value={form.paid_amount || 0} onChange={(e) => setForm(f => ({ ...f, paid_amount: e.target.value }))} /></div>
       <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
         <Select value={form.status} onValueChange={(v) => setForm(f => ({ ...f, status: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
