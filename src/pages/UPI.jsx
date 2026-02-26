@@ -36,6 +36,10 @@ export default function UPI() {
     mutationFn: ({ id, data }) => base44.entities.UPITransaction.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['upi-transactions'] }); setEditing(null); setShowForm(false); },
   });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.UPITransaction.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['upi-transactions'] }); setEditing(null); setShowForm(false); },
+  });
 
   const totalUPI = drivers.reduce((s, d) => s + (d.upi_balance || 0), 0);
   const totalEarned = transactions.filter(t => t.type === 'earned').reduce((s, t) => s + (t.amount || 0), 0);
@@ -151,7 +155,10 @@ export default function UPI() {
               <div className="space-y-1.5"><Label className="text-xs">Montante UPI</Label><Input type="number" value={form.amount} onChange={(e) => setForm(f => ({...f, amount: e.target.value}))} required /></div>
             )}
             <div className="space-y-1.5"><Label className="text-xs">Notas</Label><Input value={form.notes} onChange={(e) => setForm(f => ({...f, notes: e.target.value}))} /></div>
-            <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">{editing ? 'Atualizar' : 'Confirmar'}</Button>
+            <div className="flex gap-2">
+              {editing && <Button type="button" variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar transação UPI?')) deleteMutation.mutate(editing.id); }}>Eliminar</Button>}
+              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className={editing ? "flex-1 bg-indigo-600 hover:bg-indigo-700" : "w-full bg-indigo-600 hover:bg-indigo-700"}>{editing ? 'Atualizar' : 'Confirmar'}</Button>
+            </div>
           </form>
         </DialogContent>
       </Dialog>

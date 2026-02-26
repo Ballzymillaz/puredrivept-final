@@ -40,6 +40,10 @@ export default function Referrals() {
     mutationFn: ({ id, data }) => base44.entities.ReferralPayment.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['referral-payments'] }); setEditing(null); },
   });
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.ReferralPayment.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['referral-payments'] }); setEditing(null); },
+  });
 
   const totalPaid = payments.filter(p => p.status === 'paid').reduce((s, p) => s + (p.weekly_amount || 0) + (p.bonus_amount || 0), 0);
   const totalPending = payments.filter(p => p.status === 'pending').reduce((s, p) => s + (p.weekly_amount || 0), 0);
@@ -88,7 +92,12 @@ export default function Referrals() {
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Editar indicação</DialogTitle></DialogHeader>
-          {editing && <ReferralEditForm referral={editing} onSave={(data) => updateMutation.mutate({ id: editing.id, data })} onCancel={() => setEditing(null)} />}
+          {editing && (
+            <>
+              <ReferralEditForm referral={editing} onSave={(data) => updateMutation.mutate({ id: editing.id, data })} onCancel={() => setEditing(null)} />
+              <Button variant="outline" className="w-full text-red-600" onClick={() => { if (confirm('Eliminar indicação?')) deleteMutation.mutate(editing.id); }}>Eliminar</Button>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
@@ -120,5 +129,18 @@ function ReferralEditForm({ referral, onSave, onCancel }) {
         <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700">Guardar</Button>
       </div>
     </form>
+  );
+}
+
+function ReferralDeleteButton({ referralId, onDelete }) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      className="text-red-600 mt-2 w-full"
+      onClick={() => { if (confirm('Eliminar indicação?')) onDelete(referralId); }}
+    >
+      Eliminar
+    </Button>
   );
 }
