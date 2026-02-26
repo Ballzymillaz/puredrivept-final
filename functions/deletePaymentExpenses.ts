@@ -38,38 +38,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2. Delete all company expenses (revenus) for Via Verde, MyPRIO, Miio
-    if (via_verde_amount > 0) {
-      const viaVerdeExpenses = await base44.asServiceRole.entities.Expense.filter({
-        driver_id,
-        category: 'via_verde',
-        amount: via_verde_amount,
-      });
-      for (const exp of viaVerdeExpenses) {
-        await base44.asServiceRole.entities.Expense.delete(exp.id);
-      }
-    }
+    // 2. Delete all expenses related to this payment (using period_label in description)
+    const allExpenses = await base44.asServiceRole.entities.Expense.filter({
+      driver_id,
+    });
 
-    if (myprio_amount > 0) {
-      const myprioExpenses = await base44.asServiceRole.entities.Expense.filter({
-        driver_id,
-        description: { $regex: 'Combustivel' },
-        amount: myprio_amount,
-      });
-      for (const exp of myprioExpenses) {
-        await base44.asServiceRole.entities.Expense.delete(exp.id);
-      }
-    }
+    // Filter expenses that contain the period_label
+    const relatedExpenses = allExpenses.filter(exp => 
+      exp.description && exp.description.includes(payment.period_label)
+    );
 
-    if (miio_amount > 0) {
-      const miioExpenses = await base44.asServiceRole.entities.Expense.filter({
-        driver_id,
-        description: { $regex: 'Miio' },
-        amount: miio_amount,
-      });
-      for (const exp of miioExpenses) {
-        await base44.asServiceRole.entities.Expense.delete(exp.id);
-      }
+    for (const expense of relatedExpenses) {
+      await base44.asServiceRole.entities.Expense.delete(expense.id);
     }
 
     // 3. Delete referral payments associated with this payment
