@@ -161,6 +161,7 @@ function ContractForm({ contract, drivers, vehicles, onSubmit, onDelete, isLoadi
     driver_id: contract?.driver_id || '',
     vehicle_id: contract?.vehicle_id || '',
     contract_type: contract?.contract_type || '',
+    weekly_rental_price: contract?.weekly_rental_price || '',
     start_date: contract?.start_date || '',
     end_date: contract?.end_date || '',
     status: contract?.status || 'active',
@@ -205,7 +206,7 @@ function ContractForm({ contract, drivers, vehicles, onSubmit, onDelete, isLoadi
 
     if (data.contract_type && CONTRACT_CONFIG[data.contract_type]) {
       if (data.contract_type === 'location') {
-        data.weekly_rental_price = vehicle?.weekly_rental_price || 0;
+        data.weekly_rental_price = parseFloat(data.weekly_rental_price) || vehicle?.weekly_rental_price || 0;
       } else {
         data.slot_fee = CONTRACT_CONFIG[data.contract_type].slot_fee;
       }
@@ -256,6 +257,13 @@ function ContractForm({ contract, drivers, vehicles, onSubmit, onDelete, isLoadi
             </SelectContent>
           </Select>
         </div>
+
+        {form.contract_type === 'location' && (
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label className="text-xs">Preço de aluguer semanal (€) *</Label>
+            <Input type="number" step="0.01" value={form.weekly_rental_price} onChange={(e) => handleChange('weekly_rental_price', e.target.value)} placeholder="0.00" />
+          </div>
+        )}
 
         <div className="space-y-1.5">
           <Label className="text-xs">Data início *</Label>

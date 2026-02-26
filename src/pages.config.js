@@ -66,6 +66,7 @@ import Reimbursements from './pages/Reimbursements';
 import UPI from './pages/UPI';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
+import IVA from './pages/IVA';
 import __Layout from './Layout.jsx';
 
 
@@ -89,6 +90,7 @@ export const PAGES = {
     "UPI": UPI,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
+    "IVA": IVA,
 }
 
 export const pagesConfig = {
