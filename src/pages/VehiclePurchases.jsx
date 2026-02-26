@@ -77,7 +77,8 @@ export default function VehiclePurchases() {
   const marketPrice = selectedVehicle?.market_price || 0;
   const totalPrice = Math.round(marketPrice * 1.25 * 100) / 100;
   const months = parseInt(form.duration_months) || 0;
-  const weeklyInstallment = months > 0 ? Math.round((totalPrice / (months * 4.33)) * 100) / 100 : 0;
+  const weeks = months > 0 ? Math.round(months * 4.33) : 0;
+  const weeklyInstallment = weeks > 0 ? Math.round((totalPrice / weeks) * 100) / 100 : 0;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -160,11 +161,24 @@ export default function VehiclePurchases() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5"><Label className="text-xs">Duração (meses)</Label><Input type="number" value={form.duration_months} onChange={(e) => setForm(f => ({...f, duration_months: e.target.value}))} required /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Duração</Label>
+              <Select value={form.duration_months?.toString()} onValueChange={(v) => setForm(f => ({...f, duration_months: v}))}>
+                <SelectTrigger><SelectValue placeholder="Escolher duração..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="6">6 meses</SelectItem>
+                  <SelectItem value="12">1 ano (12 meses)</SelectItem>
+                  <SelectItem value="18">18 meses</SelectItem>
+                  <SelectItem value="24">2 anos (24 meses)</SelectItem>
+                  <SelectItem value="30">30 meses</SelectItem>
+                  <SelectItem value="36">3 anos (36 meses)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             {form.vehicle_id && form.duration_months && (
               <div className="bg-indigo-50 p-3 rounded-lg space-y-1 text-sm">
                 <p>Preço mercado: <strong>{fmt(marketPrice)}</strong></p>
                 <p>Preço total (+25%): <strong className="text-indigo-700">{fmt(totalPrice)}</strong></p>
+                <p>Duração: <strong>{weeks} semanas</strong></p>
                 <p>Pagamento semanal: <strong className="text-indigo-700">{fmt(weeklyInstallment)}</strong></p>
               </div>
             )}
