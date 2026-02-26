@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
 
     const viaVerdeExists = existingExpenses.some(e => e.description.includes('Via Verde'));
     if (via_verde_amount > 0 && !viaVerdeExists) {
+      // Dépense d'entreprise
       await base44.asServiceRole.entities.Expense.create({
         category: 'via_verde',
         description: `Via Verde - ${driver_name} - ${payment.period_label}`,
@@ -62,10 +63,19 @@ Deno.serve(async (req) => {
         date: expenseDate,
         driver_id,
       });
+      // Recette (prélevé du chauffeur)
+      await base44.asServiceRole.entities.Expense.create({
+        category: 'via_verde',
+        description: `Recebido Via Verde - ${driver_name} - ${payment.period_label}`,
+        amount: -via_verde_amount,
+        date: expenseDate,
+        driver_id,
+      });
     }
 
     const myprioExists = existingExpenses.some(e => e.description.includes('MyPRIO'));
     if (myprio_amount > 0 && !myprioExists) {
+      // Dépense d'entreprise
       await base44.asServiceRole.entities.Expense.create({
         category: 'via_verde',
         description: `MyPRIO - ${driver_name} - ${payment.period_label}`,
@@ -73,14 +83,31 @@ Deno.serve(async (req) => {
         date: expenseDate,
         driver_id,
       });
+      // Recette (prélevé du chauffeur)
+      await base44.asServiceRole.entities.Expense.create({
+        category: 'via_verde',
+        description: `Recebido MyPRIO - ${driver_name} - ${payment.period_label}`,
+        amount: -myprio_amount,
+        date: expenseDate,
+        driver_id,
+      });
     }
 
     const miioExists = existingExpenses.some(e => e.description.includes('Miio'));
     if (miio_amount > 0 && !miioExists) {
+      // Dépense d'entreprise
       await base44.asServiceRole.entities.Expense.create({
         category: 'combustivel',
         description: `Miio - ${driver_name} - ${payment.period_label}`,
         amount: miio_amount,
+        date: expenseDate,
+        driver_id,
+      });
+      // Recette (prélevé du chauffeur)
+      await base44.asServiceRole.entities.Expense.create({
+        category: 'combustivel',
+        description: `Recebido Miio - ${driver_name} - ${payment.period_label}`,
+        amount: -miio_amount,
         date: expenseDate,
         driver_id,
       });

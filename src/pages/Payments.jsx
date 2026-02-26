@@ -174,8 +174,8 @@ export default function Payments() {
                   ['Compra veículo', fmt(selected.vehicle_purchase_installment)],
                   ['Reembolsos', fmt(selected.reimbursement_credit)],
                   ['Bónus objetivo', fmt(selected.goal_bonus)],
-                  ['IVA', fmt(selected.iva_amount)],
-                  ['IRS', fmt(selected.irs_retention)],
+                  ['6% IVA (obrigatorio estado)', fmt(selected.iva_amount)],
+                  ['Caução', fmt(selected.irs_retention)],
                   ['UPI ganhos', selected.upi_earned],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between p-2 bg-gray-50 rounded">
@@ -280,8 +280,8 @@ function PaymentDetailsContent({ type, payments, fmt }) {
                 {p.miio_amount > 0 && <p>Miio: {fmt(p.miio_amount)}</p>}
                 {p.loan_installment > 0 && <p>Empréstimo: {fmt(p.loan_installment)}</p>}
                 {p.vehicle_purchase_installment > 0 && <p>Compra: {fmt(p.vehicle_purchase_installment)}</p>}
-                {p.iva_amount > 0 && <p>IVA: {fmt(p.iva_amount)}</p>}
-                {p.irs_retention > 0 && <p>IRS: {fmt(p.irs_retention)}</p>}
+                {p.iva_amount > 0 && <p>6% IVA: {fmt(p.iva_amount)}</p>}
+                {p.irs_retention > 0 && <p>Caução: {fmt(p.irs_retention)}</p>}
                 {p.upi_earned > 0 && <p>UPI: {p.upi_earned}</p>}
               </div>
             </div>
@@ -340,7 +340,7 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
           ['Via Verde', 'via_verde_amount'], ['MyPRIO', 'myprio_amount'], ['Miio', 'miio_amount'],
           ['Empréstimo', 'loan_installment'], ['Compra veículo', 'vehicle_purchase_installment'],
           ['Reembolsos', 'reimbursement_credit'], ['Bónus', 'goal_bonus'],
-          ['IVA', 'iva_amount'], ['IRS', 'irs_retention'],
+          ['6% IVA (obrigatorio estado)', 'iva_amount'], ['Caução', 'irs_retention'],
         ].map(([label, key]) => (
           <div key={key} className="space-y-1">
             <Label className="text-xs">{label}</Label>
@@ -473,7 +473,7 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
           <div className="sm:col-span-2 p-3 bg-indigo-50 rounded-lg space-y-1 text-sm">
             <p>Total bruto: <strong>€{totalGross.toFixed(2)}</strong></p>
             <p>UPI ganhos (4%): <strong>{upiPreview} UPI</strong></p>
-            <p>IVA (6%): <strong>€{ivaPreview.toFixed(2)}</strong></p>
+            <p>6% IVA (obrigatorio estado): <strong>€{ivaPreview.toFixed(2)}</strong></p>
           </div>
         )}
 
