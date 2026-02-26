@@ -31,7 +31,12 @@ export default function Loans() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['loans'] }); setSelected(null); },
   });
 
-  const [form, setForm] = useState({ driver_name: '', amount: '', duration_weeks: '' });
+  const [form, setForm] = useState({ driver_id: '', amount: '', duration_weeks: '' });
+
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
 
   const interestRate = 1; // 1% per week
   const calcTotal = (amount, weeks) => {
@@ -44,9 +49,10 @@ export default function Loans() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const { total, weekly } = calcTotal(form.amount, form.duration_weeks);
+    const driver = drivers.find(d => d.id === form.driver_id);
     createMutation.mutate({
-      ...form,
-      driver_id: form.driver_name,
+      driver_id: form.driver_id,
+      driver_name: driver?.full_name || '',
       amount: parseFloat(form.amount),
       duration_weeks: parseInt(form.duration_weeks),
       interest_rate_weekly: interestRate,
@@ -113,19 +119,28 @@ export default function Loans() {
       {/* New loan form */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Nouveau prêt</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Novo empréstimo</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5"><Label className="text-xs">Nom du chauffeur</Label><Input value={form.driver_name} onChange={(e) => setForm(f => ({...f, driver_name: e.target.value}))} required /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Montant (€)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm(f => ({...f, amount: e.target.value}))} required /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Durée (semaines)</Label><Input type="number" value={form.duration_weeks} onChange={(e) => setForm(f => ({...f, duration_weeks: e.target.value}))} required /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Motorista</Label>
+              <Select value={form.driver_id} onValueChange={(v) => setForm(f => ({...f, driver_id: v}))}>
+                <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
+                <SelectContent>
+                  {drivers.map(d => (
+                    <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs">Montante (€)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm(f => ({...f, amount: e.target.value}))} required /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Duração (semanas)</Label><Input type="number" value={form.duration_weeks} onChange={(e) => setForm(f => ({...f, duration_weeks: e.target.value}))} required /></div>
             {form.amount && form.duration_weeks && (
               <div className="bg-indigo-50 p-3 rounded-lg space-y-1 text-sm">
-                <p className="text-gray-600">Taux : <span className="font-semibold">{interestRate}%/semaine</span></p>
-                <p className="text-gray-600">Total à rembourser : <span className="font-bold text-indigo-700">{fmt(preview.total)}</span></p>
-                <p className="text-gray-600">Paiement hebdo : <span className="font-bold text-indigo-700">{fmt(preview.weekly)}</span></p>
+                <p className="text-gray-600">Taxa: <span className="font-semibold">{interestRate}%/semana</span></p>
+                <p className="text-gray-600">Total a pagar: <span className="font-bold text-indigo-700">{fmt(preview.total)}</span></p>
+                <p className="text-gray-600">Pagamento semanal: <span className="font-bold text-indigo-700">{fmt(preview.weekly)}</span></p>
               </div>
             )}
-            <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">Créer la demande</Button>
+            <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">Criar pedido</Button>
           </form>
         </DialogContent>
       </Dialog>

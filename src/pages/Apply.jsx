@@ -21,7 +21,23 @@ export default function Apply() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (d) => base44.entities.Application.create(d),
+    mutationFn: async (d) => {
+      const result = await base44.entities.Application.create(d);
+      // Send confirmation email to applicant
+      await base44.integrations.Core.SendEmail({
+        to: d.email,
+        subject: 'Candidatura recebida - PureDrive PT',
+        body: `
+          <h2>Obrigado pela sua candidatura!</h2>
+          <p>Olá ${d.full_name},</p>
+          <p>A sua candidatura foi recebida com sucesso. A nossa equipa irá analisá-la e entrará em contacto consigo em breve.</p>
+          <p>Receberá um email assim que a sua candidatura for validada.</p>
+          <br>
+          <p>Atenciosamente,<br>Equipa PureDrive PT</p>
+        `
+      });
+      return result;
+    },
     onSuccess: () => setSubmitted(true),
   });
 
@@ -36,8 +52,8 @@ export default function Apply() {
         <Card className="max-w-md w-full border-0 shadow-2xl">
           <CardContent className="p-8 text-center space-y-4">
             <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
-            <h2 className="text-2xl font-bold text-gray-900">Candidature envoyée !</h2>
-            <p className="text-gray-600">Merci pour votre candidature. Notre équipe vous contactera très prochainement.</p>
+            <h2 className="text-2xl font-bold text-gray-900">Candidatura enviada!</h2>
+            <p className="text-gray-600">Obrigado pela sua candidatura. A nossa equipa entrará em contacto consigo em breve.</p>
           </CardContent>
         </Card>
       </div>
@@ -51,36 +67,36 @@ export default function Apply() {
           <div className="w-14 h-14 rounded-xl bg-indigo-100 flex items-center justify-center mx-auto mb-3">
             <Car className="w-7 h-7 text-indigo-600" />
           </div>
-          <CardTitle className="text-xl font-bold">Rejoindre PureDrive<sup className="text-xs">PT</sup></CardTitle>
-          <p className="text-sm text-gray-500 mt-1">Remplissez le formulaire pour postuler</p>
+          <CardTitle className="text-xl font-bold">Juntar-se à PureDrive<sup className="text-xs">PT</sup></CardTitle>
+          <p className="text-sm text-gray-500 mt-1">Preencha o formulário para candidatar-se</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Je postule en tant que</Label>
+              <Label className="text-xs">Candidato como</Label>
               <Select value={form.applicant_type} onValueChange={(v) => setForm(f => ({...f, applicant_type: v}))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="driver">Chauffeur TVDE</SelectItem>
-                  <SelectItem value="fleet_manager">Gestionnaire de flotte</SelectItem>
-                  <SelectItem value="commercial">Commercial</SelectItem>
+                  <SelectItem value="driver">Motorista TVDE</SelectItem>
+                  <SelectItem value="fleet_manager">Gestor de frota</SelectItem>
+                  <SelectItem value="commercial">Comercial</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-xs">Nom complet *</Label><Input value={form.full_name} onChange={(e) => setForm(f => ({...f, full_name: e.target.value}))} required /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Nome completo *</Label><Input value={form.full_name} onChange={(e) => setForm(f => ({...f, full_name: e.target.value}))} required /></div>
               <div className="space-y-1.5"><Label className="text-xs">Email *</Label><Input type="email" value={form.email} onChange={(e) => setForm(f => ({...f, email: e.target.value}))} required /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Téléphone *</Label><Input value={form.phone} onChange={(e) => setForm(f => ({...f, phone: e.target.value}))} required /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Telefone *</Label><Input value={form.phone} onChange={(e) => setForm(f => ({...f, phone: e.target.value}))} required /></div>
               <div className="space-y-1.5"><Label className="text-xs">NIF</Label><Input value={form.nif} onChange={(e) => setForm(f => ({...f, nif: e.target.value}))} /></div>
             </div>
-            <div className="space-y-1.5"><Label className="text-xs">Message (optionnel)</Label><Textarea value={form.message} onChange={(e) => setForm(f => ({...f, message: e.target.value}))} rows={3} placeholder="Parlez-nous de votre expérience..." /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Mensagem (opcional)</Label><Textarea value={form.message} onChange={(e) => setForm(f => ({...f, message: e.target.value}))} rows={3} placeholder="Conte-nos sobre a sua experiência..." /></div>
             {referralCode && (
               <div className="bg-indigo-50 p-3 rounded-lg text-sm text-indigo-700">
-                Code de parrainage : <strong>{referralCode}</strong>
+                Código de indicação: <strong>{referralCode}</strong>
               </div>
             )}
             <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700 h-11">
-              {createMutation.isPending ? 'Envoi en cours...' : 'Envoyer ma candidature'}
+              {createMutation.isPending ? 'A enviar...' : 'Enviar candidatura'}
             </Button>
           </form>
         </CardContent>
