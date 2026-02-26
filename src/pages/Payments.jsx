@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import StatCard from '../components/dashboard/StatCard';
 import { CreditCard, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
-import WeeklyPaymentForm from '../components/payments/WeeklyPaymentForm';
+import { startOfWeek, endOfWeek, format, addWeeks } from 'date-fns';
 
 export default function Payments() {
   const [selected, setSelected] = useState(null);
@@ -185,7 +185,7 @@ export default function Payments() {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Novo pagamento semanal</DialogTitle></DialogHeader>
-          <WeeklyPaymentForm drivers={drivers} onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} />
+          <NewPaymentForm drivers={drivers} onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} onCancel={() => setShowForm(false)} />
         </DialogContent>
       </Dialog>
     </div>
@@ -224,6 +224,147 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={onCancel} className="flex-1">Cancelar</Button>
         <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700">Guardar</Button>
+      </div>
+    </form>
+  );
+}
+
+function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
+  const [selectedWeek, setSelectedWeek] = useState(null);
+  const [form, setForm] = useState({
+    driver_id: '',
+    uber_gross: 0,
+    bolt_gross: 0,
+    slot_fee: 0,
+    vehicle_rental: 0,
+    via_verde_amount: 0,
+    myprio_amount: 0,
+    miio_amount: 0,
+    loan_installment: 0,
+    vehicle_purchase_installment: 0,
+    reimbursement_credit: 0,
+    goal_bonus: 0,
+    notes: '',
+  });
+
+  const weeks = Array.from({ length: 8 }, (_, i) => {
+    const date = addWeeks(new Date(), -i);
+    const start = startOfWeek(date, { weekStartsOn: 1 });
+    const end = endOfWeek(date, { weekStartsOn: 1 });
+    return {
+      start: format(start, 'yyyy-MM-dd'),
+      end: format(end, 'yyyy-MM-dd'),
+      label: `Semana ${format(start, 'dd/MM')} - ${format(end, 'dd/MM/yyyy')}`,
+    };
+  });
+
+  const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!selectedWeek || !form.driver_id) return;
+
+    const driver = drivers.find(d => d.id === form.driver_id);
+    const totalGross = (parseFloat(form.uber_gross) || 0) + (parseFloat(form.bolt_gross) || 0);
+    const upiEarned = Math.round(totalGross * 0.04);
+    const ivaAmount = Math.round(totalGross * 0.06);
+
+    const totalDeductions = 
+      (parseFloat(form.slot_fee) || 0) +
+      (parseFloat(form.vehicle_rental) || 0) +
+      (parseFloat(form.via_verde_amount) || 0) +
+      (parseFloat(form.myprio_amount) || 0) +
+      (parseFloat(form.miio_amount) || 0) +
+      (parseFloat(form.loan_installment) || 0) +
+      (parseFloat(form.vehicle_purchase_installment) || 0) +
+      ivaAmount;
+
+    const netAmount = totalGross - totalDeductions + (parseFloat(form.reimbursement_credit) || 0) + (parseFloat(form.goal_bonus) || 0);
+
+    onSubmit({
+      driver_id: form.driver_id,
+      driver_name: driver?.full_name || '',
+      week_start: selectedWeek.start,
+      week_end: selectedWeek.end,
+      period_label: selectedWeek.label,
+      uber_gross: parseFloat(form.uber_gross) || 0,
+      bolt_gross: parseFloat(form.bolt_gross) || 0,
+      total_gross: totalGross,
+      slot_fee: parseFloat(form.slot_fee) || 0,
+      vehicle_rental: parseFloat(form.vehicle_rental) || 0,
+      via_verde_amount: parseFloat(form.via_verde_amount) || 0,
+      myprio_amount: parseFloat(form.myprio_amount) || 0,
+      miio_amount: parseFloat(form.miio_amount) || 0,
+      loan_installment: parseFloat(form.loan_installment) || 0,
+      vehicle_purchase_installment: parseFloat(form.vehicle_purchase_installment) || 0,
+      reimbursement_credit: parseFloat(form.reimbursement_credit) || 0,
+      goal_bonus: parseFloat(form.goal_bonus) || 0,
+      iva_amount: ivaAmount,
+      upi_earned: upiEarned,
+      total_deductions: totalDeductions,
+      net_amount: netAmount,
+      status: 'draft',
+    });
+  };
+
+  const totalGross = (parseFloat(form.uber_gross) || 0) + (parseFloat(form.bolt_gross) || 0);
+  const upiPreview = Math.round(totalGross * 0.04);
+  const ivaPreview = Math.round(totalGross * 0.06);
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label className="text-xs">Motorista *</Label>
+          <Select value={form.driver_id} onValueChange={(v) => handleChange('driver_id', v)}>
+            <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
+            <SelectContent>
+              {drivers.map(d => (
+                <SelectItem key={d.id} value={d.id}>{d.full_name} - {d.email}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label className="text-xs">Semana *</Label>
+          <Select value={selectedWeek?.start} onValueChange={(v) => setSelectedWeek(weeks.find(w => w.start === v))}>
+            <SelectTrigger><SelectValue placeholder="Escolher semana..." /></SelectTrigger>
+            <SelectContent>
+              {weeks.map(w => (
+                <SelectItem key={w.start} value={w.start}>{w.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5"><Label className="text-xs">Uber bruto (€)</Label><Input type="number" step="0.01" value={form.uber_gross} onChange={(e) => handleChange('uber_gross', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Bolt bruto (€)</Label><Input type="number" step="0.01" value={form.bolt_gross} onChange={(e) => handleChange('bolt_gross', e.target.value)} /></div>
+        
+        {totalGross > 0 && (
+          <div className="sm:col-span-2 p-3 bg-indigo-50 rounded-lg space-y-1 text-sm">
+            <p>Total bruto: <strong>€{totalGross.toFixed(2)}</strong></p>
+            <p>UPI ganhos (4%): <strong>{upiPreview} UPI</strong></p>
+            <p>IVA (6%): <strong>€{ivaPreview.toFixed(2)}</strong></p>
+          </div>
+        )}
+
+        <div className="space-y-1.5"><Label className="text-xs">Taxa slot (€)</Label><Input type="number" step="0.01" value={form.slot_fee} onChange={(e) => handleChange('slot_fee', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Aluguer veículo (€)</Label><Input type="number" step="0.01" value={form.vehicle_rental} onChange={(e) => handleChange('vehicle_rental', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Via Verde (€)</Label><Input type="number" step="0.01" value={form.via_verde_amount} onChange={(e) => handleChange('via_verde_amount', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">MyPRIO (€)</Label><Input type="number" step="0.01" value={form.myprio_amount} onChange={(e) => handleChange('myprio_amount', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Miio (€)</Label><Input type="number" step="0.01" value={form.miio_amount} onChange={(e) => handleChange('miio_amount', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Empréstimo (€)</Label><Input type="number" step="0.01" value={form.loan_installment} onChange={(e) => handleChange('loan_installment', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Compra veículo (€)</Label><Input type="number" step="0.01" value={form.vehicle_purchase_installment} onChange={(e) => handleChange('vehicle_purchase_installment', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Reembolsos (€)</Label><Input type="number" step="0.01" value={form.reimbursement_credit} onChange={(e) => handleChange('reimbursement_credit', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Bónus objetivos (€)</Label><Input type="number" step="0.01" value={form.goal_bonus} onChange={(e) => handleChange('goal_bonus', e.target.value)} /></div>
+      </div>
+
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">Cancelar</Button>
+        <Button type="submit" disabled={isLoading || !selectedWeek || !form.driver_id} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
+          {isLoading ? 'A criar...' : 'Criar pagamento'}
+        </Button>
       </div>
     </form>
   );
