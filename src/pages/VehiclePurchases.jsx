@@ -24,6 +24,10 @@ export default function VehiclePurchases() {
     queryKey: ['vehicles'],
     queryFn: () => base44.entities.Vehicle.list(),
   });
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.VehiclePurchase.create(d),
@@ -38,7 +42,7 @@ export default function VehiclePurchases() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); setSelected(null); setEditForm(null); },
   });
 
-  const [form, setForm] = useState({ driver_name: '', vehicle_id: '', duration_months: '' });
+  const [form, setForm] = useState({ driver_id: '', driver_name: '', vehicle_id: '', duration_months: '' });
 
   const selectedVehicle = vehicles.find(v => v.id === form.vehicle_id);
   const basePrice = selectedVehicle?.base_purchase_price || 0;
@@ -48,9 +52,10 @@ export default function VehiclePurchases() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const driver = drivers.find(d => d.id === form.driver_id);
     createMutation.mutate({
-      driver_name: form.driver_name,
-      driver_id: form.driver_name,
+      driver_name: driver?.full_name || form.driver_name,
+      driver_id: form.driver_id,
       vehicle_id: form.vehicle_id,
       vehicle_info: selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model} - ${selectedVehicle.license_plate}` : '',
       base_price: basePrice,
@@ -110,7 +115,12 @@ export default function VehiclePurchases() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Novo pedido de compra</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5"><Label className="text-xs">Motorista</Label><Input value={form.driver_name} onChange={(e) => setForm(f => ({...f, driver_name: e.target.value}))} required /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Motorista</Label>
+              <Select value={form.driver_id} onValueChange={(v) => { const d = drivers.find(dr => dr.id === v); setForm(f => ({...f, driver_id: v, driver_name: d?.full_name || ''})); }} required>
+                <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
+                <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1.5"><Label className="text-xs">Veículo</Label>
               <Select value={form.vehicle_id} onValueChange={(v) => setForm(f => ({...f, vehicle_id: v}))}>
                 <SelectTrigger><SelectValue placeholder="Escolher veículo..." /></SelectTrigger>

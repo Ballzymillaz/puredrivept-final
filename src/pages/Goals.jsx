@@ -28,6 +28,10 @@ export default function Goals() {
     queryKey: ['goals'],
     queryFn: () => base44.entities.Goal.list('-created_date'),
   });
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.Goal.create(d),
@@ -43,11 +47,11 @@ export default function Goals() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['goals'] }); setShowForm(false); setEditing(null); },
   });
 
-  const [form, setForm] = useState(editing || { title: '', type: 'weekly_revenue', target_value: '', bonus_amount: '', driver_name: '', is_global: false });
+  const [form, setForm] = useState(editing || { title: '', type: 'weekly_revenue', target_value: '', bonus_amount: '', driver_id: '', driver_name: '', is_global: false });
 
   React.useEffect(() => {
     if (editing) setForm(editing);
-    else setForm({ title: '', type: 'weekly_revenue', target_value: '', bonus_amount: '', driver_name: '', is_global: false });
+    else setForm({ title: '', type: 'weekly_revenue', target_value: '', bonus_amount: '', driver_id: '', driver_name: '', is_global: false });
   }, [editing]);
 
   const handleSubmit = (e) => {
@@ -120,7 +124,22 @@ export default function Goals() {
               </div>
               <div className="space-y-1.5"><Label className="text-xs">Objetivo</Label><Input type="number" step="0.01" value={form.target_value} onChange={(e) => setForm(f => ({...f, target_value: e.target.value}))} required /></div>
               <div className="space-y-1.5"><Label className="text-xs">Bónus (€)</Label><Input type="number" step="0.01" value={form.bonus_amount} onChange={(e) => setForm(f => ({...f, bonus_amount: e.target.value}))} required /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Motorista (vazio = global)</Label><Input value={form.driver_name} onChange={(e) => setForm(f => ({...f, driver_name: e.target.value, is_global: !e.target.value}))} /></div>
+              <div className="space-y-1.5 col-span-2"><Label className="text-xs">Motorista</Label>
+                <Select value={form.driver_id || 'all'} onValueChange={(v) => { 
+                  if (v === 'all') {
+                    setForm(f => ({...f, driver_id: '', driver_name: '', is_global: true}));
+                  } else {
+                    const d = drivers.find(dr => dr.id === v);
+                    setForm(f => ({...f, driver_id: v, driver_name: d?.full_name || '', is_global: false}));
+                  }
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Escolher..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os motoristas</SelectItem>
+                    {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
               {editing && (
                 <div className="space-y-1.5 col-span-2"><Label className="text-xs">Estado</Label>
                   <Select value={form.status} onValueChange={(v) => setForm(f => ({...f, status: v}))}>

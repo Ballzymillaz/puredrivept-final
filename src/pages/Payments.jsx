@@ -200,7 +200,7 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
     const totalGross = (form.uber_gross || 0) + (form.bolt_gross || 0) + (form.other_platform_gross || 0);
     const totalDeductions = (form.commission_amount || 0) + (form.slot_fee || 0) + (form.vehicle_rental || 0) + (form.via_verde_amount || 0) + (form.myprio_amount || 0) + (form.miio_amount || 0) + (form.loan_installment || 0) + (form.vehicle_purchase_installment || 0) + (form.iva_amount || 0) + (form.irs_retention || 0);
     const netAmount = totalGross - totalDeductions + (form.reimbursement_credit || 0) + (form.goal_bonus || 0);
-    const upiEarned = Math.round((form.uber_gross + form.bolt_gross) * 0.04);
+    const upiEarned = Math.round((form.uber_gross + form.bolt_gross) * 0.04 * 100) / 100;
     onSave({ ...form, total_gross: totalGross, total_deductions: totalDeductions, net_amount: netAmount, upi_earned: upiEarned });
   };
 
@@ -266,8 +266,8 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
 
     const driver = drivers.find(d => d.id === form.driver_id);
     const totalGross = (parseFloat(form.uber_gross) || 0) + (parseFloat(form.bolt_gross) || 0);
-    const upiEarned = Math.round(totalGross * 0.04);
-    const ivaAmount = Math.round(totalGross * 0.06);
+    const upiEarned = Math.round(totalGross * 0.04 * 100) / 100;
+    const ivaAmount = Math.round(totalGross * 0.06 * 100) / 100;
 
     const totalDeductions = 
       (parseFloat(form.slot_fee) || 0) +
@@ -308,8 +308,8 @@ function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
   };
 
   const totalGross = (parseFloat(form.uber_gross) || 0) + (parseFloat(form.bolt_gross) || 0);
-  const upiPreview = Math.round(totalGross * 0.04);
-  const ivaPreview = Math.round(totalGross * 0.06);
+  const upiPreview = Math.round(totalGross * 0.04 * 100) / 100;
+  const ivaPreview = Math.round(totalGross * 0.06 * 100) / 100;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
