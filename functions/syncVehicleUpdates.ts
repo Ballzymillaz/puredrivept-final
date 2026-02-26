@@ -1,0 +1,36 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const { event, data } = await req.json();
+
+    if (!data || !event.entity_id) {
+      return Response.json({ error: 'Invalid payload' }, { status: 400 });
+    }
+
+    const vehicleId = event.entity_id;
+    const vehicle = data;
+    const vehicleInfo = `${vehicle.brand} ${vehicle.model} - ${vehicle.license_plate}`;
+
+    // Update contracts
+    const contracts = await base44.asServiceRole.entities.Contract.filter({ vehicle_id: vehicleId });
+    for (const contract of contracts) {
+      await base44.asServiceRole.entities.Contract.update(contract.id, {
+        vehicle_info: vehicleInfo
+      });
+    }
+
+    // Update driver assignment
+    if (vehicle.assigned_driver_id) {
+      await base44.asServiceRole.entities.Driver.update(vehicle.assigned_driver_id, {
+        assigned_vehicle_id: vehicleId,
+        assigned_vehicle_plate: vehicle.license_plate
+      });
+    }
+
+    return Response.json({ success: true });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});

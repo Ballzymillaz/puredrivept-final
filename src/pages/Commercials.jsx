@@ -10,15 +10,27 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function Commercials() {
+export default function Commercials({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const qc = useQueryClient();
+  const isLoading = false;
 
   const { data: commercials = [], isLoading } = useQuery({
     queryKey: ['commercials'],
     queryFn: () => base44.entities.Commercial.list('-created_date'),
   });
+
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
+
+  // Calculate total_drivers for each commercial based on actual driver data
+  const commercialsWithStats = commercials.map(c => ({
+    ...c,
+    total_drivers: drivers.filter(d => d.commercial_id === c.id).length
+  }));
   const { data: managers = [] } = useQuery({
     queryKey: ['fleet-managers'],
     queryFn: () => base44.entities.FleetManager.list(),
@@ -26,11 +38,20 @@ export default function Commercials() {
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.Commercial.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['commercials'] }); setShowForm(false); },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ['commercials'] }); 
+      qc.invalidateQueries({ queryKey: ['drivers'] });
+      setShowForm(false); 
+    },
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Commercial.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['commercials'] }); setShowForm(false); setEditing(null); },
+    onSuccess: () => { 
+      qc.invalidateQueries({ queryKey: ['commercials'] }); 
+      qc.invalidateQueries({ queryKey: ['drivers'] });
+      setShowForm(false); 
+      setEditing(null); 
+    },
   });
 
   const [form, setForm] = useState({});
@@ -53,47 +74,47 @@ export default function Commercials() {
   };
 
   const columns = [
-    { header: 'Commercial', render: (r) => (<div><p className="font-medium text-sm">{r.full_name}</p><p className="text-xs text-gray-500">{r.email}</p></div>) },
-    { header: 'Gestionnaire', render: (r) => <span className="text-sm">{r.fleet_manager_name || '—'}</span> },
-    { header: 'Code', render: (r) => <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{r.referral_code || '—'}</span> },
-    { header: 'Chauffeurs', render: (r) => r.total_drivers || 0 },
-    { header: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
+    { header: 'Comercial', render: (r) => (<div><p className="font-medium text-sm">{r.full_name}</p><p className="text-xs text-gray-500">{r.email}</p></div>) },
+    { header: 'Gestor', render: (r) => <span className="text-sm">{r.fleet_manager_name || '—'}</span> },
+    { header: 'Código', render: (r) => <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{r.referral_code || '—'}</span> },
+    { header: 'Motoristas', render: (r) => r.total_drivers || 0 },
+    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Commerciaux" subtitle={`${commercials.length} commerciaux`} actionLabel="Ajouter" onAction={() => openForm(null)} />
-      <DataTable columns={columns} data={commercials} isLoading={isLoading} onRowClick={openForm} />
+      <PageHeader title="Comerciais" subtitle={`${commercials.length} comerciais`} actionLabel="Adicionar" onAction={() => openForm(null)} />
+      <DataTable columns={columns} data={commercialsWithStats} isLoading={isLoading} onRowClick={openForm} />
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editing ? 'Modifier' : 'Nouveau commercial'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo'} comercial</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label className="text-xs">Nom complet *</Label><Input value={form.full_name} onChange={(e) => setForm(f => ({...f, full_name: e.target.value}))} required /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Nome completo *</Label><Input value={form.full_name} onChange={(e) => setForm(f => ({...f, full_name: e.target.value}))} required /></div>
               <div className="space-y-1.5"><Label className="text-xs">Email *</Label><Input type="email" value={form.email} onChange={(e) => setForm(f => ({...f, email: e.target.value}))} required /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Téléphone *</Label><Input value={form.phone} onChange={(e) => setForm(f => ({...f, phone: e.target.value}))} required /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Gestionnaire</Label>
+              <div className="space-y-1.5"><Label className="text-xs">Telefone *</Label><Input value={form.phone} onChange={(e) => setForm(f => ({...f, phone: e.target.value}))} required /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Gestor</Label>
                 <Select value={form.fleet_manager_id} onValueChange={(v) => {
                   const mgr = managers.find(m => m.id === v);
                   setForm(f => ({...f, fleet_manager_id: v, fleet_manager_name: mgr?.full_name || ''}));
                 }}>
-                  <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Escolher..." /></SelectTrigger>
                   <SelectContent>{managers.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5"><Label className="text-xs">IBAN</Label><Input value={form.iban} onChange={(e) => setForm(f => ({...f, iban: e.target.value}))} /></div>
-              <div className="space-y-1.5"><Label className="text-xs">Statut</Label>
+              <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
                 <Select value={form.status} onValueChange={(v) => setForm(f => ({...f, status: v}))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">En attente</SelectItem>
-                    <SelectItem value="active">Actif</SelectItem>
-                    <SelectItem value="inactive">Inactif</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="inactive">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="flex justify-end"><Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700">{editing ? 'Modifier' : 'Créer'}</Button></div>
+            <div className="flex justify-end"><Button type="submit" disabled={isLoading} className="bg-indigo-600 hover:bg-indigo-700">{editing ? 'Atualizar' : 'Criar'}</Button></div>
           </form>
         </DialogContent>
       </Dialog>

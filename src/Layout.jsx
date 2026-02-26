@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
 import { base44 } from '@/api/base44Client';
+import { createPageUrl } from '@/utils';
 
 const PAGE_TITLES = {
   Dashboard: 'Tableau de bord',
@@ -37,6 +38,13 @@ export default function Layout({ children, currentPageName }) {
         setLoading(false);
         return;
       }
+      
+      // Redirect root to PublicSite
+      if (window.location.pathname === '/') {
+        window.location.href = createPageUrl('PublicSite');
+        return;
+      }
+
       const isAuth = await base44.auth.isAuthenticated();
       if (!isAuth) {
         base44.auth.redirectToLogin();

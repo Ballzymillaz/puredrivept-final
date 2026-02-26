@@ -51,6 +51,7 @@ import Applications from './pages/Applications';
 import Apply from './pages/Apply';
 import CashFlow from './pages/CashFlow';
 import Commercials from './pages/Commercials';
+import Contracts from './pages/Contracts';
 import Dashboard from './pages/Dashboard';
 import Documents from './pages/Documents';
 import Drivers from './pages/Drivers';
@@ -65,7 +66,6 @@ import Reimbursements from './pages/Reimbursements';
 import UPI from './pages/UPI';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import Contracts from './pages/Contracts';
 import __Layout from './Layout.jsx';
 
 
@@ -74,6 +74,7 @@ export const PAGES = {
     "Apply": Apply,
     "CashFlow": CashFlow,
     "Commercials": Commercials,
+    "Contracts": Contracts,
     "Dashboard": Dashboard,
     "Documents": Documents,
     "Drivers": Drivers,
@@ -88,7 +89,6 @@ export const PAGES = {
     "UPI": UPI,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "Contracts": Contracts,
 }
 
 export const pagesConfig = {

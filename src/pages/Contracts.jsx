@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search } from 'lucide-react';
+import { Search, FileText, Upload, Download, Trash2 } from 'lucide-react';
 
 export default function Contracts() {
   const [showForm, setShowForm] = useState(false);
@@ -67,6 +67,15 @@ export default function Contracts() {
     location: 'Aluguer',
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Contract.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['contracts'] });
+      setEditing(null);
+      setShowForm(false);
+    },
+  });
+
   const columns = [
     {
       header: 'Motorista',
@@ -88,6 +97,14 @@ export default function Contracts() {
     {
       header: 'Data início',
       render: (r) => <span className="text-sm">{r.start_date ? new Date(r.start_date).toLocaleDateString('pt-PT') : '—'}</span>,
+    },
+    {
+      header: 'Documento',
+      render: (r) => r.contract_file_url ? (
+        <a href={r.contract_file_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-700">
+          <FileText className="w-4 h-4" />
+        </a>
+      ) : <span className="text-gray-400 text-xs">—</span>,
     },
     {
       header: 'Estado',
@@ -128,7 +145,10 @@ export default function Contracts() {
             drivers={drivers}
             vehicles={vehicles}
             onSubmit={handleSubmit}
-            isLoading={createMutation.isPending || updateMutation.isPending}
+            onDelete={editing ? () => {
+              if (confirm('Eliminar este contrato?')) deleteMutation.mutate(editing.id);
+            } : null}
+            isLoading={createMutation.isPending || updateMutation.isPending || deleteMutation.isPending}
           />
         </DialogContent>
       </Dialog>
@@ -136,7 +156,7 @@ export default function Contracts() {
   );
 }
 
-function ContractForm({ contract, drivers, vehicles, onSubmit, isLoading }) {
+function ContractForm({ contract, drivers, vehicles, onSubmit, onDelete, isLoading }) {
   const [form, setForm] = useState({
     driver_id: contract?.driver_id || '',
     vehicle_id: contract?.vehicle_id || '',
@@ -144,8 +164,10 @@ function ContractForm({ contract, drivers, vehicles, onSubmit, isLoading }) {
     start_date: contract?.start_date || '',
     end_date: contract?.end_date || '',
     status: contract?.status || 'active',
+    contract_file_url: contract?.contract_file_url || '',
     notes: contract?.notes || '',
   });
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const CONTRACT_CONFIG = {
     slot_standard: { slot_fee: 35 },
@@ -157,6 +179,19 @@ function ContractForm({ contract, drivers, vehicles, onSubmit, isLoading }) {
   const availableVehicles = vehicles.filter(v => v.status === 'available' || v.id === form.vehicle_id);
 
   const handleChange = (field, value) => setForm(f => ({ ...f, [field]: value }));
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingFile(true);
+    try {
+      const result = await base44.integrations.Core.UploadFile({ file });
+      setForm(f => ({ ...f, contract_file_url: result.file_url }));
+    } catch (error) {
+      alert('Erro ao enviar ficheiro');
+    }
+    setUploadingFile(false);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -246,13 +281,39 @@ function ContractForm({ contract, drivers, vehicles, onSubmit, isLoading }) {
       </div>
 
       <div className="space-y-1.5">
+        <Label className="text-xs">Documento do contrato (PDF)</Label>
+        {form.contract_file_url ? (
+          <div className="flex items-center gap-2">
+            <a href={form.contract_file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:underline flex items-center gap-1">
+              <Download className="w-4 h-4" /> Ver documento
+            </a>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setForm(f => ({ ...f, contract_file_url: '' }))} className="text-red-600">
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploadingFile} />
+            {uploadingFile && <span className="text-xs text-gray-500">A enviar...</span>}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
         <Label className="text-xs">Observações</Label>
         <Textarea value={form.notes} onChange={(e) => handleChange('notes', e.target.value)} rows={3} />
       </div>
 
-      <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? 'A guardar...' : contract ? 'Atualizar' : 'Criar contrato'}
-      </Button>
+      <div className="flex gap-2">
+        {onDelete && (
+          <Button type="button" variant="outline" onClick={onDelete} disabled={isLoading} className="text-red-600 border-red-200">
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        )}
+        <Button type="submit" disabled={isLoading} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
+          {isLoading ? 'A guardar...' : contract ? 'Atualizar' : 'Criar contrato'}
+        </Button>
+      </div>
     </form>
   );
 }
