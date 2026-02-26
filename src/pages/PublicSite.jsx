@@ -39,6 +39,7 @@ export default function PublicSite() {
       { plan: 'Slot Premium', weekly: '5€/semana', description: 'Por cada motorista ativo' },
       { plan: 'Slot Black', weekly: '10€/semana', description: 'Por cada motorista ativo' },
       { plan: 'Aluguer', weekly: '15€/semana', description: 'Por motorista + 60€ bónus após 30 dias' },
+      { plan: 'Venda Veículo', weekly: '250€', description: 'Bónus por venda em auto-financiamento', isBonus: true },
     ],
     extraBenefits: ['Sem limite de indicações', 'Pagamentos semanais', 'Rastreamento em tempo real', 'Suporte dedicado', 'Rendimento ilimitado']
   };
@@ -49,7 +50,17 @@ export default function PublicSite() {
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Car className="w-8 h-8 text-indigo-600" />
+            <img 
+              src="/uploads/Logo%20PureDrive.png" 
+              alt="PureDrive" 
+              className="h-10 object-contain"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                const fallback = e.target.parentElement.querySelector('.fallback-logo');
+                if (fallback) fallback.style.display = 'block';
+              }}
+            />
+            <Car className="w-8 h-8 text-indigo-600 fallback-logo hidden" />
             <h1 className="text-2xl font-bold text-gray-900">PureDrive<sup className="text-xs">PT</sup></h1>
           </div>
           <div className="flex gap-4">
@@ -156,7 +167,7 @@ export default function PublicSite() {
 
           <div className="space-y-4 mb-12">
             {commercialOffer.benefits.map((b, i) => (
-              <Card key={i} className="border-2 border-emerald-200"><CardContent className="p-6 flex items-center justify-between"><div><p className="font-bold text-lg text-gray-900">{b.plan}</p><p className="text-sm text-gray-600">{b.description}</p></div><div className="text-right"><p className="text-2xl font-bold text-emerald-600">{b.weekly}</p><p className="text-xs text-gray-500">por motorista</p></div></CardContent></Card>
+              <Card key={i} className={`border-2 ${b.isBonus ? 'border-amber-200 bg-amber-50' : 'border-emerald-200'}`}><CardContent className="p-6 flex items-center justify-between"><div><p className="font-bold text-lg text-gray-900">{b.plan}</p><p className="text-sm text-gray-600">{b.description}</p></div><div className="text-right"><p className={`text-2xl font-bold ${b.isBonus ? 'text-amber-600' : 'text-emerald-600'}`}>{b.weekly}</p><p className="text-xs text-gray-500">{b.isBonus ? 'por venda' : 'por motorista'}</p></div></CardContent></Card>
             ))}
           </div>
 
