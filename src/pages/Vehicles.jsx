@@ -18,6 +18,7 @@ export default function Vehicles({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState('');
+  const [showAutoAssign, setShowAutoAssign] = useState(false);
   const qc = useQueryClient();
 
   const { data: vehicles = [], isLoading } = useQuery({
@@ -120,12 +121,23 @@ export default function Vehicles({ currentUser }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Veículos" subtitle={`${vehicles.length} veículos`} actionLabel="Adicionar" onAction={() => { setEditing(null); setShowForm(true); }} />
+      <PageHeader title="Veículos" subtitle={`${vehicles.length} veículos`} actionLabel="Adicionar" onAction={() => { setEditing(null); setShowForm(true); }}>
+        <Button variant="outline" className="gap-1.5" onClick={() => setShowAutoAssign(true)}>
+          <Zap className="w-4 h-4 text-yellow-500" /> Atribuição automática
+        </Button>
+      </PageHeader>
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <Input placeholder="Pesquisar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
       <DataTable columns={columns} data={filtered} isLoading={isLoading} onRowClick={(r) => { setEditing(r); setShowForm(true); }} />
+      <AutoAssignDialog
+        open={showAutoAssign}
+        onClose={() => setShowAutoAssign(false)}
+        drivers={drivers}
+        vehicles={vehicles}
+        onSuccess={() => { qc.invalidateQueries({ queryKey: ['vehicles'] }); qc.invalidateQueries({ queryKey: ['drivers'] }); setShowAutoAssign(false); }}
+      />
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Editar veículo' : 'Novo veículo'}</DialogTitle></DialogHeader>
