@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { section: 'Gestão', items: [
     { name: 'Motoristas', icon: Users, page: 'Drivers' },
     { name: 'Veículos', icon: Car, page: 'Vehicles' },
-    { name: 'Contratos', icon: FileText, page: 'Contracts' },
+    { name: 'Frotas', icon: Building2, page: 'Fleets' },
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
     { name: 'Comerciais', icon: HandCoins, page: 'Commercials' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
@@ -38,6 +38,7 @@ const NAV_ITEMS = [
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
+    { name: 'Relatório Frotas', icon: PieChart, page: 'RelatorioFrotas' },
     { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
     { name: 'Relatório Veículos', icon: Car, page: 'RelatorioVeiculos' },
     { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
