@@ -84,6 +84,7 @@ import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
 import FleetVehicles from './pages/FleetVehicles';
 import FleetDrivers from './pages/FleetDrivers';
+import FleetContracts from './pages/FleetContracts';
 import __Layout from './Layout.jsx';
 
 
@@ -125,6 +126,7 @@ export const PAGES = {
     "Vehicles": Vehicles,
     "FleetVehicles": FleetVehicles,
     "FleetDrivers": FleetDrivers,
+    "FleetContracts": FleetContracts,
 }
 
 export const pagesConfig = {
