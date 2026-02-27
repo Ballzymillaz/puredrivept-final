@@ -3,12 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import PageHeader from '../components/shared/PageHeader';
 import DataTable from '../components/shared/DataTable';
+import UserRowEditor from '../components/users/UserRowEditor';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Shield, Users } from 'lucide-react';
+import { Shield, Users, Search } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ALL_ROLES = [
@@ -57,16 +58,6 @@ export default function UserManagement({ currentUser }) {
     setInviteRoles([]);
   };
 
-  const getRoleBadges = (roleStr) => {
-    if (!roleStr) return null;
-    const roles = roleStr.split(',').map(r => r.trim()).filter(r => r && !EXCLUDED_ROLES.includes(r));
-    if (roles.length === 0) return <Badge className="text-xs bg-gray-100 text-gray-500 border-0">Sem role</Badge>;
-    return roles.map(r => {
-      const cfg = ALL_ROLES.find(ar => ar.value === r);
-      return <Badge key={r} className={`text-xs border-0 mr-1 ${cfg?.color || 'bg-gray-100 text-gray-500'}`}>{cfg?.label || r}</Badge>;
-    });
-  };
-
   const columns = [
     {
       header: 'Utilizador',
@@ -82,7 +73,7 @@ export default function UserManagement({ currentUser }) {
         </div>
       )
     },
-    { header: 'Roles', render: (r) => <div className="flex flex-wrap gap-1">{getRoleBadges(r.role)}</div> },
+    { header: 'Roles', render: (r) => <UserRowEditor user={r} /> },
     { header: 'Membro desde', render: (r) => <span className="text-xs text-gray-500">{r.created_date ? format(new Date(r.created_date), 'dd/MM/yyyy') : '—'}</span> },
   ];
 
