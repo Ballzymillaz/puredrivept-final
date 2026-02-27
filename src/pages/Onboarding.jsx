@@ -163,11 +163,11 @@ export default function Onboarding({ currentUser }) {
         )}
       </PageHeader>
 
-      {isAdmin && (
+      {(isAdmin || isFleetManager) && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
-            placeholder="Pesquisar motorista..."
+            placeholder="Pesquisar..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-9"
@@ -184,7 +184,7 @@ export default function Onboarding({ currentUser }) {
         </div>
       ) : (
         <div className="space-y-6">
-          {isAdmin && users.length > 0 && (
+          {(isAdmin || isFleetManager) && users.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="text-sm font-semibold text-blue-900 mb-3">Utilizadores convidados (sem onboarding)</h3>
               <div className="space-y-2">
@@ -202,7 +202,7 @@ export default function Onboarding({ currentUser }) {
                     <Button 
                       size="sm" 
                       onClick={() => {
-                        setNewForm({ driver_name: user.full_name, driver_email: user.email, driver_id: '' });
+                        setNewForm({ name: user.full_name, email: user.email, applicant_type: 'driver' });
                         setShowNew(true);
                       }}
                       className="bg-indigo-600 hover:bg-indigo-700"
@@ -293,45 +293,39 @@ export default function Onboarding({ currentUser }) {
       </Dialog>
 
       {/* New Onboarding Dialog */}
-      {isAdmin && (
+      {(isAdmin || isFleetManager) && (
         <Dialog open={showNew} onOpenChange={setShowNew}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Iniciar novo onboarding</DialogTitle>
+              <DialogTitle>Novo Onboarding</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label className="text-xs text-gray-500">Selecionar motorista existente</Label>
-                <Select onValueChange={handleDriverSelect}>
+                <Label className="text-xs text-gray-500">Tipo *</Label>
+                <Select value={newForm.applicant_type} onValueChange={v => setNewForm(p => ({ ...p, applicant_type: v }))}>
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Selecionar..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {drivers.map(d => (
-                      <SelectItem key={d.id} value={d.id}>{d.full_name} — {d.email}</SelectItem>
-                    ))}
+                    <SelectItem value="driver">Motorista</SelectItem>
+                    <SelectItem value="fleet_manager">Gestor de Frota</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="relative flex items-center gap-2">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs text-gray-400">ou inserir manualmente</span>
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
               <div>
                 <Label className="text-xs text-gray-500">Nome *</Label>
-                <Input className="mt-1" value={newForm.driver_name} onChange={e => setNewForm(p => ({ ...p, driver_name: e.target.value }))} placeholder="Nome completo" />
+                <Input className="mt-1" value={newForm.name} onChange={e => setNewForm(p => ({ ...p, name: e.target.value }))} placeholder="Nome completo" />
               </div>
               <div>
                 <Label className="text-xs text-gray-500">Email *</Label>
-                <Input className="mt-1" type="email" value={newForm.driver_email} onChange={e => setNewForm(p => ({ ...p, driver_email: e.target.value }))} placeholder="email@exemplo.com" />
+                <Input className="mt-1" type="email" value={newForm.email} onChange={e => setNewForm(p => ({ ...p, email: e.target.value }))} placeholder="email@exemplo.com" />
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setShowNew(false)}>Cancelar</Button>
                 <Button
                   className="bg-indigo-600 hover:bg-indigo-700"
                   onClick={handleCreate}
-                  disabled={creating || !newForm.driver_name || !newForm.driver_email}
+                  disabled={creating || !newForm.name || !newForm.email}
                 >
                   {creating ? 'A criar...' : 'Iniciar onboarding'}
                 </Button>
