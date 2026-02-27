@@ -55,18 +55,21 @@ export default function Layout({ children, currentPageName }) {
         return;
       }
       const me = await base44.auth.me();
-      setUser(me);
+      // Support multi-roles: roles can be comma-separated or a single string
+      const userRoles = me?.role ? me.role.split(',').map(r => r.trim()) : [];
+      const hasRole = (r) => userRoles.includes(r);
+      setUser({ ...me, roles: userRoles, hasRole });
       setLoading(false);
 
-      // Redirect drivers to their own dashboard if they land on non-driver pages
+      // Redirect pure drivers (no admin/fleet role) to their allowed pages
       const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'];
-      if (me?.role === 'driver' && !DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
+      if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager') && !DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('DriverDashboard');
         return;
       }
-      // Redirect fleet_manager away from admin-only pages
-      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging'];
-      if (me?.role === 'fleet_manager' && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
+      // Redirect pure fleet_manager away from admin-only pages
+      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging', 'FleetManagers'];
+      if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('RelatoriosFrota');
         return;
       }
