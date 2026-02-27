@@ -42,6 +42,7 @@ const PAGE_TITLES = {
   DocumentManagement: 'Gestão de Documentos',
   DriverAssignmentHistory: 'Histórico de Motoristas',
   VehicleAssignmentHistory: 'Histórico de Veículos',
+  DriverVehicleStatus: 'Meu Veículo',
 };
 
 // Public pages that don't need auth or sidebar

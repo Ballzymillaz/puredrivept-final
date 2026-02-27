@@ -19,6 +19,9 @@ const NAV_ITEMS = [
     { name: 'Histórico de Motoristas', icon: Users, page: 'DriverAssignmentHistory' },
     { name: 'Histórico de Veículos', icon: Car, page: 'VehicleAssignmentHistory' },
   ]},
+  { section: 'Meu Veículo', items: [
+    { name: 'Meu Veículo', icon: Car, page: 'DriverVehicleStatus' },
+  ]},
   { section: 'Gestão', items: [
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
     { name: 'Documentos', icon: FileText, page: 'DocumentsHub' },
@@ -83,7 +86,7 @@ export default function Sidebar({ currentPage, userRole }) {
       }
 
       if (hasRole('driver')) {
-        return ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'PaymentHistory', 'AdvanceRequest', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications', 'FleetCommunications'].includes(item.page);
+        return ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'PaymentHistory', 'AdvanceRequest', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications', 'FleetCommunications', 'DriverVehicleStatus'].includes(item.page);
       }
       // No valid role: no access
       return false;
