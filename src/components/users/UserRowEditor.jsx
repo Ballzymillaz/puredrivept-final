@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Check, X, Edit2 } from 'lucide-react';
 
 const ALL_ROLES = [
-  { value: 'new', label: 'Novo', color: 'bg-gray-100 text-gray-700' },
   { value: 'admin', label: 'Admin', color: 'bg-red-100 text-red-700' },
   { value: 'fleet_manager', label: 'Gestor frota', color: 'bg-blue-100 text-blue-700' },
   { value: 'commercial', label: 'Comercial', color: 'bg-green-100 text-green-700' },
