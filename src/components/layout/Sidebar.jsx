@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Car, FileText, CreditCard, TrendingUp,
   Target, Wallet, ShoppingCart, UserPlus, Coins, Receipt,
   ChevronLeft, ChevronRight, Settings, LogOut, Menu, X,
-  Building2, HandCoins, FileBarChart
+  Building2, HandCoins, FileBarChart, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
