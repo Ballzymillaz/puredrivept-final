@@ -11,13 +11,9 @@ import {
 import { Button } from '@/components/ui/button';
 
 const NAV_ITEMS = [
-  { section: 'Principal', items: [
-    { name: 'Painel', icon: LayoutDashboard, page: 'Dashboard' },
-  ]},
   { section: 'Gestão de Frotas', items: [
     { name: 'Veículos', icon: Car, page: 'FleetVehicles' },
     { name: 'Motoristas', icon: Users, page: 'FleetDrivers' },
-    { name: 'Contratos', icon: FileText, page: 'FleetContracts' },
     { name: 'Frotas', icon: Building2, page: 'Fleets' },
   ]},
   { section: 'Gestão', items: [
@@ -44,15 +40,14 @@ const NAV_ITEMS = [
     { name: 'UPI', icon: Coins, page: 'UPI' },
   ]},
   { section: 'Relatórios', items: [
-    { name: 'Veículos', icon: Car, page: 'ReportVehiclePerformance' },
-    { name: 'Motoristas', icon: Users, page: 'ReportDriverUtilization' },
-    { name: 'Contratos', icon: FileText, page: 'ReportContractStatus' },
-    { name: 'Geral', icon: FileBarChart, page: 'Relatorios' },
-    { name: 'Frota Avançado', icon: PieChart, page: 'RelatorioFrotas' },
-    { name: 'Frota Customizável', icon: PieChart, page: 'RelatoriosFrotas' },
-    { name: 'Análise Veículos', icon: Car, page: 'RelatorioVeiculos' },
-    { name: 'Avançados', icon: FileBarChart, page: 'AdvancedReports' },
-    { name: 'Construtor', icon: FileBarChart, page: 'ReportBuilder' },
+   { name: 'Veículos', icon: Car, page: 'ReportVehiclePerformance' },
+   { name: 'Motoristas', icon: Users, page: 'ReportDriverUtilization' },
+   { name: 'Geral', icon: FileBarChart, page: 'Relatorios' },
+   { name: 'Frota Avançado', icon: PieChart, page: 'RelatorioFrotas' },
+   { name: 'Frota Customizável', icon: PieChart, page: 'RelatoriosFrotas' },
+   { name: 'Análise Veículos', icon: Car, page: 'RelatorioVeiculos' },
+   { name: 'Avançados', icon: FileBarChart, page: 'AdvancedReports' },
+   { name: 'Construtor', icon: FileBarChart, page: 'ReportBuilder' },
   ]},
   { section: 'Automação', items: [
     { name: 'Agendamento de Relatórios', icon: FileBarChart, page: 'ReportScheduler' },
@@ -81,7 +76,7 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'FleetContracts', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'ReportContractStatus', 'DashboardModular', 'DriverPerformance', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'DashboardModular', 'DriverPerformance', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('driver')) {
