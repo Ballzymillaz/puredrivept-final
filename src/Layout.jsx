@@ -46,6 +46,7 @@ const PAGE_TITLES = {
   ReportVehiclePerformance: 'Desempenho de Veículos',
   ReportDriverUtilization: 'Utilização de Motoristas',
   ReportContractStatus: 'Situação de Contratos',
+  ReportScheduler: 'Agendamento de Relatórios',
   DashboardModular: 'Dashboard Modular',
   AdvancedReports: 'Relatórios Avançados',
 };
