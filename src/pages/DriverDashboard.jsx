@@ -9,28 +9,30 @@ import StatusBadge from '../components/shared/StatusBadge';
 
 const fmt = (v) => `€${(v || 0).toFixed(2)}`;
 
-export default function DriverDashboard() {
-  const [user, setUser] = useState(null);
+const DOC_TYPE_LABELS = {
+  driving_license: 'Carta de condução',
+  tvde_certificate: 'Certificado TVDE',
+  id_card: 'Cartão de cidadão',
+  iban_proof: 'Comprovativo IBAN',
+  insurance: 'Seguro',
+  periodic_inspection: 'Inspeção periódica',
+  vehicle_booklet: 'Livro do veículo',
+};
+
+export default function DriverDashboard({ currentUser }) {
   const [driver, setDriver] = useState(null);
+  const [loadingDriver, setLoadingDriver] = useState(true);
 
+  // Find driver by email from currentUser prop (passed by Layout)
   useEffect(() => {
-    base44.auth.me().then(u => {
-      setUser(u);
-    });
-  }, []);
-
-  const { data: drivers = [] } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list(),
-    enabled: !!user,
-  });
-
-  useEffect(() => {
-    if (user && drivers.length > 0) {
-      const found = drivers.find(d => d.email === user.email);
-      setDriver(found || null);
-    }
-  }, [user, drivers]);
+    if (!currentUser?.email) return;
+    base44.entities.Driver.filter({ email: currentUser.email }, '-created_date', 1)
+      .then(results => {
+        setDriver(results?.[0] || null);
+        setLoadingDriver(false);
+      })
+      .catch(() => setLoadingDriver(false));
+  }, [currentUser?.email]);
 
   const { data: payments = [] } = useQuery({
     queryKey: ['my-payments', driver?.id],
@@ -56,20 +58,25 @@ export default function DriverDashboard() {
     return days <= 30;
   });
 
-  const DOC_TYPE_LABELS = {
-    driving_license: 'Carta de condução',
-    tvde_certificate: 'Certificado TVDE',
-    id_card: 'Cartão de cidadão',
-    iban_proof: 'Comprovativo IBAN',
-    insurance: 'Seguro',
-    periodic_inspection: 'Inspeção periódica',
-    vehicle_booklet: 'Livro do veículo',
-  };
+  if (loadingDriver) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-indigo-600 animate-pulse" />
+          <p className="text-gray-400 text-sm">A carregar dados...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!driver) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-400">A carregar dados...</p>
+        <div className="text-center space-y-2">
+          <AlertCircle className="w-10 h-10 text-orange-400 mx-auto" />
+          <p className="text-gray-600 font-medium">Perfil de motorista não encontrado</p>
+          <p className="text-gray-400 text-sm">O seu email ({currentUser?.email}) não está associado a nenhum motorista.</p>
+        </div>
       </div>
     );
   }

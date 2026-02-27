@@ -22,6 +22,8 @@ const PAGE_TITLES = {
   Goals: 'Objetivos',
   Rankings: 'Classificação',
   UPI: 'Moeda UPI',
+  Messaging: 'Mensagens',
+  RelatoriosFrota: 'Relatório de Frota',
   PublicSite: 'Site público',
   Apply: 'Candidatura',
   Contracts: 'Contratos',
@@ -56,9 +58,17 @@ export default function Layout({ children, currentPageName }) {
       setUser(me);
       setLoading(false);
 
-      // Redirect drivers to their own dashboard if they land on admin pages
-      if (me?.role === 'driver' && !['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases'].includes(currentPageName)) {
+      // Redirect drivers to their own dashboard if they land on non-driver pages
+      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'];
+      if (me?.role === 'driver' && !DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('DriverDashboard');
+        return;
+      }
+      // Redirect fleet_manager away from admin-only pages
+      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging'];
+      if (me?.role === 'fleet_manager' && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
+        window.location.href = createPageUrl('RelatoriosFrota');
+        return;
       }
     };
     loadUser();

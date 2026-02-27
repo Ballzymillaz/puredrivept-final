@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 
-const TYPE_LABELS = { driver: 'Chauffeur', fleet_manager: 'Gestionnaire', commercial: 'Commercial' };
+const TYPE_LABELS = { driver: 'Motorista', fleet_manager: 'Gestor de frota', commercial: 'Comercial' };
 
 export default function Applications() {
   const [selected, setSelected] = useState(null);
@@ -74,25 +74,25 @@ export default function Applications() {
   const filtered = statusFilter === 'all' ? applications : applications.filter(a => a.status === statusFilter);
 
   const columns = [
-    { header: 'Candidat', render: (r) => (<div><p className="text-sm font-medium">{r.full_name}</p><p className="text-xs text-gray-500">{r.email}</p></div>) },
-    { header: 'Type', render: (r) => <span className="text-sm">{TYPE_LABELS[r.applicant_type] || r.applicant_type}</span> },
-    { header: 'Téléphone', accessor: 'phone' },
-    { header: 'Parrainage', render: (r) => r.referral_code ? <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{r.referral_code}</span> : '—' },
-    { header: 'Date', render: (r) => <span className="text-xs text-gray-500">{format(new Date(r.created_date), 'dd/MM/yyyy')}</span> },
-    { header: 'Statut', render: (r) => <StatusBadge status={r.status} /> },
+    { header: 'Candidato', render: (r) => (<div><p className="text-sm font-medium">{r.full_name}</p><p className="text-xs text-gray-500">{r.email}</p></div>) },
+    { header: 'Tipo', render: (r) => <span className="text-sm">{TYPE_LABELS[r.applicant_type] || r.applicant_type}</span> },
+    { header: 'Telefone', accessor: 'phone' },
+    { header: 'Referência', render: (r) => r.referral_code ? <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{r.referral_code}</span> : '—' },
+    { header: 'Data', render: (r) => <span className="text-xs text-gray-500">{format(new Date(r.created_date), 'dd/MM/yyyy')}</span> },
+    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Candidatures" subtitle={`${applications.length} candidatures`}>
+      <PageHeader title="Candidaturas" subtitle={`${applications.length} candidaturas`}>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes</SelectItem>
-            <SelectItem value="new">Nouvelles</SelectItem>
-            <SelectItem value="reviewing">En cours</SelectItem>
-            <SelectItem value="approved">Approuvées</SelectItem>
-            <SelectItem value="rejected">Rejetées</SelectItem>
+            <SelectItem value="all">Todas</SelectItem>
+            <SelectItem value="new">Novas</SelectItem>
+            <SelectItem value="reviewing">Em análise</SelectItem>
+            <SelectItem value="approved">Aprovadas</SelectItem>
+            <SelectItem value="rejected">Rejeitadas</SelectItem>
           </SelectContent>
         </Select>
       </PageHeader>
@@ -100,22 +100,22 @@ export default function Applications() {
 
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Candidature de {selected?.full_name}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Candidatura de {selected?.full_name}</DialogTitle></DialogHeader>
           {selected && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-gray-500 text-xs">Email</span><p>{selected.email}</p></div>
-                <div><span className="text-gray-500 text-xs">Téléphone</span><p>{selected.phone}</p></div>
-                <div><span className="text-gray-500 text-xs">Type</span><p>{TYPE_LABELS[selected.applicant_type]}</p></div>
+                <div><span className="text-gray-500 text-xs">Telefone</span><p>{selected.phone}</p></div>
+                <div><span className="text-gray-500 text-xs">Tipo</span><p>{TYPE_LABELS[selected.applicant_type]}</p></div>
                 <div><span className="text-gray-500 text-xs">NIF</span><p>{selected.nif || '—'}</p></div>
               </div>
               {selected.message && <div className="bg-gray-50 p-3 rounded-lg text-sm">{selected.message}</div>}
               {selected.status === 'new' || selected.status === 'reviewing' ? (
                 <div className="flex gap-3 pt-2">
                   <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={updateMutation.isPending} onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'approved' }, application: selected })}>
-                    {updateMutation.isPending ? 'A processar...' : 'Approuver'}
+                    {updateMutation.isPending ? 'A processar...' : 'Aprovar'}
                   </Button>
-                  <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" disabled={updateMutation.isPending} onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' }, application: selected })}>Rejeter</Button>
+                  <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" disabled={updateMutation.isPending} onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' }, application: selected })}>Rejeitar</Button>
                 </div>
               ) : (
                 <StatusBadge status={selected.status} />

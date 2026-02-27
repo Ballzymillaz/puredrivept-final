@@ -83,7 +83,16 @@ export default function Relatorios() {
       };
     });
 
-    return { total, totalGross, totalNet, totalDeductions, avgUpi, driversData };
+    // Average gross per driver per week
+    const uniqueDriverCount = driverIds.length;
+    const avgGrossPerDriverPerWeek = uniqueDriverCount > 0 && total > 0
+      ? totalGross / uniqueDriverCount / (total / (uniqueDriverCount || 1))
+      : 0;
+    // Better: total gross / nb drivers / nb weeks
+    const totalWeeks = total > 0 && uniqueDriverCount > 0 ? Math.round(total / uniqueDriverCount) : 0;
+    const avgGrossPerWeek = uniqueDriverCount > 0 && totalWeeks > 0 ? totalGross / uniqueDriverCount / totalWeeks : 0;
+
+    return { total, totalGross, totalNet, totalDeductions, avgUpi, driversData, avgGrossPerDriverPerWeek: avgGrossPerWeek, uniqueDriverCount, totalWeeks };
   }, [filteredPayments, drivers]);
 
   const selectedDriver = drivers.find(d => d.id === filters.driver_id);
@@ -252,7 +261,7 @@ export default function Relatorios() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-5">
             <div className="flex items-center justify-between mb-1">
@@ -293,6 +302,16 @@ export default function Relatorios() {
             </div>
             <p className="text-2xl font-bold text-yellow-600">{fmt(stats.avgUpi)}</p>
             <p className="text-xs text-gray-400 mt-1">Por pagamento</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-5">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs text-gray-500">Média Bruto / motorista / semana</p>
+              <TrendingUp className="w-4 h-4 text-indigo-400" />
+            </div>
+            <p className="text-2xl font-bold text-indigo-700">{fmt(stats.avgGrossPerDriverPerWeek)}</p>
+            <p className="text-xs text-gray-400 mt-1">{stats.uniqueDriverCount} motoristas · {stats.totalWeeks} sem. méd.</p>
           </CardContent>
         </Card>
       </div>

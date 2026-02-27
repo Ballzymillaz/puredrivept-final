@@ -22,7 +22,7 @@ const DOC_TYPE_LABELS = {
   vehicle_booklet: 'Livro do veículo',
 };
 
-export default function Documents() {
+export default function Documents({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [ownerTypeFilter, setOwnerTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -31,15 +31,26 @@ export default function Documents() {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const qc = useQueryClient();
-
-  const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents'],
-    queryFn: () => base44.entities.Document.list('-created_date'),
-  });
+  const isDriver = currentUser?.role === 'driver';
 
   const { data: drivers = [] } = useQuery({
     queryKey: ['drivers'],
     queryFn: () => base44.entities.Driver.list(),
+  });
+
+  // For drivers, find their own driver record
+  const myDriverRecord = isDriver ? drivers.find(d => d.email === currentUser?.email) : null;
+
+  const { data: documents = [], isLoading } = useQuery({
+    queryKey: ['documents', isDriver ? myDriverRecord?.id : 'all'],
+    queryFn: async () => {
+      const all = await base44.entities.Document.list('-created_date');
+      if (isDriver && myDriverRecord) {
+        return all.filter(d => d.owner_id === myDriverRecord.id);
+      }
+      return all;
+    },
+    enabled: !isDriver || !!myDriverRecord,
   });
 
   const { data: vehicles = [] } = useQuery({
@@ -118,7 +129,7 @@ export default function Documents() {
       <PageHeader
         title="Documentos"
         subtitle={`${documents.length} documentos`}
-        actionLabel="Adicionar"
+        actionLabel={isDriver ? "Adicionar documento" : "Adicionar"}
         actionIcon={Upload}
         onAction={() => { resetForm(); setShowForm(true); }}
       >
@@ -130,22 +141,24 @@ export default function Documents() {
         )}
       </PageHeader>
 
-      {/* Filters */}
+      {/* Filters - hide owner type filter for drivers */}
       <div className="flex flex-wrap gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input placeholder="Pesquisar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-48" />
         </div>
-        <Select value={ownerTypeFilter} onValueChange={setOwnerTypeFilter}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="driver">Motoristas</SelectItem>
-            <SelectItem value="vehicle">Veículos</SelectItem>
-            <SelectItem value="fleet_manager">Gestores</SelectItem>
-            <SelectItem value="commercial">Comerciais</SelectItem>
-          </SelectContent>
-        </Select>
+        {!isDriver && (
+          <Select value={ownerTypeFilter} onValueChange={setOwnerTypeFilter}>
+            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="driver">Motoristas</SelectItem>
+              <SelectItem value="vehicle">Veículos</SelectItem>
+              <SelectItem value="fleet_manager">Gestores</SelectItem>
+              <SelectItem value="commercial">Comerciais</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
