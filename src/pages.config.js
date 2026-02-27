@@ -93,6 +93,7 @@ import Vehicles from './pages/Vehicles';
 import DocumentManagement from './pages/DocumentManagement';
 import VehicleManagement from './pages/VehicleManagement';
 import DriverPerformance from './pages/DriverPerformance';
+import RelatoriosFrotaCustomizable from './pages/RelatoriosFrotaCustomizable';
 import __Layout from './Layout.jsx';
 
 
@@ -143,6 +144,7 @@ export const PAGES = {
     "DocumentManagement": DocumentManagement,
     "VehicleManagement": VehicleManagement,
     "DriverPerformance": DriverPerformance,
+    "RelatoriosFrotaCustomizable": RelatoriosFrotaCustomizable,
 }
 
 export const pagesConfig = {

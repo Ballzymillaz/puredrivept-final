@@ -32,6 +32,36 @@ Deno.serve(async (req) => {
           sent_email: false,
         });
 
+        // Send email to driver with renewal action
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: doc.driver_email,
+          subject: '⛔ Documento Expirado - Ação Necessária',
+          body: `
+            <html>
+              <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+                <div style="background:white;border-radius:12px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+                  <h2 style="color:#dc2626;margin-top:0">⛔ Documento Expirado</h2>
+                  <p style="color:#374151;line-height:1.6">
+                    O seu documento expirou em <strong>${expiryDate.toLocaleDateString('pt-PT')}</strong>. 
+                    É necessária uma ação imediata para renovar o documento.
+                  </p>
+                  <div style="background:#fee2e2;border-radius:8px;padding:16px;margin:20px 0;border-left:4px solid #dc2626">
+                    <p style="margin:0;color:#7f1d1d;font-weight:bold">Tipo de Documento:</p>
+                    <p style="margin:5px 0 0 0;color:#7f1d1d">${doc.doc_type}</p>
+                  </div>
+                  <p style="color:#6b7280;margin-bottom:24px">
+                    Clique no botão abaixo para renovar o documento no seu painel de controlo.
+                  </p>
+                  <a href="https://pure-drive-pt.base44.app/pages/DriverDashboard" style="background:#dc2626;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:bold">
+                    🔄 Renovar Documento
+                  </a>
+                  <p style="color:#9ca3af;font-size:12px;margin-top:24px">Bem-vindo à PureDrivePT!</p>
+                </div>
+              </body>
+            </html>
+          `,
+        });
+
         // Create notification for admin with link to management page
         await base44.asServiceRole.entities.Notification.create({
           title: '⛔ Documento Expirado — ' + doc.driver_email,
@@ -58,6 +88,36 @@ Deno.serve(async (req) => {
           related_entity: doc.id,
           action_url: '/pages/DriverDashboard',
           sent_email: false,
+        });
+
+        // Send email to driver with renewal button
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: doc.driver_email,
+          subject: '⚠️ Documento a expirar em breve',
+          body: `
+            <html>
+              <body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+                <div style="background:white;border-radius:12px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+                  <h2 style="color:#ea580c;margin-top:0">⚠️ Documento a Expirar</h2>
+                  <p style="color:#374151;line-height:1.6">
+                    O seu documento expirará em <strong>${daysUntilExpiry} dias</strong> 
+                    (${expiryDate.toLocaleDateString('pt-PT')}). Recomendamos renovar em breve para evitar problemas.
+                  </p>
+                  <div style="background:#fef3c7;border-radius:8px;padding:16px;margin:20px 0;border-left:4px solid #ea580c">
+                    <p style="margin:0;color:#92400e;font-weight:bold">Tipo de Documento:</p>
+                    <p style="margin:5px 0 0 0;color:#92400e">${doc.doc_type}</p>
+                  </div>
+                  <p style="color:#6b7280;margin-bottom:24px">
+                    Clique no botão abaixo para renovar o documento no seu painel de controlo.
+                  </p>
+                  <a href="https://pure-drive-pt.base44.app/pages/DriverDashboard" style="background:#4f46e5;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:bold">
+                    🔄 Renovar Documento
+                  </a>
+                  <p style="color:#9ca3af;font-size:12px;margin-top:24px">Bem-vindo à PureDrivePT!</p>
+                </div>
+              </body>
+            </html>
+          `,
         });
 
         // Create notification for admin with link to management page
