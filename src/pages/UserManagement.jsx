@@ -52,7 +52,16 @@ export default function UserManagement({ currentUser }) {
 
   const handleInvite = async () => {
     const platformRole = inviteRoles.includes('admin') ? 'admin' : 'user';
+    const appRoles = inviteRoles.length === 0 ? 'new' : inviteRoles.join(',');
+    
     await base44.users.inviteUser(inviteEmail, platformRole);
+    
+    // Set app roles for the new user
+    const users = await base44.entities.User.filter({ email: inviteEmail });
+    if (users.length > 0) {
+      await base44.entities.User.update(users[0].id, { role: appRoles });
+    }
+    
     setShowInvite(false);
     setInviteEmail('');
     setInviteRoles([]);
