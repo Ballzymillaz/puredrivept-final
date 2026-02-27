@@ -70,6 +70,7 @@ import UPI from './pages/UPI';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
 import RelatoriosFrota from './pages/RelatoriosFrota';
+import Messaging from './pages/Messaging';
 import __Layout from './Layout.jsx';
 
 
@@ -97,6 +98,7 @@ export const PAGES = {
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
     "RelatoriosFrota": RelatoriosFrota,
+    "Messaging": Messaging,
 }
 
 export const pagesConfig = {
