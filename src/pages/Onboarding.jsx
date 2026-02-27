@@ -50,6 +50,12 @@ export default function Onboarding({ currentUser }) {
     enabled: isAdmin,
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ['invited-users'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin,
+  });
+
   // Driver sees only their own onboarding
   const visibleOnboardings = isDriver
     ? onboardings.filter(o => o.driver_email === currentUser?.email)
@@ -69,6 +75,15 @@ export default function Onboarding({ currentUser }) {
       background_check_status: 'pending',
       vehicle_assignment_status: 'pending',
     });
+    
+    // Send welcome email to driver
+    await base44.integrations.Core.SendEmail({
+      to: newForm.driver_email,
+      from_name: 'PureDrivePT',
+      subject: '[PureDrivePT] Bem-vindo ao processo de Onboarding',
+      body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9f9f9"><div style="background:white;border-radius:12px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.08)"><div style="background:#4f46e5;border-radius:8px;padding:16px;text-align:center;margin-bottom:24px"><h1 style="color:white;margin:0;font-size:20px">PureDrive<sup style="font-size:11px">PT</sup></h1></div><p style="color:#374151;font-size:16px">Olá <strong>${newForm.driver_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.6">Bem-vindo ao processo de onboarding da PureDrivePT! Iniciámos o seu processo de integração com sucesso.</p><div style="background:#f3f4f6;border-radius:8px;padding:16px;margin:24px 0"><p style="margin:0;color:#374151;font-size:14px"><strong>Próximos passos:</strong></p><ol style="color:#6b7280;margin:8px 0 0 20px"><li>Submeter os documentos obrigatórios</li><li>Aguardar verificação de antecedentes</li><li>Receber atribuição de veículo</li></ol></div><p style="color:#6b7280;font-size:14px">Aceda à plataforma PureDrivePT para começar o seu onboarding.</p><p style="color:#9ca3af;font-size:12px;margin-top:24px">Esta é uma mensagem automática — não responda a este email.</p></div></body></html>`,
+    });
+    
     await base44.entities.Notification.create({
       title: `🆕 Novo onboarding iniciado — ${newForm.driver_name}`,
       message: `Foi iniciado o processo de onboarding para o motorista ${newForm.driver_name}.`,
@@ -77,6 +92,7 @@ export default function Onboarding({ currentUser }) {
       recipient_role: 'admin',
       related_entity: record.id,
     });
+    
     setCreating(false);
     setShowNew(false);
     setNewForm({ driver_name: '', driver_email: '', driver_id: '' });
@@ -149,7 +165,39 @@ export default function Onboarding({ currentUser }) {
           <p className="text-sm">Nenhum processo de onboarding encontrado</p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="space-y-6">
+          {isAdmin && users.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-blue-900 mb-3">Utilizadores convidados (sem onboarding)</h3>
+              <div className="space-y-2">
+                {users.filter(u => !onboardings.some(ob => ob.driver_email === u.email)).map(user => (
+                  <div key={user.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-blue-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700">
+                        {user.full_name?.[0]?.toUpperCase() || '?'}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
+                        <p className="text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        setNewForm({ driver_name: user.full_name, driver_email: user.email, driver_id: '' });
+                        setShowNew(true);
+                      }}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      Iniciar onboarding
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-3">
           {visibleOnboardings.map(ob => (
             <div
               key={ob.id}
@@ -180,8 +228,9 @@ export default function Onboarding({ currentUser }) {
               </div>
             </div>
           ))}
-        </div>
-      )}
+          </div>
+          </div>
+          )}
 
       {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={(o) => { if (!o) setSelected(null); }}>
