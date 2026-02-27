@@ -37,6 +37,7 @@ const NAV_ITEMS = [
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
+    { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
   ]},
 ];
 
