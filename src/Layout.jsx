@@ -56,8 +56,9 @@ export default function Layout({ children, currentPageName }) {
       setUser(me);
       setLoading(false);
 
-      // Redirect drivers to their own dashboard if they land on admin pages
-      if (me?.role === 'driver' && !['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases'].includes(currentPageName)) {
+      // Redirect drivers to their own dashboard if they land on non-driver pages
+      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases'];
+      if (me?.role === 'driver' && !DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('DriverDashboard');
       }
     };
