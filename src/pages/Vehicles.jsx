@@ -10,6 +10,7 @@ import { Search, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { createPageUrl } from '@/utils';
 import { differenceInDays } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 export default function Vehicles({ currentUser }) {
   const [showForm, setShowForm] = useState(false);

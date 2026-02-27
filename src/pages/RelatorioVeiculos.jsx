@@ -13,6 +13,7 @@ import { jsPDF } from 'jspdf';
 import { format, differenceInDays } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { createPageUrl } from '@/utils';
+import { Link } from 'react-router-dom';
 
 const fmt = (n) => `€${(n || 0).toFixed(2)}`;
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('pt-PT') : '—';
