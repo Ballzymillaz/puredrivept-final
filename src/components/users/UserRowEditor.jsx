@@ -9,10 +9,8 @@ const ALL_ROLES = [
   { value: 'fleet_manager', label: 'Gestor frota', color: 'bg-blue-100 text-blue-700' },
   { value: 'commercial', label: 'Comercial', color: 'bg-green-100 text-green-700' },
   { value: 'driver', label: 'Motorista', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'user', label: 'Utilizador', color: 'bg-gray-100 text-gray-700' },
 ];
-
-// Roles that cannot be removed/unselected
-const REQUIRED_ROLE_VALIDATION = true;
 
 export default function UserRowEditor({ user }) {
   const [editing, setEditing] = useState(false);
