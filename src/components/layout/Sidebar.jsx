@@ -23,6 +23,7 @@ const NAV_ITEMS = [
   { section: 'Gestão', items: [
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
+    { name: 'Gestão de Documentos', icon: FileText, page: 'DocumentManagement' },
     { name: 'Onboarding', icon: UserPlus, page: 'Onboarding' },
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
   ]},
@@ -76,7 +77,7 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'FleetContracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'ReportContractStatus', 'DashboardModular', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'FleetContracts', 'Documents', 'DocumentManagement', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'ReportContractStatus', 'DashboardModular', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('driver')) {
