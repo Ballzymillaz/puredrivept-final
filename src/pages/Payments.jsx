@@ -341,9 +341,12 @@ function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
     e.preventDefault();
     if (!form.driver_id || !form.week_start_date) return;
 
-    const driver = drivers.find(d => d.id === form.driver_id);
+    console.log('Drivers list:', drivers);
+    console.log('Selected driver_id:', form.driver_id, 'Type:', typeof form.driver_id);
+    
+    const driver = drivers.find(d => String(d.id) === String(form.driver_id));
     if (!driver) {
-      console.error('Driver not found');
+      console.error('Driver not found. Available IDs:', drivers.map(d => d.id));
       return;
     }
 
