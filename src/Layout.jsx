@@ -6,7 +6,6 @@ import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 
 const PAGE_TITLES = {
-  Dashboard: 'Painel de controlo',
   Drivers: 'Gestão de motoristas',
   Vehicles: 'Gestão de veículos',
   FleetManagers: 'Gestores de frota',
@@ -31,11 +30,9 @@ const PAGE_TITLES = {
   UserManagement: 'Gestão de Utilizadores',
   PublicSite: 'Site público',
   Apply: 'Candidatura',
-  Contracts: 'Contratos',
   Fleets: 'Gestão de Frotas',
   FleetVehicles: 'Veículos de Frota',
   FleetDrivers: 'Motoristas de Frota',
-  FleetContracts: 'Contratos de Frota',
   DocumentManagement: 'Gestão de Documentos',
   VehicleManagement: 'Gestão de Veículos',
   DriverPerformance: 'Análise de Performance de Motoristas',
@@ -45,8 +42,6 @@ const PAGE_TITLES = {
   ReportScheduler: 'Scheduler de Relatórios',
   ReportVehiclePerformance: 'Desempenho de Veículos',
   ReportDriverUtilization: 'Utilização de Motoristas',
-  ReportContractStatus: 'Situação de Contratos',
-  ReportScheduler: 'Agendamento de Relatórios',
   DashboardModular: 'Dashboard Modular',
   AdvancedReports: 'Relatórios Avançados',
 };
@@ -84,13 +79,8 @@ export default function Layout({ children, currentPageName }) {
       setLoading(false);
 
       // Redirect pure drivers (no admin/fleet role) to their allowed pages
-      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications', 'Dashboard'];
+      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'];
       if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
-        // Auto-redirect driver from root Dashboard to DriverDashboard
-        if (currentPageName === 'Dashboard') {
-          window.location.href = createPageUrl('DriverDashboard');
-          return;
-        }
         if (!DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
           window.location.href = createPageUrl('DriverDashboard');
           return;
