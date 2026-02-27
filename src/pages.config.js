@@ -82,6 +82,7 @@ import DocumentsHub from './pages/DocumentsHub';
 import DocumentApproval from './pages/DocumentApproval';
 import PaymentHistory from './pages/PaymentHistory';
 import AdvanceRequest from './pages/AdvanceRequest';
+import AdvanceApproval from './pages/AdvanceApproval';
 import __Layout from './Layout.jsx';
 
 
@@ -121,6 +122,7 @@ export const PAGES = {
     "DocumentApproval": DocumentApproval,
     "PaymentHistory": PaymentHistory,
     "AdvanceRequest": AdvanceRequest,
+    "AdvanceApproval": AdvanceApproval,
 }
 
 export const pagesConfig = {

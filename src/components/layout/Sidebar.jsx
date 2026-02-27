@@ -67,11 +67,11 @@ export default function Sidebar({ currentPage, userRole }) {
       }
 
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'DocumentApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
+        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'DocumentApproval', 'AdvanceApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('driver')) {
-        return ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'].includes(item.page);
+        return ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'PaymentHistory', 'AdvanceRequest', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'].includes(item.page);
       }
       // No valid role: no access
       return false;

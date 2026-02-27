@@ -31,6 +31,9 @@ const PAGE_TITLES = {
   DriverDashboard: 'Dashboard do Motorista',
   DocumentsHub: 'Gestão de Documentos',
   DocumentApproval: 'Aprovação de Documentos',
+  PaymentHistory: 'Histórico de Pagamentos',
+  AdvanceRequest: 'Solicitar Adiantamento',
+  AdvanceApproval: 'Aprovar Adiantamentos',
   Relatorios: 'Relatórios Gerais',
   AdvancedReports: 'Relatórios Avançados',
 };
@@ -75,7 +78,7 @@ export default function Layout({ children, currentPageName }) {
         }
       }
       // Redirect pure drivers (no admin/fleet role) to their allowed pages
-      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'];
+      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'PaymentHistory', 'AdvanceRequest', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'];
       if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
         if (!DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
           window.location.href = createPageUrl('DriverDashboard');
@@ -83,7 +86,7 @@ export default function Layout({ children, currentPageName }) {
         }
       }
       // Redirect pure fleet_manager away from admin-only pages
-      const FLEET_ALLOWED_PAGES = ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'DocumentApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'];
+      const FLEET_ALLOWED_PAGES = ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'DocumentApproval', 'AdvanceApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'];
       if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('FleetVehicles');
         return;
