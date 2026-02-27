@@ -80,6 +80,8 @@ import Vehicles from './pages/Vehicles';
 import DriverDashboard from './pages/DriverDashboard';
 import DocumentsHub from './pages/DocumentsHub';
 import DocumentApproval from './pages/DocumentApproval';
+import PaymentHistory from './pages/PaymentHistory';
+import AdvanceRequest from './pages/AdvanceRequest';
 import __Layout from './Layout.jsx';
 
 
@@ -117,6 +119,8 @@ export const PAGES = {
     "DriverDashboard": DriverDashboard,
     "DocumentsHub": DocumentsHub,
     "DocumentApproval": DocumentApproval,
+    "PaymentHistory": PaymentHistory,
+    "AdvanceRequest": AdvanceRequest,
 }
 
 export const pagesConfig = {
