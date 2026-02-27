@@ -27,6 +27,19 @@ export default function Applications() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['applications'] }); setSelected(null); },
   });
 
+  const createMutation = useMutation({
+    mutationFn: async (d) => {
+      const result = await base44.entities.Application.create(d);
+      try {
+        await base44.functions.invoke('notifyNewApplication', { applicationId: result.id });
+      } catch (e) {
+        console.error('Error notifying:', e);
+      }
+      return result;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['applications'] }); },
+  });
+
   const filtered = statusFilter === 'all' ? applications : applications.filter(a => a.status === statusFilter);
 
   const columns = [

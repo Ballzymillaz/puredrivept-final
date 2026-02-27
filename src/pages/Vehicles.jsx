@@ -30,7 +30,17 @@ export default function Vehicles() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicles'] }); setShowForm(false); },
   });
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Vehicle.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const result = await base44.entities.Vehicle.update(id, data);
+      if (data.status && editing && data.status !== editing.status) {
+        try {
+          await base44.functions.invoke('notifyVehicleStatus', { vehicleId: id, oldStatus: editing.status, newStatus: data.status });
+        } catch (e) {
+          console.error('Error notifying:', e);
+        }
+      }
+      return result;
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicles'] }); setShowForm(false); setEditing(null); },
   });
 
