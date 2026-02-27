@@ -25,7 +25,8 @@ const PAGE_TITLES = {
   PublicSite: 'Site público',
   Apply: 'Candidatura',
   Contracts: 'Contratos',
-};
+  Relatorios: 'Relatórios',
+  };
 
 // Public pages that don't need auth or sidebar
 const PUBLIC_PAGES = ['PublicSite', 'Apply'];
