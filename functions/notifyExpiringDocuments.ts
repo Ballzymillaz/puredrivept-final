@@ -9,6 +9,9 @@ Deno.serve(async (req) => {
     }
 
     const documents = await base44.asServiceRole.entities.Document.list();
+    const drivers = await base44.asServiceRole.entities.Driver.list();
+    const vehicles = await base44.asServiceRole.entities.Vehicle.list();
+    const users = await base44.asServiceRole.entities.User.list();
     const now = new Date();
 
     const expiring = documents.filter(doc => {
@@ -24,31 +27,73 @@ Deno.serve(async (req) => {
       return expDate < now && doc.status !== 'expired';
     });
 
-    // Mark expired docs
+    // Mark expired docs and create notifications
     for (const doc of expired) {
       await base44.asServiceRole.entities.Document.update(doc.id, { status: 'expired' });
-    }
-
-    // Notify admins if any expiring/expired
-    if (expiring.length > 0 || expired.length > 0) {
-      const lines = [];
-      if (expired.length > 0) {
-        lines.push(`<b>${expired.length} documento(s) expirado(s):</b>`);
-        expired.slice(0, 5).forEach(d => lines.push(`- ${d.owner_name}: ${d.document_type} (${d.expiry_date})`));
-      }
-      if (expiring.length > 0) {
-        lines.push(`<b>${expiring.length} documento(s) a expirar nos próximos 30 dias:</b>`);
-        expiring.slice(0, 5).forEach(d => {
-          const days = Math.ceil((new Date(d.expiry_date) - now) / (1000 * 60 * 60 * 24));
-          lines.push(`- ${d.owner_name}: ${d.document_type} (${days} dias)`);
+      
+      // Notify admin
+      const adminUsers = users.filter(u => u.role === 'admin');
+      for (const admin of adminUsers) {
+        await base44.asServiceRole.entities.Notification.create({
+          user_id: admin.id,
+          user_email: admin.email,
+          title: '❌ Documento expirado',
+          message: `${doc.owner_name} - ${doc.document_type}`,
+          type: 'document_expiring',
+          related_entity_type: 'document',
+          related_entity_id: doc.id,
+          email_sent: false,
         });
       }
+    }
 
+    // Create notifications for expiring docs
+    for (const doc of expiring) {
+      const daysLeft = Math.ceil((new Date(doc.expiry_date) - now) / (1000 * 60 * 60 * 24));
+      if (doc.owner_type === 'driver') {
+        const driver = drivers.find(d => d.id === doc.owner_id);
+        if (driver) {
+          const driverUser = users.find(u => u.email === driver.email);
+          if (driverUser) {
+            await base44.asServiceRole.entities.Notification.create({
+              user_id: driverUser.id,
+              user_email: driver.email,
+              title: '⚠️ Documento a expirar',
+              message: `${doc.document_type} expira em ${daysLeft} dias (${doc.expiry_date})`,
+              type: 'document_expiring',
+              related_entity_type: 'document',
+              related_entity_id: doc.id,
+              email_sent: false,
+            });
+          }
+        }
+      }
+
+      // Notify admin
+      const adminUsers = users.filter(u => u.role === 'admin');
+      for (const admin of adminUsers) {
+        await base44.asServiceRole.entities.Notification.create({
+          user_id: admin.id,
+          user_email: admin.email,
+          title: '⚠️ Documento a expirar',
+          message: `${doc.owner_name} - ${doc.document_type} (${daysLeft} dias)`,
+          type: 'document_expiring',
+          related_entity_type: 'document',
+          related_entity_id: doc.id,
+          email_sent: false,
+        });
+      }
+    }
+
+    // Send emails for new notifications
+    const newNotifs = await base44.asServiceRole.entities.Notification.filter({ email_sent: false });
+    for (const notif of newNotifs.filter(n => n.type === 'document_expiring')) {
       await base44.asServiceRole.integrations.Core.SendEmail({
-        to: 'admin@puredrivept.com',
-        subject: `⚠️ PureDrivePT - Documentos a expirar (${new Date().toLocaleDateString('pt-PT')})`,
-        body: lines.join('\n'),
+        to: notif.user_email,
+        subject: notif.title,
+        body: notif.message,
       });
+      await base44.asServiceRole.entities.Notification.update(notif.id, { email_sent: true });
     }
 
     return Response.json({
