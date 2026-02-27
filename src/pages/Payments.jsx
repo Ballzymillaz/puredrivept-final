@@ -342,17 +342,17 @@ function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
     if (!form.driver_id || !form.week_start_date) return;
 
     const driver = drivers.find(d => d.id === form.driver_id);
+    if (!driver) return;
 
     // Send only input fields, let backend calculate financials
     onSubmit({
       driver_id: form.driver_id,
-      city_id: driver?.city_id,
+      city_id: driver.city_id,
       week_start_date: form.week_start_date,
       week_end_date: form.week_end_date || form.week_start_date,
       uber_revenue: parseFloat(form.uber_revenue) || 0,
       bolt_revenue: parseFloat(form.bolt_revenue) || 0,
       other_revenue: parseFloat(form.other_revenue) || 0,
-      status: 'draft',
     });
   };
 
