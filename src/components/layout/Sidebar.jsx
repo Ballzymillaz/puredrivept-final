@@ -51,7 +51,7 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (userRole === 'admin') return true;
       if (userRole === 'fleet_manager') {
-        return !['FleetManagers', 'CashFlow'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings'].includes(item.page);
       }
       if (userRole === 'commercial') {
         return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings'].includes(item.page);
