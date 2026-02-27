@@ -48,18 +48,12 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import AdvancedReports from './pages/AdvancedReports';
-import Applications from './pages/Applications';
-import Apply from './pages/Apply';
 import CashFlow from './pages/CashFlow';
-import Commercials from './pages/Commercials';
 import Configuracoes from './pages/Configuracoes';
-import DashboardModular from './pages/DashboardModular';
 import DocumentManagement from './pages/DocumentManagement';
 import Documents from './pages/Documents';
-import DriverDashboard from './pages/DriverDashboard';
 import DriverPerformance from './pages/DriverPerformance';
 import Drivers from './pages/Drivers';
-import FleetContracts from './pages/FleetContracts';
 import FleetDrivers from './pages/FleetDrivers';
 import FleetManagers from './pages/FleetManagers';
 import FleetVehicles from './pages/FleetVehicles';
@@ -67,51 +61,33 @@ import Fleets from './pages/Fleets';
 import Goals from './pages/Goals';
 import IVA from './pages/IVA';
 import Loans from './pages/Loans';
-import Messaging from './pages/Messaging';
 import Notifications from './pages/Notifications';
 import Onboarding from './pages/Onboarding';
-import Payments from './pages/Payments';
 import PublicSite from './pages/PublicSite';
 import Rankings from './pages/Rankings';
 import Referrals from './pages/Referrals';
 import Reimbursements from './pages/Reimbursements';
-import RelatorioFrotas from './pages/RelatorioFrotas';
-import RelatorioVeiculos from './pages/RelatorioVeiculos';
 import Relatorios from './pages/Relatorios';
 import RelatoriosFrota from './pages/RelatoriosFrota';
-import RelatoriosFrotaCustomizable from './pages/RelatoriosFrotaCustomizable';
 import RelatoriosFrotas from './pages/RelatoriosFrotas';
-import ReportBuilder from './pages/ReportBuilder';
-import ReportContractStatus from './pages/ReportContractStatus';
-import ReportDriverUtilization from './pages/ReportDriverUtilization';
-import ReportScheduler from './pages/ReportScheduler';
-import ReportVehiclePerformance from './pages/ReportVehiclePerformance';
 import UPI from './pages/UPI';
 import UserManagement from './pages/UserManagement';
-import VehicleDetail from './pages/VehicleDetail';
 import VehicleManagement from './pages/VehicleManagement';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
 import DriverDetail from './pages/DriverDetail';
 import FleetManagerDashboard from './pages/FleetManagerDashboard';
-import AdvancedPayments from './pages/AdvancedPayments';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AdvancedReports": AdvancedReports,
-    "Applications": Applications,
-    "Apply": Apply,
     "CashFlow": CashFlow,
-    "Commercials": Commercials,
     "Configuracoes": Configuracoes,
-    "DashboardModular": DashboardModular,
     "DocumentManagement": DocumentManagement,
     "Documents": Documents,
-    "DriverDashboard": DriverDashboard,
     "DriverPerformance": DriverPerformance,
     "Drivers": Drivers,
-    "FleetContracts": FleetContracts,
     "FleetDrivers": FleetDrivers,
     "FleetManagers": FleetManagers,
     "FleetVehicles": FleetVehicles,
@@ -119,34 +95,22 @@ export const PAGES = {
     "Goals": Goals,
     "IVA": IVA,
     "Loans": Loans,
-    "Messaging": Messaging,
     "Notifications": Notifications,
     "Onboarding": Onboarding,
-    "Payments": Payments,
     "PublicSite": PublicSite,
     "Rankings": Rankings,
     "Referrals": Referrals,
     "Reimbursements": Reimbursements,
-    "RelatorioFrotas": RelatorioFrotas,
-    "RelatorioVeiculos": RelatorioVeiculos,
     "Relatorios": Relatorios,
     "RelatoriosFrota": RelatoriosFrota,
-    "RelatoriosFrotaCustomizable": RelatoriosFrotaCustomizable,
     "RelatoriosFrotas": RelatoriosFrotas,
-    "ReportBuilder": ReportBuilder,
-    "ReportContractStatus": ReportContractStatus,
-    "ReportDriverUtilization": ReportDriverUtilization,
-    "ReportScheduler": ReportScheduler,
-    "ReportVehiclePerformance": ReportVehiclePerformance,
     "UPI": UPI,
     "UserManagement": UserManagement,
-    "VehicleDetail": VehicleDetail,
     "VehicleManagement": VehicleManagement,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
     "DriverDetail": DriverDetail,
     "FleetManagerDashboard": FleetManagerDashboard,
-    "AdvancedPayments": AdvancedPayments,
 }
 
 export const pagesConfig = {
