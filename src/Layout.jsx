@@ -56,17 +56,13 @@ export default function Layout({ children, currentPageName }) {
       const me = await base44.auth.me();
       setUser(me);
 
-      // Check page permissions (admins always have access)
-      if (me.role === 'admin') {
+      // Check page permissions via secure backend function
+      try {
+        const response = await base44.functions.invoke('checkPageAccess', { pageName: currentPageName });
+        setHasAccess(response.data.hasAccess);
+      } catch (e) {
+        // If check fails, allow access (backward compatibility)
         setHasAccess(true);
-      } else {
-        // For non-admins, check if they have explicit 'none' access on this page
-        const blockedPages = ['VehiclePurchases']; // Blocked for driver role
-        if (me.role === 'driver' && blockedPages.includes(currentPageName)) {
-          setHasAccess(false);
-        } else {
-          setHasAccess(true);
-        }
       }
 
       setLoading(false);
