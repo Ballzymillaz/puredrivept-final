@@ -47,57 +47,57 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import IVA from './pages/IVA';
-import Relatorios from './pages/Relatorios';
 import Applications from './pages/Applications';
-import Rankings from './pages/Rankings';
-import Referrals from './pages/Referrals';
-import CashFlow from './pages/CashFlow';
-import Goals from './pages/Goals';
 import Apply from './pages/Apply';
-import RoleManagement from './pages/RoleManagement';
+import CashFlow from './pages/CashFlow';
 import Commercials from './pages/Commercials';
-import FleetManagers from './pages/FleetManagers';
-import UPI from './pages/UPI';
-import Loans from './pages/Loans';
-import Reimbursements from './pages/Reimbursements';
-import VehiclePurchases from './pages/VehiclePurchases';
-import Documents from './pages/Documents';
-import Dashboard from './pages/Dashboard';
-import DriverDashboard from './pages/DriverDashboard';
 import Contracts from './pages/Contracts';
+import Dashboard from './pages/Dashboard';
+import Documents from './pages/Documents';
+import DriverDashboard from './pages/DriverDashboard';
 import DriverFinancialDashboard from './pages/DriverFinancialDashboard';
+import Drivers from './pages/Drivers';
+import FleetManagers from './pages/FleetManagers';
+import Goals from './pages/Goals';
+import IVA from './pages/IVA';
+import Loans from './pages/Loans';
 import Payments from './pages/Payments';
 import PublicSite from './pages/PublicSite';
-import Drivers from './pages/Drivers';
+import Rankings from './pages/Rankings';
+import Referrals from './pages/Referrals';
+import Reimbursements from './pages/Reimbursements';
+import Relatorios from './pages/Relatorios';
+import RoleManagement from './pages/RoleManagement';
+import UPI from './pages/UPI';
+import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "IVA": IVA,
-    "Relatorios": Relatorios,
     "Applications": Applications,
-    "Rankings": Rankings,
-    "Referrals": Referrals,
-    "CashFlow": CashFlow,
-    "Goals": Goals,
     "Apply": Apply,
-    "RoleManagement": RoleManagement,
+    "CashFlow": CashFlow,
     "Commercials": Commercials,
-    "FleetManagers": FleetManagers,
-    "UPI": UPI,
-    "Loans": Loans,
-    "Reimbursements": Reimbursements,
-    "VehiclePurchases": VehiclePurchases,
-    "Documents": Documents,
-    "Dashboard": Dashboard,
-    "DriverDashboard": DriverDashboard,
     "Contracts": Contracts,
+    "Dashboard": Dashboard,
+    "Documents": Documents,
+    "DriverDashboard": DriverDashboard,
     "DriverFinancialDashboard": DriverFinancialDashboard,
+    "Drivers": Drivers,
+    "FleetManagers": FleetManagers,
+    "Goals": Goals,
+    "IVA": IVA,
+    "Loans": Loans,
     "Payments": Payments,
     "PublicSite": PublicSite,
-    "Drivers": Drivers,
+    "Rankings": Rankings,
+    "Referrals": Referrals,
+    "Reimbursements": Reimbursements,
+    "Relatorios": Relatorios,
+    "RoleManagement": RoleManagement,
+    "UPI": UPI,
+    "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
 }
 

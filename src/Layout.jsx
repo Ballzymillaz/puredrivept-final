@@ -60,19 +60,11 @@ export default function Layout({ children, currentPageName }) {
       if (me.role === 'admin') {
         setHasAccess(true);
       } else {
-        try {
-          const perms = await base44.entities.RolePermission.filter({ 
-            role: me.role, 
-            page: currentPageName 
-          });
-          const perm = perms[0];
-          if (!perm || perm.access_level === 'none') {
-            setHasAccess(false);
-          } else {
-            setHasAccess(true);
-          }
-        } catch (e) {
-          // If RolePermission check fails, allow access (backward compatibility)
+        // For non-admins, check if they have explicit 'none' access on this page
+        const blockedPages = ['VehiclePurchases']; // Blocked for driver role
+        if (me.role === 'driver' && blockedPages.includes(currentPageName)) {
+          setHasAccess(false);
+        } else {
           setHasAccess(true);
         }
       }
