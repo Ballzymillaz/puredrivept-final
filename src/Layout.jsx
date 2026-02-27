@@ -24,9 +24,14 @@ const PAGE_TITLES = {
   UPI: 'Moeda UPI',
   Messaging: 'Mensagens',
   RelatoriosFrota: 'Relatório de Frota',
+  RelatorioVeiculos: 'Relatório de Veículos',
+  Notifications: 'Notificações',
+  VehicleDetail: 'Detalhe do Veículo',
+  UserManagement: 'Gestão de Utilizadores',
   PublicSite: 'Site público',
   Apply: 'Candidatura',
-  Contracts: 'Contratos',
+  Fleets: 'Gestão de Frotas',
+  RelatorioFrotas: 'Relatório de Desempenho de Frotas',
 };
 
 // Public pages that don't need auth or sidebar
@@ -62,13 +67,20 @@ export default function Layout({ children, currentPageName }) {
       setLoading(false);
 
       // Redirect pure drivers (no admin/fleet role) to their allowed pages
-      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'];
-      if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager') && !DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
-        window.location.href = createPageUrl('DriverDashboard');
-        return;
+      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications', 'Dashboard'];
+      if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
+        // Auto-redirect driver from root Dashboard to DriverDashboard
+        if (currentPageName === 'Dashboard') {
+          window.location.href = createPageUrl('DriverDashboard');
+          return;
+        }
+        if (!DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
+          window.location.href = createPageUrl('DriverDashboard');
+          return;
+        }
       }
       // Redirect pure fleet_manager away from admin-only pages
-      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging', 'FleetManagers'];
+      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'];
       if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('RelatoriosFrota');
         return;

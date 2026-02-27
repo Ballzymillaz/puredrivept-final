@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Car, FileText, CreditCard, TrendingUp,
   Target, Wallet, ShoppingCart, UserPlus, Coins, Receipt,
   ChevronLeft, ChevronRight, Settings, LogOut, Menu, X,
-  Building2, HandCoins, FileBarChart, PieChart, MessageCircle
+  Building2, HandCoins, FileBarChart, PieChart, MessageCircle, Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -17,11 +17,12 @@ const NAV_ITEMS = [
   { section: 'Gestão', items: [
     { name: 'Motoristas', icon: Users, page: 'Drivers' },
     { name: 'Veículos', icon: Car, page: 'Vehicles' },
-    { name: 'Contratos', icon: FileText, page: 'Contracts' },
+    { name: 'Frotas', icon: Building2, page: 'Fleets' },
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
     { name: 'Comerciais', icon: HandCoins, page: 'Commercials' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
     { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
+    { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
   ]},
   { section: 'Finanças', items: [
     { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
@@ -37,8 +38,11 @@ const NAV_ITEMS = [
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
+    { name: 'Relatório Frotas', icon: PieChart, page: 'RelatorioFrotas' },
     { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
+    { name: 'Relatório Veículos', icon: Car, page: 'RelatorioVeiculos' },
     { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
+    { name: 'Notificações', icon: Bell, page: 'Notifications' },
     { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
   ]},
 ];
@@ -56,13 +60,13 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging', 'FleetManagers'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
       }
       if (hasRole('commercial') && !hasRole('admin')) {
         return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings', 'Messaging'].includes(item.page);
       }
       if (hasRole('driver')) {
-        return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'].includes(item.page);
+        return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'].includes(item.page);
       }
       return true;
     })
@@ -72,14 +76,24 @@ export default function Sidebar({ currentPage, userRole }) {
     <div className="flex flex-col h-full">
       <div className={cn("flex items-center gap-3 px-5 py-6 border-b border-indigo-500/20", collapsed && "justify-center px-3")}>
         {collapsed ? (
-          <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm">PD</span>
-          </div>
+          <img 
+            src="/uploads/Logo%20PureDriveWhite.png" 
+            alt="PureDrive" 
+            className="h-9 w-auto object-contain"
+            onError={(e) => {
+              e.target.outerHTML = '<div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-sm">PD</span></div>';
+            }}
+          />
         ) : (
           <>
-            <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-sm">PD</span>
-            </div>
+            <img 
+              src="/uploads/Logo%20PureDriveWhite.png" 
+              alt="PureDrive" 
+              className="h-10 w-auto object-contain"
+              onError={(e) => {
+                e.target.outerHTML = '<div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0"><span class="text-white font-bold text-sm">PD</span></div>';
+              }}
+            />
             <div>
               <h1 className="text-white font-semibold text-base tracking-tight">PureDrive<sup className="text-[10px]">PT</sup></h1>
               <p className="text-indigo-300 text-[11px]">Gestão de Frota</p>

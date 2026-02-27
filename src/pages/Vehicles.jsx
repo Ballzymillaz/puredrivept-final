@@ -6,10 +6,13 @@ import DataTable from '../components/shared/DataTable';
 import StatusBadge from '../components/shared/StatusBadge';
 import VehicleForm from '../components/vehicles/VehicleForm';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { createPageUrl } from '@/utils';
+import { differenceInDays } from 'date-fns';
+import { Link } from 'react-router-dom';
 
-export default function Vehicles() {
+export default function Vehicles({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState('');
@@ -56,6 +59,18 @@ export default function Vehicles() {
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('pt-PT') : '—';
 
+  const { data: maintenances = [] } = useQuery({
+    queryKey: ['maintenance-all'],
+    queryFn: () => base44.entities.MaintenanceRecord.list(),
+  });
+
+  const today = new Date();
+
+  // Check which vehicles have upcoming maintenance
+  const vehicleAlerts = (vehicleId) => {
+    return maintenances.some(m => m.vehicle_id === vehicleId && m.next_service_date && differenceInDays(new Date(m.next_service_date), today) <= 30 && differenceInDays(new Date(m.next_service_date), today) >= 0);
+  };
+
   const columns = [
     {
       header: 'Veículo',
@@ -91,6 +106,14 @@ export default function Vehicles() {
       },
     },
     { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
+    { header: '', render: (r) => (
+      <div className="flex items-center gap-2">
+        {vehicleAlerts(r.id) && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" title="Manutenção próxima" />}
+        <Link to={createPageUrl(`VehicleDetail?id=${r.id}`)} onClick={e => e.stopPropagation()} className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5">
+          Detalhes <ExternalLink className="w-3 h-3" />
+        </Link>
+      </div>
+    )},
   ];
 
   return (
