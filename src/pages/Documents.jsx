@@ -2,70 +2,48 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import PageHeader from '../components/shared/PageHeader';
-import StatusBadge from '../components/shared/StatusBadge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Eye, Check, X, AlertTriangle, Search } from 'lucide-react';
-import { differenceInDays, format } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Upload, AlertTriangle, CheckCircle2, Clock, Trash2, Download, Search } from 'lucide-react';
+import { format, isPast, differenceInDays } from 'date-fns';
 
-const DOC_TYPE_LABELS = {
-  driving_license: 'Carta de condução',
-  tvde_certificate: 'Certificado TVDE',
-  id_card: 'Cartão de cidadão',
-  iban_proof: 'Comprovativo IBAN',
-  insurance: 'Seguro',
-  periodic_inspection: 'Inspeção periódica',
-  vehicle_booklet: 'Livro do veículo',
+const DOC_TYPES = [
+  { value: 'driving_license', label: 'Carta de Condução' },
+  { value: 'id_card', label: 'CC/Passaporte' },
+  { value: 'tvde_certificate', label: 'Certificado TVDE' },
+  { value: 'iban_proof', label: 'Comprovativo IBAN' },
+  { value: 'insurance', label: 'Seguro' },
+  { value: 'inspection', label: 'Inspeção Técnica' },
+  { value: 'other', label: 'Outro' },
+];
+
+const STATUS_CONFIG = {
+  pending: { label: 'Pendente', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
+  approved: { label: 'Aprovado', color: 'bg-green-100 text-green-700', icon: CheckCircle2 },
+  rejected: { label: 'Rejeitado', color: 'bg-red-100 text-red-700', icon: AlertTriangle },
 };
 
 export default function Documents({ currentUser }) {
-  const [showForm, setShowForm] = useState(false);
-  const [ownerTypeFilter, setOwnerTypeFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({ owner_type: 'driver', owner_id: '', owner_name: '', document_type: '', expiry_date: '' });
-  const [file, setFile] = useState(null);
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadForm, setUploadForm] = useState({ doc_type: '', expiry_date: '', file: null });
   const [uploading, setUploading] = useState(false);
   const qc = useQueryClient();
-  const isDriver = currentUser?.role === 'driver';
 
-  const { data: drivers = [] } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list(),
-  });
+  const isAdmin = currentUser?.role?.includes('admin') || currentUser?.role?.includes('fleet_manager');
+  const isDriver = currentUser?.role?.includes('driver');
 
-  // For drivers, find their own driver record
-  const myDriverRecord = isDriver ? drivers.find(d => d.email === currentUser?.email) : null;
-
-  const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents', isDriver ? myDriverRecord?.id : 'all'],
+  const { data: docs = [], isLoading } = useQuery({
+    queryKey: ['documents'],
     queryFn: async () => {
-      const all = await base44.entities.Document.list('-created_date');
-      if (isDriver && myDriverRecord) {
-        return all.filter(d => d.owner_id === myDriverRecord.id);
+      if (isDriver) {
+        return await base44.entities.Document.filter({ created_by: currentUser.email });
       }
-      return all;
+      return await base44.entities.Document.list('-updated_date');
     },
-    enabled: !isDriver || !!myDriverRecord,
-  });
-
-  const { data: vehicles = [] } = useQuery({
-    queryKey: ['vehicles'],
-    queryFn: () => base44.entities.Vehicle.list(),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Document.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['documents'] }),
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (d) => base44.entities.Document.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); setShowForm(false); resetForm(); },
   });
 
   const deleteMutation = useMutation({
@@ -73,243 +51,292 @@ export default function Documents({ currentUser }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['documents'] }),
   });
 
-  const resetForm = () => {
-    setForm({ owner_type: 'driver', owner_id: '', owner_name: '', document_type: '', expiry_date: '' });
-    setFile(null);
-  };
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status, rejection_reason }) => 
+      base44.entities.Document.update(id, { status, rejection_reason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['documents'] });
+      setSelectedDoc(null);
+    },
+  });
 
-  const handleOwnerSelect = (ownerId) => {
-    let name = '';
-    if (form.owner_type === 'driver') {
-      name = drivers.find(d => d.id === ownerId)?.full_name || '';
-    } else if (form.owner_type === 'vehicle') {
-      const v = vehicles.find(v => v.id === ownerId);
-      name = v ? `${v.brand} ${v.model} - ${v.license_plate}` : '';
-    }
-    setForm(f => ({ ...f, owner_id: ownerId, owner_name: name }));
-  };
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
+  const handleUpload = async () => {
+    if (!uploadForm.file || !uploadForm.doc_type) return;
     setUploading(true);
-    let file_url = '';
-    if (file) {
-      const res = await base44.integrations.Core.UploadFile({ file });
-      file_url = res.file_url;
+
+    const fileData = new FormData();
+    fileData.append('file', uploadForm.file);
+    const uploadRes = await base44.integrations.Core.UploadFile({ file: uploadForm.file });
+
+    const docRecord = await base44.entities.Document.create({
+      doc_type: uploadForm.doc_type,
+      driver_id: isDriver ? currentUser?.id : '',
+      driver_email: currentUser?.email,
+      file_url: uploadRes.file_url,
+      expiry_date: uploadForm.expiry_date || null,
+      status: 'pending',
+    });
+
+    // Alert admin of new document
+    if (isDriver) {
+      await base44.entities.Notification.create({
+        title: `📄 Novo documento submetido — ${currentUser.full_name}`,
+        message: `${DOC_TYPES.find(d => d.value === uploadForm.doc_type)?.label || uploadForm.doc_type} foi submetido para revisão.`,
+        type: 'info',
+        category: 'document_expiry',
+        recipient_role: 'admin',
+        related_entity: docRecord.id,
+      });
     }
-    await createMutation.mutateAsync({ ...form, file_url, status: 'pending' });
+
     setUploading(false);
+    setShowUpload(false);
+    setUploadForm({ doc_type: '', expiry_date: '', file: null });
+    qc.invalidateQueries({ queryKey: ['documents'] });
   };
 
-  const getExpiryInfo = (doc) => {
-    if (!doc.expiry_date) return null;
-    const days = differenceInDays(new Date(doc.expiry_date), new Date());
-    if (days < 0) return { label: 'Expirado', color: 'bg-red-100 text-red-700' };
-    if (days <= 7) return { label: `${days}d ⚠️`, color: 'bg-red-100 text-red-700' };
-    if (days <= 30) return { label: `${days}d`, color: 'bg-orange-100 text-orange-700' };
-    if (days <= 90) return { label: format(new Date(doc.expiry_date), 'dd/MM/yy'), color: 'bg-yellow-100 text-yellow-700' };
-    return { label: format(new Date(doc.expiry_date), 'dd/MM/yy'), color: 'bg-gray-100 text-gray-600' };
-  };
+  const filteredDocs = docs.filter(d => {
+    const driverName = d.driver_email || '';
+    return !search || driverName.toLowerCase().includes(search.toLowerCase());
+  });
 
-  const expiringCount = documents.filter(d => {
+  const expiringDocs = docs.filter(d => {
     if (!d.expiry_date) return false;
-    return differenceInDays(new Date(d.expiry_date), new Date()) <= 30;
-  }).length;
+    const daysUntilExpiry = differenceInDays(new Date(d.expiry_date), new Date());
+    return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  });
 
-  const filtered = documents.filter(d => {
-    if (ownerTypeFilter !== 'all' && d.owner_type !== ownerTypeFilter) return false;
-    if (statusFilter !== 'all' && d.status !== statusFilter) return false;
-    if (search && !d.owner_name?.toLowerCase().includes(search.toLowerCase()) &&
-        !DOC_TYPE_LABELS[d.document_type]?.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
+  const expiredDocs = docs.filter(d => {
+    if (!d.expiry_date) return false;
+    return isPast(new Date(d.expiry_date));
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader
-        title="Documentos"
-        subtitle={`${documents.length} documentos`}
-        actionLabel={isDriver ? "Adicionar documento" : "Adicionar"}
+        title="Gestão de Documentos"
+        subtitle={`${docs.length} documentos · ${expiringDocs.length} a expirar`}
+        actionLabel="Upload"
+        onAction={() => setShowUpload(true)}
         actionIcon={Upload}
-        onAction={() => { resetForm(); setShowForm(true); }}
-      >
-        {expiringCount > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg text-orange-700 text-sm">
-            <AlertTriangle className="w-4 h-4" />
-            {expiringCount} a expirar em 30 dias
-          </div>
-        )}
-      </PageHeader>
+      />
 
-      {/* Filters - hide owner type filter for drivers */}
-      <div className="flex flex-wrap gap-3">
+      {(isAdmin && expiredDocs.length > 0) && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold text-sm text-red-800">{expiredDocs.length} documentos expirados</p>
+              <p className="text-xs text-red-700 mt-1">Ação requerida para os seguintes motoristas</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAdmin && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Pesquisar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-48" />
+          <Input
+            placeholder="Pesquisar por email..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
-        {!isDriver && (
-          <Select value={ownerTypeFilter} onValueChange={setOwnerTypeFilter}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="driver">Motoristas</SelectItem>
-              <SelectItem value="vehicle">Veículos</SelectItem>
-              <SelectItem value="fleet_manager">Gestores</SelectItem>
-              <SelectItem value="commercial">Comerciais</SelectItem>
-            </SelectContent>
-          </Select>
-        )}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos estados</SelectItem>
-            <SelectItem value="pending">Pendente</SelectItem>
-            <SelectItem value="approved">Aprovado</SelectItem>
-            <SelectItem value="rejected">Rejeitado</SelectItem>
-            <SelectItem value="expired">Expirado</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      )}
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border overflow-hidden">
-        {isLoading ? (
-          <p className="text-center py-8 text-gray-400 text-sm">A carregar...</p>
-        ) : filtered.length === 0 ? (
-          <p className="text-center py-8 text-gray-400 text-sm">Nenhum documento encontrado.</p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b">
-                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500">Proprietário</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500">Tipo</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500">Validade</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500">Estado</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-gray-500">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {filtered.map(r => {
-                const expiry = getExpiryInfo(r);
-                return (
-                  <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <p className="font-medium text-gray-900">{r.owner_name}</p>
-                      <p className="text-xs text-gray-400 capitalize">{r.owner_type}</p>
-                    </td>
-                    <td className="py-3 px-4 text-gray-700">{DOC_TYPE_LABELS[r.document_type] || r.document_type}</td>
-                    <td className="py-3 px-4">
-                      {expiry ? (
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${expiry.color}`}>{expiry.label}</span>
-                      ) : <span className="text-gray-400 text-xs">—</span>}
-                    </td>
-                    <td className="py-3 px-4"><StatusBadge status={r.status} /></td>
-                    <td className="py-3 px-4">
-                      <div className="flex gap-1">
-                        {r.file_url && (
-                          <a href={r.file_url} target="_blank" rel="noopener noreferrer" className="p-1.5 hover:bg-gray-100 rounded">
-                            <Eye className="w-4 h-4 text-gray-500" />
-                          </a>
-                        )}
-                        {r.status === 'pending' && (
-                          <>
-                            <button onClick={() => updateMutation.mutate({ id: r.id, data: { status: 'approved' } })} className="p-1.5 hover:bg-emerald-50 rounded">
-                              <Check className="w-4 h-4 text-emerald-600" />
-                            </button>
-                            <button onClick={() => updateMutation.mutate({ id: r.id, data: { status: 'rejected' } })} className="p-1.5 hover:bg-red-50 rounded">
-                              <X className="w-4 h-4 text-red-500" />
-                            </button>
-                          </>
-                        )}
-                        <button onClick={() => { if (confirm('Eliminar documento?')) deleteMutation.mutate(r.id); }} className="p-1.5 hover:bg-red-50 rounded">
-                          <X className="w-4 h-4 text-red-400" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {isLoading ? (
+        <div className="text-center py-12 text-gray-400">A carregar...</div>
+      ) : filteredDocs.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <Upload className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Nenhum documento encontrado</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {filteredDocs.map(doc => {
+            const docType = DOC_TYPES.find(d => d.value === doc.doc_type);
+            const statusConfig = STATUS_CONFIG[doc.status] || STATUS_CONFIG.pending;
+            const StatusIcon = statusConfig.icon;
+            let expiryStatus = null;
 
-      {/* Add form dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
+            if (doc.expiry_date) {
+              const daysUntilExpiry = differenceInDays(new Date(doc.expiry_date), new Date());
+              if (daysUntilExpiry <= 0) {
+                expiryStatus = { label: 'Expirado', color: 'text-red-600' };
+              } else if (daysUntilExpiry <= 30) {
+                expiryStatus = { label: `${daysUntilExpiry} dias`, color: 'text-yellow-600' };
+              }
+            }
+
+            return (
+              <div
+                key={doc.id}
+                onClick={() => setSelectedDoc(doc)}
+                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+                    <Upload className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm text-gray-900">{docType?.label || doc.doc_type}</p>
+                    <p className="text-xs text-gray-500">{doc.driver_email}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  {expiryStatus && (
+                    <span className={`text-xs font-medium ${expiryStatus.color}`}>
+                      {expiryStatus.label}
+                    </span>
+                  )}
+                  <Badge className={`text-xs border-0 ${statusConfig.color}`}>
+                    {statusConfig.label}
+                  </Badge>
+                  {doc.created_date && (
+                    <span className="text-xs text-gray-400 hidden sm:block">
+                      {format(new Date(doc.created_date), 'dd/MM/yyyy')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedDoc} onOpenChange={(o) => { if (!o) setSelectedDoc(null); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Novo documento</DialogTitle></DialogHeader>
-          <form onSubmit={handleUpload} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tipo de proprietário</Label>
-              <Select value={form.owner_type} onValueChange={(v) => setForm(f => ({ ...f, owner_type: v, owner_id: '', owner_name: '' }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="driver">Motorista</SelectItem>
-                  <SelectItem value="vehicle">Veículo</SelectItem>
-                  <SelectItem value="fleet_manager">Gestor de frota</SelectItem>
-                  <SelectItem value="commercial">Comercial</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {form.owner_type === 'driver' && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Motorista</Label>
-                <Select value={form.owner_id} onValueChange={handleOwnerSelect}>
-                  <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
-                  <SelectContent>
-                    {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+          {selectedDoc && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{DOC_TYPES.find(d => d.value === selectedDoc.doc_type)?.label || selectedDoc.doc_type}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Motorista</p>
+                  <p className="text-sm font-medium text-gray-900">{selectedDoc.driver_email}</p>
+                </div>
+                {selectedDoc.expiry_date && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Validade</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {format(new Date(selectedDoc.expiry_date), 'dd/MM/yyyy')}
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Estado</p>
+                  <Badge className={`text-xs border-0 ${STATUS_CONFIG[selectedDoc.status]?.color || STATUS_CONFIG.pending.color}`}>
+                    {STATUS_CONFIG[selectedDoc.status]?.label || 'Pendente'}
+                  </Badge>
+                </div>
+                {isAdmin && selectedDoc.status === 'pending' && (
+                  <div className="space-y-2 pt-4 border-t">
+                    <p className="text-xs font-semibold text-gray-700">Ação</p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        onClick={() => {
+                          updateStatusMutation.mutate({ id: selectedDoc.id, status: 'approved' });
+                        }}
+                        disabled={updateStatusMutation.isPending}
+                      >
+                        Aprovar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => {
+                          updateStatusMutation.mutate({ id: selectedDoc.id, status: 'rejected' });
+                        }}
+                        disabled={updateStatusMutation.isPending}
+                      >
+                        Rejeitar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {selectedDoc.file_url && (
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => window.open(selectedDoc.file_url, '_blank')}
+                    >
+                      <Download className="w-4 h-4 mr-1" /> Ver documento
+                    </Button>
+                    {isAdmin && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          deleteMutation.mutate(selectedDoc.id);
+                        }}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
-            {form.owner_type === 'vehicle' && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Veículo</Label>
-                <Select value={form.owner_id} onValueChange={handleOwnerSelect}>
-                  <SelectTrigger><SelectValue placeholder="Escolher veículo..." /></SelectTrigger>
-                  <SelectContent>
-                    {vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {(form.owner_type === 'fleet_manager' || form.owner_type === 'commercial') && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">Nome</Label>
-                <Input value={form.owner_name} onChange={e => setForm(f => ({ ...f, owner_name: e.target.value }))} required />
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Tipo de documento</Label>
-              <Select value={form.document_type} onValueChange={(v) => setForm(f => ({ ...f, document_type: v }))}>
-                <SelectTrigger><SelectValue placeholder="Escolher..." /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(DOC_TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                </SelectContent>
-              </Select>
+      {/* Upload Dialog */}
+      <Dialog open={showUpload} onOpenChange={setShowUpload}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload de Documento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Tipo de Documento *</label>
+              <select
+                value={uploadForm.doc_type}
+                onChange={e => setUploadForm(p => ({ ...p, doc_type: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="">Selecionar...</option>
+                {DOC_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
             </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Data de validade</Label>
-              <Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} />
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Data de Validade</label>
+              <Input
+                type="date"
+                value={uploadForm.expiry_date}
+                onChange={e => setUploadForm(p => ({ ...p, expiry_date: e.target.value }))}
+              />
             </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">Ficheiro (PDF ou imagem)</Label>
-              <Input type="file" onChange={e => setFile(e.target.files[0])} accept="image/*,.pdf" />
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Ficheiro *</label>
+              <input
+                type="file"
+                onChange={e => setUploadForm(p => ({ ...p, file: e.target.files?.[0] || null }))}
+                className="w-full text-sm"
+              />
             </div>
-
-            <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-              <Button type="submit" disabled={uploading || !form.document_type || !form.owner_id} className="bg-indigo-600 hover:bg-indigo-700">
-                {uploading ? 'A enviar...' : 'Guardar'}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowUpload(false)}>Cancelar</Button>
+              <Button
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                onClick={handleUpload}
+                disabled={uploading || !uploadForm.doc_type || !uploadForm.file}
+              >
+                {uploading ? 'A carregar...' : 'Upload'}
               </Button>
             </div>
-          </form>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
