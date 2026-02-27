@@ -185,9 +185,13 @@ export default function Notifications({ currentUser }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    {!isRead && (
+                    {!isRead ? (
                       <button onClick={() => markReadMutation.mutate(n)} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded" title="Marcar como lida">
                         <CheckCheck className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button onClick={() => markUnreadMutation.mutate(n)} className="p-1.5 text-gray-300 hover:text-gray-500 rounded" title="Marcar como não lida">
+                        <Bell className="w-3.5 h-3.5" />
                       </button>
                     )}
                     {isAdmin && (
