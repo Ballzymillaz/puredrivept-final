@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 const TYPE_LABELS = { driver: 'Motorista', fleet_manager: 'Gestor de frota' };
@@ -120,7 +121,15 @@ export default function Applications() {
           </SelectContent>
         </Select>
       </PageHeader>
-      <DataTable columns={columns} data={filtered} isLoading={isLoading} onRowClick={setSelected} />
+      {applications.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <AlertCircle className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>Este sistema foi substituído pelo novo fluxo de onboarding.</p>
+          <p className="text-sm mt-1">Utilize a página de Onboarding para gerenciar candidatos.</p>
+        </div>
+      ) : (
+        <DataTable columns={columns} data={filtered} isLoading={isLoading} onRowClick={setSelected} />
+      )}
 
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         <DialogContent className="max-w-md">

@@ -44,6 +44,7 @@ const PAGE_TITLES = {
   ReportDriverUtilization: 'Utilização de Motoristas',
   ReportContractStatus: 'Situação de Contratos',
   DashboardModular: 'Dashboard Modular',
+  AdvancedReports: 'Relatórios Avançados',
 };
 
 // Public pages that don't need auth or sidebar
