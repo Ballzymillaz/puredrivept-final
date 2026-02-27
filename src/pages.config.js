@@ -85,6 +85,8 @@ import AdvanceRequest from './pages/AdvanceRequest';
 import AdvanceApproval from './pages/AdvanceApproval';
 import FleetCommunications from './pages/FleetCommunications';
 import VehicleAssignment from './pages/VehicleAssignment';
+import DriverAssignmentHistory from './pages/DriverAssignmentHistory';
+import VehicleAssignmentHistory from './pages/VehicleAssignmentHistory';
 import __Layout from './Layout.jsx';
 
 
@@ -127,6 +129,8 @@ export const PAGES = {
     "AdvanceApproval": AdvanceApproval,
     "FleetCommunications": FleetCommunications,
     "VehicleAssignment": VehicleAssignment,
+    "DriverAssignmentHistory": DriverAssignmentHistory,
+    "VehicleAssignmentHistory": VehicleAssignmentHistory,
 }
 
 export const pagesConfig = {
