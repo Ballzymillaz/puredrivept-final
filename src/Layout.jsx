@@ -22,6 +22,7 @@ const PAGE_TITLES = {
   Goals: 'Objetivos',
   Rankings: 'Classificação',
   UPI: 'Moeda UPI',
+  Relatorios: 'Relatórios',
   Messaging: 'Mensagens',
   RelatoriosFrota: 'Relatório de Frota',
   PublicSite: 'Site público',
