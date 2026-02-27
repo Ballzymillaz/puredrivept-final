@@ -30,6 +30,7 @@ const PAGE_TITLES = {
   UserManagement: 'Gestão de Utilizadores',
   PublicSite: 'Site público',
   Apply: 'Candidatura',
+  Contracts: 'Contratos',
   Fleets: 'Gestão de Frotas',
   RelatorioFrotas: 'Relatório de Desempenho de Frotas',
 };
