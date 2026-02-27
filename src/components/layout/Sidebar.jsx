@@ -16,6 +16,8 @@ const NAV_ITEMS = [
     { name: 'Motoristas', icon: Users, page: 'FleetDrivers' },
     { name: 'Frotas', icon: Building2, page: 'Fleets' },
     { name: 'Atribuição de Veículos', icon: Truck, page: 'VehicleAssignment' },
+    { name: 'Histórico de Motoristas', icon: Users, page: 'DriverAssignmentHistory' },
+    { name: 'Histórico de Veículos', icon: Car, page: 'VehicleAssignmentHistory' },
   ]},
   { section: 'Gestão', items: [
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
@@ -73,7 +75,7 @@ export default function Sidebar({ currentPage, userRole }) {
       }
 
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'VehicleAssignment', 'DocumentsHub', 'DocumentManagement', 'DocumentApproval', 'AdvanceApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'FleetCommunications', 'Configuracoes'].includes(item.page);
+        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'VehicleAssignment', 'DriverAssignmentHistory', 'VehicleAssignmentHistory', 'DocumentsHub', 'DocumentManagement', 'DocumentApproval', 'AdvanceApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'FleetCommunications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('admin')) {

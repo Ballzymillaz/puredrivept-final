@@ -40,6 +40,8 @@ const PAGE_TITLES = {
   FleetCommunications: 'Comunicações da Frota',
   VehicleAssignment: 'Atribuição de Veículos',
   DocumentManagement: 'Gestão de Documentos',
+  DriverAssignmentHistory: 'Histórico de Motoristas',
+  VehicleAssignmentHistory: 'Histórico de Veículos',
 };
 
 // Public pages that don't need auth or sidebar
