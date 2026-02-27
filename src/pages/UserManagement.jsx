@@ -55,30 +55,14 @@ export default function UserManagement({ currentUser }) {
     );
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     const role = selectedRoles.join(',') || '';
     updateMutation.mutate({ id: editing.id, role });
-    // Sync to corresponding entities
-    await base44.functions.invoke('syncUserRole', {
-      targetUserId: editing.id,
-      targetEmail: editing.email,
-      targetName: editing.full_name,
-      newRoles: selectedRoles,
-    });
   };
 
   const handleInvite = async () => {
     const platformRole = inviteRoles.includes('admin') ? 'admin' : 'user';
     await base44.users.inviteUser(inviteEmail, platformRole);
-    // Store intended app roles so they can be applied when user registers
-    // We also sync them immediately if possible via function
-    if (inviteRoles.length > 0) {
-      await base44.functions.invoke('syncUserRole', {
-        targetEmail: inviteEmail,
-        targetName: inviteEmail.split('@')[0],
-        newRoles: inviteRoles,
-      });
-    }
     setShowInvite(false);
     setInviteEmail('');
     setInviteRoles([]);
