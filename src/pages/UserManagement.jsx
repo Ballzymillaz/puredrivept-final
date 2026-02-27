@@ -68,8 +68,17 @@ export default function UserManagement({ currentUser }) {
   };
 
   const handleInvite = async () => {
-    const role = inviteRoles.join(',') || '';
-    await base44.users.inviteUser(inviteEmail, inviteRoles.includes('admin') ? 'admin' : 'user');
+    const platformRole = inviteRoles.includes('admin') ? 'admin' : 'user';
+    await base44.users.inviteUser(inviteEmail, platformRole);
+    // Store intended app roles so they can be applied when user registers
+    // We also sync them immediately if possible via function
+    if (inviteRoles.length > 0) {
+      await base44.functions.invoke('syncUserRole', {
+        targetEmail: inviteEmail,
+        targetName: inviteEmail.split('@')[0],
+        newRoles: inviteRoles,
+      });
+    }
     setShowInvite(false);
     setInviteEmail('');
     setInviteRoles([]);
