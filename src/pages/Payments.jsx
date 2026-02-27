@@ -194,7 +194,9 @@ export default function Payments() {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Novo pagamento semanal</DialogTitle></DialogHeader>
-          <NewRevenueForm drivers={drivers} onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} onCancel={() => setShowForm(false)} />
+          {driversLoading && <p className="text-sm text-gray-500">Carregando motoristas...</p>}
+          {driversError && <p className="text-sm text-red-500">Erro ao carregar motoristas: {driversError.message}</p>}
+          {!driversLoading && <NewRevenueForm drivers={drivers} onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} onCancel={() => setShowForm(false)} />}
         </DialogContent>
       </Dialog>
 
