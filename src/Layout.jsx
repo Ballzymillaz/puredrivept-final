@@ -22,6 +22,8 @@ const PAGE_TITLES = {
   Goals: 'Objetivos',
   Rankings: 'Classificação',
   UPI: 'Moeda UPI',
+  Messaging: 'Mensagens',
+  RelatoriosFrota: 'Relatório de Frota',
   PublicSite: 'Site público',
   Apply: 'Candidatura',
   Contracts: 'Contratos',
@@ -57,7 +59,7 @@ export default function Layout({ children, currentPageName }) {
       setLoading(false);
 
       // Redirect drivers to their own dashboard if they land on non-driver pages
-      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases'];
+      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'];
       if (me?.role === 'driver' && !DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('DriverDashboard');
       }
