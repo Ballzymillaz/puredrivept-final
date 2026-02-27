@@ -47,17 +47,21 @@ export default function Sidebar({ currentPage, userRole }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Support multi-roles (comma-separated)
+  const roles = userRole ? userRole.split(',').map(r => r.trim()) : [];
+  const hasRole = (r) => roles.includes(r);
+
   const filteredNav = NAV_ITEMS.map(section => ({
     ...section,
     items: section.items.filter(item => {
-      if (userRole === 'admin') return true;
-      if (userRole === 'fleet_manager') {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging'].includes(item.page);
+      if (hasRole('admin')) return true;
+      if (hasRole('fleet_manager') && !hasRole('driver')) {
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging', 'FleetManagers'].includes(item.page);
       }
-      if (userRole === 'commercial') {
-        return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings'].includes(item.page);
+      if (hasRole('commercial') && !hasRole('admin')) {
+        return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings', 'Messaging'].includes(item.page);
       }
-      if (userRole === 'driver') {
+      if (hasRole('driver')) {
         return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'].includes(item.page);
       }
       return true;
