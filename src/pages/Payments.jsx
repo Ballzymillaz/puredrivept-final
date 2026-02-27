@@ -30,13 +30,16 @@ export default function Payments() {
   const { data: drivers = [], isLoading: driversLoading, error: driversError } = useQuery({
     queryKey: ['drivers'],
     queryFn: async () => {
-      console.log('Fetching drivers...');
+      console.log('Fetching all drivers (no city filter)...');
       try {
         const result = await base44.entities.Drivers.list();
-        console.log('Drivers loaded:', result);
+        console.log(`✅ Drivers loaded: ${result.length} drivers`);
+        result.forEach(d => {
+          console.log(`  - ${d.full_name} (ID: ${d.id}, City: ${d.city_id})`);
+        });
         return result;
       } catch (err) {
-        console.error('Error loading drivers:', err);
+        console.error('❌ Error loading drivers:', err);
         throw err;
       }
     },
