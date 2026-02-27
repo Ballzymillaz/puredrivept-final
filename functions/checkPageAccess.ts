@@ -5,11 +5,14 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
+    console.log('User in checkPageAccess:', user?.email, user?.role);
+
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { pageName } = await req.json();
+    console.log('Checking access for page:', pageName, 'user role:', user.role);
 
     // Admins always have access
     if (user.role === 'admin') {
@@ -19,6 +22,7 @@ Deno.serve(async (req) => {
     // Default blocklist for drivers
     const driverBlockedPages = ['VehiclePurchases'];
     if (user.role === 'driver' && driverBlockedPages.includes(pageName)) {
+      console.log('Driver blocked from VehiclePurchases');
       return Response.json({ hasAccess: false });
     }
 
