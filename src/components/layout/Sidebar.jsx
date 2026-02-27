@@ -25,8 +25,6 @@ const NAV_ITEMS = [
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
   ]},
   { section: 'Finanças', items: [
-    { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
-    { name: 'Pagamentos Avançados', icon: HandCoins, page: 'AdvancedPayments' },
     { name: 'Fluxo de caixa', icon: TrendingUp, page: 'CashFlow' },
     { name: 'IVA', icon: Receipt, page: 'IVA' },
     { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
@@ -41,23 +39,11 @@ const NAV_ITEMS = [
     { name: 'UPI', icon: Coins, page: 'UPI' },
   ]},
   { section: 'Relatórios', items: [
-   { name: 'Veículos', icon: Car, page: 'ReportVehiclePerformance' },
-   { name: 'Motoristas', icon: Users, page: 'ReportDriverUtilization' },
-   { name: 'Geral', icon: FileBarChart, page: 'Relatorios' },
-   { name: 'Frota Avançado', icon: PieChart, page: 'RelatorioFrotas' },
-   { name: 'Frota Customizável', icon: PieChart, page: 'RelatoriosFrotas' },
-   { name: 'Análise Veículos', icon: Car, page: 'RelatorioVeiculos' },
-   { name: 'Avançados', icon: FileBarChart, page: 'AdvancedReports' },
-   { name: 'Construtor', icon: FileBarChart, page: 'ReportBuilder' },
-  ]},
-  { section: 'Automação', items: [
-    { name: 'Agendamento de Relatórios', icon: FileBarChart, page: 'ReportScheduler' },
+    { name: 'Geral', icon: FileBarChart, page: 'Relatorios' },
+    { name: 'Avançados', icon: FileBarChart, page: 'AdvancedReports' },
   ]},
   { section: 'Outros', items: [
-    { name: 'Dashboard Modular', icon: LayoutDashboard, page: 'DashboardModular' },
-    { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
     { name: 'Notificações', icon: Bell, page: 'Notifications' },
-    { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
   ]},
   { section: 'Sistema', items: [
     { name: 'Configurações', icon: Settings, page: 'Configuracoes' },
@@ -77,11 +63,11 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Payments', 'AdvancedPayments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'DashboardModular', 'DriverPerformance', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
+        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('driver')) {
-        return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'].includes(item.page);
+        return ['Onboarding', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'].includes(item.page);
       }
       // No valid role: no access
       return false;
