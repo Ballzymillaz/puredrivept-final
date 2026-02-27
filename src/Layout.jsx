@@ -56,13 +56,19 @@ export default function Layout({ children, currentPageName }) {
       const me = await base44.auth.me();
       setUser(me);
 
-      // Check page permissions via secure backend function
-      try {
-        const response = await base44.functions.invoke('checkPageAccess', { pageName: currentPageName });
-        setHasAccess(response.data.hasAccess);
-      } catch (e) {
-        // If check fails, allow access (backward compatibility)
-        setHasAccess(true);
+      // Quick blocklist check on frontend first
+      const driverBlockedPages = ['VehiclePurchases'];
+      if (me.role === 'driver' && driverBlockedPages.includes(currentPageName)) {
+        setHasAccess(false);
+      } else {
+        // Check page permissions via secure backend function
+        try {
+          const response = await base44.functions.invoke('checkPageAccess', { pageName: currentPageName });
+          setHasAccess(response.data.hasAccess);
+        } catch (e) {
+          // If check fails, allow access (backward compatibility)
+          setHasAccess(true);
+        }
       }
 
       setLoading(false);
