@@ -118,7 +118,8 @@ export default function DocumentsHub({ currentUser }) {
     approved: documents.filter(d => d.status === 'approved').length,
     pending: documents.filter(d => d.status === 'pending').length,
     expired: documents.filter(d => d.expiry_date && differenceInDays(new Date(d.expiry_date), new Date()) <= 0).length,
-    expiring: documents.filter(d => d.expiry_date && {
+    expiring: documents.filter(d => {
+      if (!d.expiry_date) return false;
       const days = differenceInDays(new Date(d.expiry_date), new Date());
       return days > 0 && days <= 30;
     }).length,
