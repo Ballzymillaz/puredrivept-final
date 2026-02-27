@@ -13,7 +13,6 @@ import { Shield, Users, Search } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ALL_ROLES = [
-  { value: 'new', label: 'Novo', color: 'bg-gray-100 text-gray-700' },
   { value: 'admin', label: 'Administrador', color: 'bg-red-100 text-red-700' },
   { value: 'fleet_manager', label: 'Gestor de frota', color: 'bg-blue-100 text-blue-700' },
   { value: 'driver', label: 'Motorista', color: 'bg-indigo-100 text-indigo-700' },
@@ -52,16 +51,7 @@ export default function UserManagement({ currentUser }) {
 
   const handleInvite = async () => {
     const platformRole = inviteRoles.includes('admin') ? 'admin' : 'user';
-    const appRoles = inviteRoles.length === 0 ? 'new' : inviteRoles.join(',');
-    
     await base44.users.inviteUser(inviteEmail, platformRole);
-    
-    // Set app roles for the new user
-    const users = await base44.entities.User.filter({ email: inviteEmail });
-    if (users.length > 0) {
-      await base44.entities.User.update(users[0].id, { role: appRoles });
-    }
-    
     setShowInvite(false);
     setInviteEmail('');
     setInviteRoles([]);
