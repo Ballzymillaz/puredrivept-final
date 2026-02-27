@@ -62,6 +62,13 @@ export default function Layout({ children, currentPageName }) {
       const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'];
       if (me?.role === 'driver' && !DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('DriverDashboard');
+        return;
+      }
+      // Redirect fleet_manager away from admin-only pages
+      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging'];
+      if (me?.role === 'fleet_manager' && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
+        window.location.href = createPageUrl('RelatoriosFrota');
+        return;
       }
     };
     loadUser();
