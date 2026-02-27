@@ -40,16 +40,19 @@ export default function RoleManagement() {
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.RolePermission.create(d),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['rolePermissions'] }); setShowDialog(false); setFormData({ role: '', page: '', access_level: 'read' }); },
+    onError: (e) => alert(`Erreur: ${e.message}`),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.RolePermission.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['rolePermissions'] }); setShowDialog(false); setEditingPermission(null); },
+    onError: (e) => alert(`Erreur: ${e.message}`),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.RolePermission.delete(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['rolePermissions'] }),
+    onError: (e) => alert(`Erreur: ${e.message}`),
   });
 
   const handleSubmit = () => {
@@ -212,7 +215,9 @@ export default function RoleManagement() {
             </div>
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowDialog(false)}>Cancelar</Button>
-              <Button onClick={handleSubmit} className="flex-1 bg-indigo-600 hover:bg-indigo-700">Guardar</Button>
+              <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
+                {createMutation.isPending || updateMutation.isPending ? 'Guardando...' : 'Guardar'}
+              </Button>
             </div>
           </div>
         </DialogContent>
