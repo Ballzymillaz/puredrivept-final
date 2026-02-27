@@ -2,45 +2,43 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {
-    const { applicationId } = await req.json();
     const base44 = createClientFromRequest(req);
+    const { data } = await req.json();
 
-    const app = await base44.asServiceRole.entities.Application.get(applicationId);
-    const users = await base44.asServiceRole.entities.User.list();
-    const adminUsers = users.filter(u => u.role === 'admin');
-
-    const typeLabel = {
-      driver: 'Motorista',
-      fleet_manager: 'Gestor de Frota',
-      commercial: 'Comercial',
-    }[app.applicant_type] || app.applicant_type;
-
-    // Notify admins
-    for (const admin of adminUsers) {
-      await base44.asServiceRole.entities.Notification.create({
-        user_id: admin.id,
-        user_email: admin.email,
-        title: '📝 Nova candidatura',
-        message: `${app.full_name} candidatou-se como ${typeLabel}`,
-        type: 'application_new',
-        related_entity_type: 'application',
-        related_entity_id: applicationId,
-        email_sent: false,
-      });
+    if (!data) {
+      return Response.json({ error: 'No application data' }, { status: 400 });
     }
 
-    // Send emails
-    const newNotifs = await base44.asServiceRole.entities.Notification.filter({ email_sent: false, related_entity_id: applicationId });
-    for (const notif of newNotifs) {
+    // Get all admin users
+    const users = await base44.asServiceRole.entities.User.filter({ role: 'admin' });
+    
+    const typeLabels = {
+      driver: 'Motorista TVDE',
+      fleet_manager: 'Gestor de frota',
+      commercial: 'Comercial'
+    };
+
+    // Send email to all admins
+    for (const admin of users) {
       await base44.asServiceRole.integrations.Core.SendEmail({
-        to: notif.user_email,
-        subject: notif.title,
-        body: `${app.full_name} (${app.email}) candidatou-se como ${typeLabel}.\n\nMensagem: ${app.message || 'N/A'}`,
+        to: admin.email,
+        subject: `Nova candidatura: ${typeLabels[data.applicant_type] || data.applicant_type}`,
+        body: `
+          <h2>Nova candidatura recebida</h2>
+          <p><strong>Nome:</strong> ${data.full_name}</p>
+          <p><strong>Email:</strong> ${data.email}</p>
+          <p><strong>Telefone:</strong> ${data.phone}</p>
+          <p><strong>Tipo:</strong> ${typeLabels[data.applicant_type] || data.applicant_type}</p>
+          ${data.nif ? `<p><strong>NIF:</strong> ${data.nif}</p>` : ''}
+          ${data.referral_code ? `<p><strong>Código de indicação:</strong> ${data.referral_code}</p>` : ''}
+          ${data.message ? `<p><strong>Mensagem:</strong><br>${data.message}</p>` : ''}
+          <br>
+          <p><a href="https://pure-drive-pt.base44.app" style="background: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; display: inline-block;">Ver candidatura</a></p>
+        `
       });
-      await base44.asServiceRole.entities.Notification.update(notif.id, { email_sent: true });
     }
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, notified: users.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

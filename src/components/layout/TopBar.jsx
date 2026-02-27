@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { LogOut, User, Languages } from 'lucide-react';
+import { Bell, LogOut, User, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { base44 } from '@/api/base44Client';
-import NotificationCenter from '../shared/NotificationCenter';
 
 export default function TopBar({ user, pageTitle }) {
   const [lang, setLang] = useState(localStorage.getItem('lang') || 'pt');
@@ -60,7 +59,10 @@ export default function TopBar({ user, pageTitle }) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <NotificationCenter />
+        <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-gray-600">
+          <Bell className="w-[18px] h-[18px]" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

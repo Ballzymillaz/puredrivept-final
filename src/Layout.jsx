@@ -33,7 +33,6 @@ const PUBLIC_PAGES = ['PublicSite', 'Apply'];
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [hasAccess, setHasAccess] = useState(true);
 
   useEffect(() => {
     const loadUser = async () => {
@@ -55,22 +54,6 @@ export default function Layout({ children, currentPageName }) {
       }
       const me = await base44.auth.me();
       setUser(me);
-
-      // Quick blocklist check on frontend first
-      const driverBlockedPages = ['VehiclePurchases'];
-      if (me.role === 'driver' && driverBlockedPages.includes(currentPageName)) {
-        setHasAccess(false);
-      } else {
-        // Check page permissions via secure backend function
-        try {
-          const response = await base44.functions.invoke('checkPageAccess', { pageName: currentPageName });
-          setHasAccess(response.data.hasAccess);
-        } catch (e) {
-          // If check fails, allow access (backward compatibility)
-          setHasAccess(true);
-        }
-      }
-
       setLoading(false);
     };
     loadUser();
@@ -88,30 +71,6 @@ export default function Layout({ children, currentPageName }) {
             <span className="text-white font-bold text-sm">PD</span>
           </div>
           <p className="text-sm text-gray-500">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!hasAccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-lg bg-red-100 flex items-center justify-center">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Accès Refusé</h1>
-            <p className="text-gray-600 mb-6">Vous n'avez pas la permission d'accéder à cette page.</p>
-            <button
-              onClick={() => window.location.href = createPageUrl('Dashboard')}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              Retour au Painel
-            </button>
-          </div>
         </div>
       </div>
     );

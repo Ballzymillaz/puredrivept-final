@@ -9,109 +9,170 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import StatCard from '../components/dashboard/StatCard';
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react';
-import { format } from 'date-fns';
+import { CreditCard, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { startOfWeek, endOfWeek, format, addWeeks } from 'date-fns';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function Payments() {
   const [selected, setSelected] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [driverFilter, setDriverFilter] = useState('all');
+  const [weekFilter, setWeekFilter] = useState('all');
   const [editMode, setEditMode] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [detailsDialog, setDetailsDialog] = useState(null);
   const qc = useQueryClient();
 
-  const { data: revenues = [], isLoading } = useQuery({
-    queryKey: ['weekly-revenues'],
-    queryFn: () => base44.entities.WeeklyRevenues.list('-week_start_date', 100),
+  const { data: payments = [], isLoading } = useQuery({
+    queryKey: ['payments'],
+    queryFn: () => base44.entities.WeeklyPayment.list('-week_start', 100),
   });
 
-  const { data: drivers = [], isLoading: driversLoading, error: driversError } = useQuery({
+  const { data: drivers = [] } = useQuery({
     queryKey: ['drivers'],
-    queryFn: async () => {
-      console.log('Fetching all drivers (no city filter)...');
-      try {
-        const result = await base44.entities.Drivers.list();
-        console.log(`✅ Drivers loaded: ${result.length} drivers`);
-        result.forEach(d => {
-          console.log(`  - ${d.full_name} (ID: ${d.id}, City: ${d.city_id})`);
-        });
-        return result;
-      } catch (err) {
-        console.error('❌ Error loading drivers:', err);
-        throw err;
-      }
-    },
-  });
-
-  const { data: ledger = [] } = useQuery({
-    queryKey: ['ledger'],
-    queryFn: () => base44.entities.Ledger.list('-date', 100),
+    queryFn: () => base44.entities.Driver.list(),
   });
 
   const createMutation = useMutation({
-    mutationFn: (d) => base44.entities.WeeklyRevenues.create(d),
-    onSuccess: async () => { 
-      await qc.invalidateQueries({ queryKey: ['weekly-revenues'] });
-      setShowForm(false); 
-    },
+    mutationFn: (d) => base44.entities.WeeklyPayment.create(d),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['payments'] }); setShowForm(false); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const result = await base44.entities.WeeklyRevenues.update(id, data);
+    mutationFn: async ({ id, data, oldPayment }) => {
+      const result = await base44.entities.WeeklyPayment.update(id, data);
       
-      // Create ledger entry if paid
-      if (data.status === 'paid') {
+      // If status changed to 'paid', sync to expenses and UPI
+      if (data.status === 'paid' && oldPayment.status !== 'paid') {
         try {
-          await base44.entities.Ledger.create({
-            date: new Date().toISOString().split('T')[0],
-            city_id: data.city_id,
-            driver_id: data.driver_id,
-            type: 'payout',
-            amount: data.net_driver_payout || 0,
-            description: `Pagamento semanal - ${data.driver_name}`,
-            reference_id: id,
-          });
+          await base44.functions.invoke('syncPaymentToExpenses', { paymentId: id });
         } catch (error) {
-          console.error('Erro criando ledger:', error);
+          console.error('Error syncing payment:', error);
+        }
+        
+        // Update driver caução if applicable
+        const driver = drivers.find(d => d.id === oldPayment.driver_id);
+        if (driver && oldPayment.irs_retention > 0 && !driver.vehicle_deposit_paid) {
+          const newDepositAmount = (driver.vehicle_deposit || 0) + oldPayment.irs_retention;
+          const depositPaid = newDepositAmount >= 500;
+          
+          try {
+            await base44.entities.Driver.update(driver.id, {
+              vehicle_deposit: newDepositAmount,
+              vehicle_deposit_paid: depositPaid,
+            });
+          } catch (error) {
+            console.error('Error updating driver deposit:', error);
+          }
+        }
+        
+        // Create referral payment for commercial/fleet manager
+        if (driver && (driver.commercial_id || driver.fleet_manager_id)) {
+          const referrerType = driver.commercial_id ? 'commercial' : 'fleet_manager';
+          const referrerId = driver.commercial_id || driver.fleet_manager_id;
+          const referrerName = driver.commercial_name || driver.fleet_manager_name;
+          
+          // Calculate weekly amount based on contract type
+          const weeklyAmount = driver.contract_type === 'slot_standard' ? 5 :
+                              driver.contract_type === 'slot_premium' ? 5 :
+                              driver.contract_type === 'slot_black' ? 10 :
+                              driver.contract_type === 'location' ? 15 : 0;
+          
+          if (weeklyAmount > 0) {
+            try {
+              await base44.entities.ReferralPayment.create({
+                referrer_type: referrerType,
+                referrer_id: referrerId,
+                referrer_name: referrerName,
+                driver_id: driver.id,
+                driver_name: driver.full_name,
+                driver_contract_type: driver.contract_type,
+                weekly_amount: weeklyAmount,
+                week_label: oldPayment.period_label,
+                status: 'pending',
+              });
+            } catch (error) {
+              console.error('Error creating referral payment:', error);
+            }
+          }
         }
       }
+      
       return result;
     },
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ['weekly-revenues'] });
-      await qc.invalidateQueries({ queryKey: ['ledger'] });
+      await qc.invalidateQueries({ queryKey: ['payments'] });
+      await qc.invalidateQueries({ queryKey: ['expenses-all'] });
+      await qc.invalidateQueries({ queryKey: ['upi-transactions'] });
+      await qc.invalidateQueries({ queryKey: ['drivers'] });
+      await qc.invalidateQueries({ queryKey: ['referralPayments'] });
       setEditMode(false);
       setSelected(null);
     },
   });
 
-  const filtered = revenues.filter(r => {
-    const statusMatch = statusFilter === 'all' || r.status === statusFilter;
-    const driverMatch = driverFilter === 'all' || r.driver_id === driverFilter;
-    return statusMatch && driverMatch;
+  const deleteMutation = useMutation({
+    mutationFn: async (payment) => {
+      // Si le paiement était payé, supprimer les dépenses/UPI associés
+      if (payment.status === 'paid') {
+        await base44.functions.invoke('deletePaymentExpenses', { paymentId: payment.id });
+        
+        // Retirer la caução du driver si applicable
+        if (payment.irs_retention > 0) {
+          const driver = drivers.find(d => d.id === payment.driver_id);
+          if (driver) {
+            const newDepositAmount = Math.max(0, (driver.vehicle_deposit || 0) - payment.irs_retention);
+            const depositPaid = newDepositAmount >= 500;
+            
+            try {
+              await base44.entities.Driver.update(driver.id, {
+                vehicle_deposit: newDepositAmount,
+                vehicle_deposit_paid: depositPaid,
+              });
+            } catch (error) {
+              console.error('Error updating driver deposit:', error);
+            }
+          }
+        }
+      }
+      return await base44.entities.WeeklyPayment.delete(payment.id);
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['payments'] });
+      await qc.invalidateQueries({ queryKey: ['expenses-all'] });
+      await qc.invalidateQueries({ queryKey: ['upi-transactions'] });
+      await qc.invalidateQueries({ queryKey: ['drivers'] });
+      setSelected(null);
+    },
   });
 
-  const totalGross = filtered.reduce((s, r) => s + (r.total_revenue || 0), 0);
-  const totalNet = filtered.reduce((s, r) => s + (r.net_driver_payout || 0), 0);
-  const totalUPI = filtered.reduce((s, r) => s + (r.upi_4_percent || 0), 0);
+  const filtered = payments.filter(p => {
+    const statusMatch = statusFilter === 'all' || p.status === statusFilter;
+    const driverMatch = driverFilter === 'all' || p.driver_id === driverFilter;
+    const weekMatch = weekFilter === 'all' || p.period_label === weekFilter;
+    return statusMatch && driverMatch && weekMatch;
+  });
+  const totalGross = filtered.reduce((s, p) => s + (p.total_gross || 0), 0);
+  const totalNet = filtered.reduce((s, p) => s + (p.net_amount || 0), 0);
+  const totalDeductions = filtered.reduce((s, p) => s + (p.total_deductions || 0), 0);
 
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
 
   const columns = [
     { header: 'Motorista', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
-    { header: 'Período', render: (r) => <span className="text-sm">{r.week_start_date} a {r.week_end_date}</span> },
-    { header: 'Bruto', render: (r) => <span className="text-sm font-medium text-gray-900">{fmt(r.total_revenue)}</span> },
-    { header: 'UPI (4%)', render: (r) => <span className="text-sm text-violet-600">{r.upi_4_percent.toFixed(0)}</span> },
-    { header: 'Líquido', render: (r) => <span className="text-sm font-bold text-indigo-700">{fmt(r.net_driver_payout)}</span> },
+    { header: 'Período', render: (r) => <span className="text-sm">{r.period_label || `${r.week_start}`}</span> },
+    { header: 'Bruto', render: (r) => <span className="text-sm font-medium text-gray-900">{fmt(r.total_gross)}</span> },
+    { header: 'Deduções', render: (r) => <span className="text-sm text-red-600">{fmt(r.total_deductions)}</span> },
+    { header: 'Líquido', render: (r) => <span className="text-sm font-bold text-indigo-700">{fmt(r.net_amount)}</span> },
+    { header: 'UPI', render: (r) => <span className="text-sm text-violet-600">{r.upi_earned || 0}</span> },
     { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Pagamentos Semanais" subtitle={`${revenues.length} períodos`} actionLabel="Novo pagamento" onAction={() => { setShowForm(true); }} />
+      <PageHeader title="Pagamentos semanais" subtitle={`${payments.length} pagamentos`} actionLabel="Novo pagamento" onAction={() => { setShowForm(true); }} />
       
       <div className="flex flex-wrap gap-3">
         <Select value={driverFilter} onValueChange={setDriverFilter}>
@@ -122,12 +183,22 @@ export default function Payments() {
           </SelectContent>
         </Select>
 
+        <Select value={weekFilter} onValueChange={setWeekFilter}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Todas semanas" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as semanas</SelectItem>
+            {[...new Set(payments.map(p => p.period_label))].filter(Boolean).map(w => (
+              <SelectItem key={w} value={w}>{w}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="draft">Rascunho</SelectItem>
-            <SelectItem value="validated">Validado</SelectItem>
+            <SelectItem value="approved">Aprovado</SelectItem>
             <SelectItem value="paid">Pago</SelectItem>
           </SelectContent>
         </Select>
@@ -137,8 +208,8 @@ export default function Payments() {
         <div className="cursor-pointer" onClick={() => setDetailsDialog('gross')}>
           <StatCard title="Total bruto" value={fmt(totalGross)} icon={TrendingUp} color="green" />
         </div>
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('upi')}>
-          <StatCard title="UPI gerado" value={totalUPI.toFixed(0)} icon={Wallet} color="violet" />
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('deductions')}>
+          <StatCard title="Deduções" value={fmt(totalDeductions)} icon={TrendingDown} color="rose" />
         </div>
         <div className="cursor-pointer" onClick={() => setDetailsDialog('net')}>
           <StatCard title="Líquido a pagar" value={fmt(totalNet)} icon={Wallet} color="indigo" />
@@ -156,16 +227,22 @@ export default function Payments() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {[
-                  ['Uber', fmt(selected.uber_revenue)],
-                  ['Bolt', fmt(selected.bolt_revenue)],
-                  ['Outros', fmt(selected.other_revenue)],
-                  ['Total bruto', fmt(selected.total_revenue)],
-                  ['UPI (4%)', selected.upi_4_percent.toFixed(0)],
-                  ['Aluguer veículo', fmt(selected.rent_due)],
-                  ['Empréstimo', fmt(selected.loan_due)],
-                  ['Seguros', fmt(selected.insurance)],
-                  ['Outras deduções', fmt(selected.other_deductions)],
-                  ['6% IVA', fmt(selected.iva_6_percent)],
+                  ['Uber', fmt(selected.uber_gross)],
+                  ['Bolt', fmt(selected.bolt_gross)],
+                  ['Outros', fmt(selected.other_platform_gross)],
+                  ['Comissão', fmt(selected.commission_amount)],
+                  ['Taxa slot', fmt(selected.slot_fee)],
+                  ['Aluguer veículo', fmt(selected.vehicle_rental)],
+                  ['Via Verde', fmt(selected.via_verde_amount)],
+                  ['MyPRIO', fmt(selected.myprio_amount)],
+                  ['Miio', fmt(selected.miio_amount)],
+                  ['Empréstimo', fmt(selected.loan_installment)],
+                  ['Compra veículo', fmt(selected.vehicle_purchase_installment)],
+                  ['Reembolsos', fmt(selected.reimbursement_credit)],
+                  ['Bónus objetivo', fmt(selected.goal_bonus)],
+                  ['6% IVA (obrigatorio estado)', fmt(selected.iva_amount)],
+                  ['Caução', fmt(selected.irs_retention)],
+                  ['UPI ganhos', selected.upi_earned],
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between p-2 bg-gray-50 rounded">
                     <span className="text-gray-600">{label}</span>
@@ -175,31 +252,32 @@ export default function Payments() {
               </div>
               <div className="flex justify-between p-3 bg-indigo-50 rounded-lg text-indigo-900 font-bold">
                 <span>Líquido a pagar</span>
-                <span>{fmt(selected.net_driver_payout)}</span>
+                <span>{fmt(selected.net_amount)}</span>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setEditMode(true)} variant="outline" className="flex-1">Editar</Button>
-                <Select value={selected.status} onValueChange={(v) => updateMutation.mutate({ id: selected.id, data: { status: v } })}>
+                <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar pagamento?')) deleteMutation.mutate(selected); }}>Eliminar</Button>
+                <Select value={selected.status} onValueChange={(v) => updateMutation.mutate({ id: selected.id, data: { status: v }, oldPayment: selected })}>
                   <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">Rascunho</SelectItem>
-                    <SelectItem value="validated">Validado</SelectItem>
+                    <SelectItem value="processing">Processando</SelectItem>
+                    <SelectItem value="approved">Aprovado</SelectItem>
                     <SelectItem value="paid">Pago</SelectItem>
+                    <SelectItem value="disputed">Contestado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           )}
-          {selected && editMode && <RevenueEditForm revenue={selected} onSave={(data) => updateMutation.mutate({ id: selected.id, data })} onCancel={() => setEditMode(false)} />}
+          {selected && editMode && <PaymentEditForm payment={selected} onSave={(data) => updateMutation.mutate({ id: selected.id, data })} onCancel={() => setEditMode(false)} />}
         </DialogContent>
       </Dialog>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Novo pagamento semanal</DialogTitle></DialogHeader>
-          {driversLoading && <p className="text-sm text-gray-500">Carregando motoristas...</p>}
-          {driversError && <p className="text-sm text-red-500">Erro ao carregar motoristas: {driversError.message}</p>}
-          {!driversLoading && <NewRevenueForm drivers={drivers} onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} onCancel={() => setShowForm(false)} />}
+          <NewPaymentForm drivers={drivers} onSubmit={(data) => createMutation.mutate(data)} isLoading={createMutation.isPending} onCancel={() => setShowForm(false)} />
         </DialogContent>
       </Dialog>
 
@@ -208,35 +286,35 @@ export default function Payments() {
           <DialogHeader>
             <DialogTitle>
               {detailsDialog === 'gross' && 'Detalhes: Total Bruto'}
-              {detailsDialog === 'upi' && 'Detalhes: UPI Gerado'}
+              {detailsDialog === 'deductions' && 'Detalhes: Deduções'}
               {detailsDialog === 'net' && 'Detalhes: Líquido a Pagar'}
             </DialogTitle>
           </DialogHeader>
-          <RevenueDetailsContent type={detailsDialog} revenues={filtered} fmt={fmt} />
+          <PaymentDetailsContent type={detailsDialog} payments={filtered} fmt={fmt} />
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function RevenueDetailsContent({ type, revenues, fmt }) {
+function PaymentDetailsContent({ type, payments, fmt }) {
   if (type === 'gross') {
-    const total = revenues.reduce((s, r) => s + (r.total_revenue || 0), 0);
+    const total = payments.reduce((s, p) => s + (p.total_gross || 0), 0);
     return (
       <div className="space-y-3">
         <div className="p-3 bg-green-50 rounded-lg">
           <p className="text-sm font-semibold">Total: {fmt(total)}</p>
         </div>
         <div className="space-y-2">
-          {revenues.map(r => (
-            <div key={r.id} className="flex justify-between items-center p-2 border-b">
+          {payments.map(p => (
+            <div key={p.id} className="flex justify-between items-center p-2 border-b">
               <div>
-                <p className="font-medium text-sm">{r.driver_name}</p>
-                <p className="text-xs text-gray-500">{r.week_start_date}</p>
+                <p className="font-medium text-sm">{p.driver_name}</p>
+                <p className="text-xs text-gray-500">{p.period_label}</p>
               </div>
               <div className="text-right">
-                <p className="font-medium">{fmt(r.total_revenue)}</p>
-                <p className="text-xs text-gray-500">Uber: {fmt(r.uber_revenue)} | Bolt: {fmt(r.bolt_revenue)}</p>
+                <p className="font-medium">{fmt(p.total_gross)}</p>
+                <p className="text-xs text-gray-500">Uber: {fmt(p.uber_gross)} | Bolt: {fmt(p.bolt_gross)}</p>
               </div>
             </div>
           ))}
@@ -245,21 +323,33 @@ function RevenueDetailsContent({ type, revenues, fmt }) {
     );
   }
 
-  if (type === 'upi') {
-    const total = revenues.reduce((s, r) => s + (r.upi_4_percent || 0), 0);
+  if (type === 'deductions') {
+    const total = payments.reduce((s, p) => s + (p.total_deductions || 0), 0);
     return (
       <div className="space-y-3">
-        <div className="p-3 bg-violet-50 rounded-lg">
-          <p className="text-sm font-semibold">Total UPI: {total.toFixed(0)}</p>
+        <div className="p-3 bg-rose-50 rounded-lg">
+          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
         </div>
         <div className="space-y-2">
-          {revenues.filter(r => r.upi_4_percent > 0).map(r => (
-            <div key={r.id} className="flex justify-between items-center p-2 border-b">
-              <div>
-                <p className="font-medium text-sm">{r.driver_name}</p>
-                <p className="text-xs text-gray-500">{r.week_start_date}</p>
+          {payments.map(p => (
+            <div key={p.id} className="p-3 border-b">
+              <div className="flex justify-between items-center mb-2">
+                <p className="font-medium text-sm">{p.driver_name}</p>
+                <p className="font-bold text-red-600">{fmt(p.total_deductions)}</p>
               </div>
-              <p className="font-medium">{r.upi_4_percent.toFixed(0)} UPI</p>
+              <div className="grid grid-cols-2 gap-1 text-xs text-gray-600">
+                {p.commission_amount > 0 && <p>Comissão: {fmt(p.commission_amount)}</p>}
+                {p.slot_fee > 0 && <p>Taxa slot: {fmt(p.slot_fee)}</p>}
+                {p.vehicle_rental > 0 && <p>Aluguer: {fmt(p.vehicle_rental)}</p>}
+                {p.via_verde_amount > 0 && <p>Via Verde: {fmt(p.via_verde_amount)}</p>}
+                {p.myprio_amount > 0 && <p>MyPRIO: {fmt(p.myprio_amount)}</p>}
+                {p.miio_amount > 0 && <p>Miio: {fmt(p.miio_amount)}</p>}
+                {p.loan_installment > 0 && <p>Empréstimo: {fmt(p.loan_installment)}</p>}
+                {p.vehicle_purchase_installment > 0 && <p>Compra: {fmt(p.vehicle_purchase_installment)}</p>}
+                {p.iva_amount > 0 && <p>6% IVA: {fmt(p.iva_amount)}</p>}
+                {p.irs_retention > 0 && <p>Caução: {fmt(p.irs_retention)}</p>}
+                {p.upi_earned > 0 && <p>UPI: {p.upi_earned}</p>}
+              </div>
             </div>
           ))}
         </div>
@@ -268,20 +358,23 @@ function RevenueDetailsContent({ type, revenues, fmt }) {
   }
 
   if (type === 'net') {
-    const total = revenues.reduce((s, r) => s + (r.net_driver_payout || 0), 0);
+    const total = payments.reduce((s, p) => s + (p.net_amount || 0), 0);
     return (
       <div className="space-y-3">
         <div className="p-3 bg-indigo-50 rounded-lg">
           <p className="text-sm font-semibold">Total: {fmt(total)}</p>
         </div>
         <div className="space-y-2">
-          {revenues.map(r => (
-            <div key={r.id} className="flex justify-between items-center p-2 border-b">
+          {payments.map(p => (
+            <div key={p.id} className="flex justify-between items-center p-2 border-b">
               <div>
-                <p className="font-medium text-sm">{r.driver_name}</p>
-                <p className="text-xs text-gray-500">{r.week_start_date}</p>
+                <p className="font-medium text-sm">{p.driver_name}</p>
+                <p className="text-xs text-gray-500">{p.period_label}</p>
               </div>
-              <p className="font-bold text-indigo-700">{fmt(r.net_driver_payout)}</p>
+              <div className="text-right">
+                <p className="font-bold text-indigo-700">{fmt(p.net_amount)}</p>
+                <p className="text-xs text-gray-500">Bruto: {fmt(p.total_gross)} - Deduções: {fmt(p.total_deductions)}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -292,38 +385,28 @@ function RevenueDetailsContent({ type, revenues, fmt }) {
   return null;
 }
 
-function RevenueEditForm({ revenue, onSave, onCancel }) {
-  const [form, setForm] = React.useState({ ...revenue });
+function PaymentEditForm({ payment, onSave, onCancel }) {
+  const [form, setForm] = useState({ ...payment });
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: parseFloat(v) || 0 }));
-  
   const handleSubmit = (e) => {
     e.preventDefault();
-    const totalRev = (form.uber_revenue || 0) + (form.bolt_revenue || 0) + (form.other_revenue || 0);
-    const upi = totalRev * 0.04;
-    const iva = (form.uber_revenue + form.bolt_revenue) * 0.06;
-    const totalDeductions = (form.rent_due || 0) + (form.loan_due || 0) + (form.insurance || 0) + (form.other_deductions || 0) + upi + iva;
-    const netPayout = totalRev - totalDeductions;
-    
-    onSave({ 
-      ...form, 
-      total_revenue: totalRev,
-      upi_4_percent: upi,
-      iva_6_percent: iva,
-      net_driver_payout: netPayout
-    });
+    const totalGross = (form.uber_gross || 0) + (form.bolt_gross || 0) + (form.other_platform_gross || 0);
+    const totalDeductions = (form.commission_amount || 0) + (form.slot_fee || 0) + (form.vehicle_rental || 0) + (form.via_verde_amount || 0) + (form.myprio_amount || 0) + (form.miio_amount || 0) + (form.loan_installment || 0) + (form.vehicle_purchase_installment || 0) + (form.iva_amount || 0) + (form.irs_retention || 0);
+    const netAmount = totalGross - totalDeductions + (form.reimbursement_credit || 0) + (form.goal_bonus || 0);
+    const upiEarned = Math.round((form.uber_gross + form.bolt_gross) * 0.04 * 100) / 100;
+    onSave({ ...form, total_gross: totalGross, total_deductions: totalDeductions, net_amount: netAmount, upi_earned: upiEarned });
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         {[
-          ['Uber', 'uber_revenue'], 
-          ['Bolt', 'bolt_revenue'], 
-          ['Outros', 'other_revenue'],
-          ['Aluguer', 'rent_due'], 
-          ['Empréstimo', 'loan_due'], 
-          ['Seguros', 'insurance'],
-          ['Outras deduções', 'other_deductions'],
+          ['Uber', 'uber_gross'], ['Bolt', 'bolt_gross'], ['Outros', 'other_platform_gross'],
+          ['Comissão', 'commission_amount'], ['Taxa slot', 'slot_fee'], ['Aluguer', 'vehicle_rental'],
+          ['Via Verde', 'via_verde_amount'], ['MyPRIO', 'myprio_amount'], ['Miio', 'miio_amount'],
+          ['Empréstimo', 'loan_installment'], ['Compra veículo', 'vehicle_purchase_installment'],
+          ['Reembolsos', 'reimbursement_credit'], ['Bónus', 'goal_bonus'],
+          ['6% IVA (obrigatorio estado)', 'iva_amount'], ['Caução', 'irs_retention'],
         ].map(([label, key]) => (
           <div key={key} className="space-y-1">
             <Label className="text-xs">{label}</Label>
@@ -339,86 +422,181 @@ function RevenueEditForm({ revenue, onSave, onCancel }) {
   );
 }
 
-function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
-  const [form, setForm] = React.useState({
+function NewPaymentForm({ drivers, onSubmit, isLoading, onCancel }) {
+  const [selectedWeek, setSelectedWeek] = useState(null);
+  const [form, setForm] = useState({
     driver_id: '',
-    city_id: '',
-    week_start_date: '',
-    week_end_date: '',
-    uber_revenue: 0,
-    bolt_revenue: 0,
-    other_revenue: 0,
+    uber_gross: 0,
+    bolt_gross: 0,
+    slot_fee: 0,
+    vehicle_rental: 0,
+    via_verde_amount: 0,
+    myprio_amount: 0,
+    miio_amount: 0,
+    loan_installment: 0,
+    vehicle_purchase_installment: 0,
+    reimbursement_credit: 0,
+    goal_bonus: 0,
+    irs_retention: 0,
+    notes: '',
+  });
+
+  const { data: contracts = [] } = useQuery({
+    queryKey: ['contracts'],
+    queryFn: () => base44.entities.Contract.list(),
+  });
+
+  const weeks = Array.from({ length: 8 }, (_, i) => {
+    const date = addWeeks(new Date(), -i);
+    const start = startOfWeek(date, { weekStartsOn: 1 });
+    const end = endOfWeek(date, { weekStartsOn: 1 });
+    return {
+      start: format(start, 'yyyy-MM-dd'),
+      end: format(end, 'yyyy-MM-dd'),
+      label: `Semana ${format(start, 'dd/MM')} - ${format(end, 'dd/MM/yyyy')}`,
+    };
   });
 
   const handleChange = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
+  const handleDriverChange = (driverId) => {
+    const driver = drivers.find(d => d.id === driverId);
+    if (!driver) {
+      handleChange('driver_id', driverId);
+      return;
+    }
+
+    // Trouver le contrat actif du chauffeur
+    const activeContract = contracts.find(c => 
+      c.driver_id === driverId && 
+      c.status === 'active' && 
+      c.contract_type === 'location'
+    );
+
+    let updates = { driver_id: driverId };
+
+    // Si location, remplir le montant d'aluguer
+    if (activeContract && activeContract.weekly_rental_price) {
+      updates.vehicle_rental = activeContract.weekly_rental_price;
+    }
+
+    // Si location et caução non payée, ajouter 50€
+    if (activeContract && !driver.vehicle_deposit_paid) {
+      updates.irs_retention = 50;
+    } else {
+      updates.irs_retention = 0;
+    }
+
+    setForm(f => ({ ...f, ...updates }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.driver_id || !form.week_start_date) return;
+    if (!selectedWeek || !form.driver_id) return;
 
-    console.log('Drivers list:', drivers);
-    console.log('Selected driver_id:', form.driver_id, 'Type:', typeof form.driver_id);
-    
-    const driver = drivers.find(d => String(d.id) === String(form.driver_id));
-    if (!driver) {
-      console.error('Driver not found. Available IDs:', drivers.map(d => d.id));
-      return;
-    }
+    const driver = drivers.find(d => d.id === form.driver_id);
+    const totalGross = (parseFloat(form.uber_gross) || 0) + (parseFloat(form.bolt_gross) || 0);
+    const upiEarned = Math.round(totalGross * 0.04 * 100) / 100;
+    const ivaAmount = Math.round(totalGross * 0.06 * 100) / 100;
 
-    if (!driver.city_id) {
-      console.error('Driver does not have city_id:', driver);
-      return;
-    }
+    const totalDeductions = 
+      (parseFloat(form.slot_fee) || 0) +
+      (parseFloat(form.vehicle_rental) || 0) +
+      (parseFloat(form.via_verde_amount) || 0) +
+      (parseFloat(form.myprio_amount) || 0) +
+      (parseFloat(form.miio_amount) || 0) +
+      (parseFloat(form.loan_installment) || 0) +
+      (parseFloat(form.vehicle_purchase_installment) || 0) +
+      ivaAmount +
+      (parseFloat(form.irs_retention) || 0) +
+      upiEarned;
 
-    const payload = {
+    const netAmount = totalGross - totalDeductions + (parseFloat(form.reimbursement_credit) || 0) + (parseFloat(form.goal_bonus) || 0);
+
+    onSubmit({
       driver_id: form.driver_id,
-      city_id: driver.city_id,
-      week_start_date: form.week_start_date,
-      week_end_date: form.week_end_date || form.week_start_date,
-      uber_revenue: parseFloat(form.uber_revenue) || 0,
-      bolt_revenue: parseFloat(form.bolt_revenue) || 0,
-      other_revenue: parseFloat(form.other_revenue) || 0,
-    };
-
-    console.log('Selected Driver:', driver);
-    console.log('Payload enviado:', payload);
-    onSubmit(payload);
+      driver_name: driver?.full_name || '',
+      week_start: selectedWeek.start,
+      week_end: selectedWeek.end,
+      period_label: selectedWeek.label,
+      uber_gross: parseFloat(form.uber_gross) || 0,
+      bolt_gross: parseFloat(form.bolt_gross) || 0,
+      total_gross: totalGross,
+      slot_fee: parseFloat(form.slot_fee) || 0,
+      vehicle_rental: parseFloat(form.vehicle_rental) || 0,
+      via_verde_amount: parseFloat(form.via_verde_amount) || 0,
+      myprio_amount: parseFloat(form.myprio_amount) || 0,
+      miio_amount: parseFloat(form.miio_amount) || 0,
+      loan_installment: parseFloat(form.loan_installment) || 0,
+      vehicle_purchase_installment: parseFloat(form.vehicle_purchase_installment) || 0,
+      reimbursement_credit: parseFloat(form.reimbursement_credit) || 0,
+      goal_bonus: parseFloat(form.goal_bonus) || 0,
+      iva_amount: ivaAmount,
+      irs_retention: parseFloat(form.irs_retention) || 0,
+      upi_earned: upiEarned,
+      total_deductions: totalDeductions,
+      net_amount: netAmount,
+      status: 'draft',
+    });
   };
+
+  const totalGross = (parseFloat(form.uber_gross) || 0) + (parseFloat(form.bolt_gross) || 0);
+  const upiPreview = Math.round(totalGross * 0.04 * 100) / 100;
+  const ivaPreview = Math.round(totalGross * 0.06 * 100) / 100;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label className="text-xs">Motorista *</Label>
-        <Select value={form.driver_id} onValueChange={(v) => {
-          const selectedDriver = drivers.find(d => d.id === v);
-          console.log('Selected Driver:', selectedDriver);
-          handleChange('driver_id', v);
-        }}>
-          <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
-          <SelectContent>
-            {drivers.map(d => {
-              console.log(`Rendering driver option: ${d.full_name} (city_id: ${d.city_id})`);
-              return <SelectItem key={d.id} value={String(d.id)}>{d.full_name}</SelectItem>;
-            })}
-          </SelectContent>
-        </Select>
-      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label className="text-xs">Motorista *</Label>
+          <Select value={form.driver_id} onValueChange={handleDriverChange}>
+            <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
+            <SelectContent>
+              {drivers.map(d => (
+                <SelectItem key={d.id} value={d.id}>{d.full_name} - {d.email}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5"><Label className="text-xs">Data inicio *</Label><Input type="date" value={form.week_start_date} onChange={(e) => handleChange('week_start_date', e.target.value)} required /></div>
-        <div className="space-y-1.5"><Label className="text-xs">Data fim</Label><Input type="date" value={form.week_end_date} onChange={(e) => handleChange('week_end_date', e.target.value)} /></div>
-      </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label className="text-xs">Semana *</Label>
+          <Select value={selectedWeek?.start} onValueChange={(v) => setSelectedWeek(weeks.find(w => w.start === v))}>
+            <SelectTrigger><SelectValue placeholder="Escolher semana..." /></SelectTrigger>
+            <SelectContent>
+              {weeks.map(w => (
+                <SelectItem key={w.start} value={w.start}>{w.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5"><Label className="text-xs">Uber (€)</Label><Input type="number" step="0.01" value={form.uber_revenue} onChange={(e) => handleChange('uber_revenue', e.target.value)} /></div>
-        <div className="space-y-1.5"><Label className="text-xs">Bolt (€)</Label><Input type="number" step="0.01" value={form.bolt_revenue} onChange={(e) => handleChange('bolt_revenue', e.target.value)} /></div>
-      </div>
+        <div className="space-y-1.5"><Label className="text-xs">Uber bruto (€)</Label><Input type="number" step="0.01" value={form.uber_gross} onChange={(e) => handleChange('uber_gross', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Bolt bruto (€)</Label><Input type="number" step="0.01" value={form.bolt_gross} onChange={(e) => handleChange('bolt_gross', e.target.value)} /></div>
+        
+        {totalGross > 0 && (
+          <div className="sm:col-span-2 p-3 bg-indigo-50 rounded-lg space-y-1 text-sm">
+            <p>Total bruto: <strong>€{totalGross.toFixed(2)}</strong></p>
+            <p>UPI ganhos (4%): <strong>{upiPreview} UPI</strong></p>
+            <p>6% IVA (obrigatorio estado): <strong>€{ivaPreview.toFixed(2)}</strong></p>
+          </div>
+        )}
 
-      <div className="space-y-1.5"><Label className="text-xs">Outros (€)</Label><Input type="number" step="0.01" value={form.other_revenue} onChange={(e) => handleChange('other_revenue', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Taxa slot (€)</Label><Input type="number" step="0.01" value={form.slot_fee} onChange={(e) => handleChange('slot_fee', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Aluguer veículo (€)</Label><Input type="number" step="0.01" value={form.vehicle_rental} onChange={(e) => handleChange('vehicle_rental', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Via Verde (€)</Label><Input type="number" step="0.01" value={form.via_verde_amount} onChange={(e) => handleChange('via_verde_amount', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">MyPRIO (€)</Label><Input type="number" step="0.01" value={form.myprio_amount} onChange={(e) => handleChange('myprio_amount', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Miio (€)</Label><Input type="number" step="0.01" value={form.miio_amount} onChange={(e) => handleChange('miio_amount', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Empréstimo (€)</Label><Input type="number" step="0.01" value={form.loan_installment} onChange={(e) => handleChange('loan_installment', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Compra veículo (€)</Label><Input type="number" step="0.01" value={form.vehicle_purchase_installment} onChange={(e) => handleChange('vehicle_purchase_installment', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Reembolsos (€)</Label><Input type="number" step="0.01" value={form.reimbursement_credit} onChange={(e) => handleChange('reimbursement_credit', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Bónus objetivos (€)</Label><Input type="number" step="0.01" value={form.goal_bonus} onChange={(e) => handleChange('goal_bonus', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">Caução (€)</Label><Input type="number" step="0.01" value={form.irs_retention} onChange={(e) => handleChange('irs_retention', e.target.value)} /></div>
+      </div>
 
       <div className="flex gap-2">
         <Button type="button" variant="outline" onClick={onCancel} className="flex-1">Cancelar</Button>
-        <Button type="submit" disabled={isLoading || !form.driver_id} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
+        <Button type="submit" disabled={isLoading || !selectedWeek || !form.driver_id} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
           {isLoading ? 'A criar...' : 'Criar pagamento'}
         </Button>
       </div>

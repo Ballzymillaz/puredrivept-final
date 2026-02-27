@@ -30,17 +30,7 @@ export default function Vehicles() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicles'] }); setShowForm(false); },
   });
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const result = await base44.entities.Vehicle.update(id, data);
-      if (data.status && editing && data.status !== editing.status) {
-        try {
-          await base44.functions.invoke('notifyVehicleStatus', { vehicleId: id, oldStatus: editing.status, newStatus: data.status });
-        } catch (e) {
-          console.error('Error notifying:', e);
-        }
-      }
-      return result;
-    },
+    mutationFn: ({ id, data }) => base44.entities.Vehicle.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicles'] }); setShowForm(false); setEditing(null); },
   });
 
@@ -84,18 +74,12 @@ export default function Vehicles() {
       render: (r) => {
         const expiry = getTvdeExpiry(r.first_registration_date);
         if (!expiry) return <span className="text-gray-400 text-xs">—</span>;
-            const now = new Date();
-        const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
-        const yearsLeft = (expiry - now) / msPerYear;
-        let colorClass = 'text-gray-700';
-        let warning = '';
-        if (yearsLeft < 0) { colorClass = 'text-red-600'; warning = ' ⚠️'; }
-        else if (yearsLeft < 1) { colorClass = 'text-red-600'; warning = ' ⚠️'; }
-        else if (yearsLeft < 2) { colorClass = 'text-orange-500'; }
-        else if (yearsLeft < 3) { colorClass = 'text-yellow-600'; }
+        const isExpired = expiry < new Date();
+        const isSoon = !isExpired && expiry < new Date(Date.now() + 180 * 24 * 60 * 60 * 1000);
         return (
-          <span className={`text-xs font-medium ${colorClass}`}>
-            {expiry.toLocaleDateString('pt-PT')}{warning}
+          <span className={`text-xs font-medium ${isExpired ? 'text-red-600' : isSoon ? 'text-orange-500' : 'text-gray-700'}`}>
+            {expiry.toLocaleDateString('pt-PT')}
+            {isExpired && ' ⚠️'}
           </span>
         );
       },
