@@ -56,7 +56,7 @@ export default function UserManagement({ currentUser }) {
   };
 
   const handleSave = async () => {
-    const role = selectedRoles.join(',') || 'user';
+    const role = selectedRoles.join(',') || '';
     updateMutation.mutate({ id: editing.id, role });
     // Sync to corresponding entities
     await base44.functions.invoke('syncUserRole', {
@@ -68,11 +68,11 @@ export default function UserManagement({ currentUser }) {
   };
 
   const handleInvite = async () => {
-    const role = inviteRoles.join(',') || 'user';
-    await base44.users.inviteUser(inviteEmail, role === 'admin' ? 'admin' : 'user');
+    const role = inviteRoles.join(',') || '';
+    await base44.users.inviteUser(inviteEmail, inviteRoles.includes('admin') ? 'admin' : 'user');
     setShowInvite(false);
     setInviteEmail('');
-    setInviteRoles(['user']);
+    setInviteRoles([]);
   };
 
   const getRoleBadges = (roleStr) => {

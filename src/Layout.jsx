@@ -33,6 +33,8 @@ const PAGE_TITLES = {
   Contracts: 'Contratos',
   Fleets: 'Gestão de Frotas',
   RelatorioFrotas: 'Relatório de Desempenho de Frotas',
+  Configuracoes: 'Configurações',
+  ReportBuilder: 'Construtor de Relatórios',
 };
 
 // Public pages that don't need auth or sidebar
