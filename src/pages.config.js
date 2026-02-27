@@ -47,54 +47,54 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import Applications from './pages/Applications';
-import Apply from './pages/Apply';
-import CashFlow from './pages/CashFlow';
-import Commercials from './pages/Commercials';
-import Contracts from './pages/Contracts';
-import Dashboard from './pages/Dashboard';
-import Documents from './pages/Documents';
-import Drivers from './pages/Drivers';
-import FleetManagers from './pages/FleetManagers';
-import Goals from './pages/Goals';
 import IVA from './pages/IVA';
-import Loans from './pages/Loans';
-import Payments from './pages/Payments';
-import PublicSite from './pages/PublicSite';
+import Relatorios from './pages/Relatorios';
+import Applications from './pages/Applications';
 import Rankings from './pages/Rankings';
 import Referrals from './pages/Referrals';
-import Reimbursements from './pages/Reimbursements';
+import CashFlow from './pages/CashFlow';
+import Goals from './pages/Goals';
+import Apply from './pages/Apply';
+import Commercials from './pages/Commercials';
+import FleetManagers from './pages/FleetManagers';
 import UPI from './pages/UPI';
+import Loans from './pages/Loans';
+import Reimbursements from './pages/Reimbursements';
 import VehiclePurchases from './pages/VehiclePurchases';
-import Vehicles from './pages/Vehicles';
-import Relatorios from './pages/Relatorios';
+import Documents from './pages/Documents';
+import Dashboard from './pages/Dashboard';
 import DriverDashboard from './pages/DriverDashboard';
+import Contracts from './pages/Contracts';
+import Payments from './pages/Payments';
+import PublicSite from './pages/PublicSite';
+import Drivers from './pages/Drivers';
+import Vehicles from './pages/Vehicles';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Applications": Applications,
-    "Apply": Apply,
-    "CashFlow": CashFlow,
-    "Commercials": Commercials,
-    "Contracts": Contracts,
-    "Dashboard": Dashboard,
-    "Documents": Documents,
-    "Drivers": Drivers,
-    "FleetManagers": FleetManagers,
-    "Goals": Goals,
     "IVA": IVA,
-    "Loans": Loans,
-    "Payments": Payments,
-    "PublicSite": PublicSite,
+    "Relatorios": Relatorios,
+    "Applications": Applications,
     "Rankings": Rankings,
     "Referrals": Referrals,
-    "Reimbursements": Reimbursements,
+    "CashFlow": CashFlow,
+    "Goals": Goals,
+    "Apply": Apply,
+    "Commercials": Commercials,
+    "FleetManagers": FleetManagers,
     "UPI": UPI,
+    "Loans": Loans,
+    "Reimbursements": Reimbursements,
     "VehiclePurchases": VehiclePurchases,
-    "Vehicles": Vehicles,
-    "Relatorios": Relatorios,
+    "Documents": Documents,
+    "Dashboard": Dashboard,
     "DriverDashboard": DriverDashboard,
+    "Contracts": Contracts,
+    "Payments": Payments,
+    "PublicSite": PublicSite,
+    "Drivers": Drivers,
+    "Vehicles": Vehicles,
 }
 
 export const pagesConfig = {

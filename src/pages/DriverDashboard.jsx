@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Wallet, TrendingUp, TrendingDown, Zap, Shield, FileText, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import StatusBadge from '../components/shared/StatusBadge';
+import DriverDocumentUpload from '../components/documents/DriverDocumentUpload';
 
 const fmt = (v) => `€${(v || 0).toFixed(2)}`;
 
@@ -195,10 +196,11 @@ export default function DriverDashboard() {
 
       {/* Documents */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <FileText className="w-4 h-4" /> Documentos ({documents.length})
           </CardTitle>
+          <DriverDocumentUpload driverId={driver.id} driverName={driver.full_name} />
         </CardHeader>
         <CardContent className="p-0">
           {documents.length === 0 ? (

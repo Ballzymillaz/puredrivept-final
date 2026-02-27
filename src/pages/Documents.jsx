@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { Upload, Eye, Check, X, AlertTriangle, Search } from 'lucide-react';
 import { differenceInDays, format } from 'date-fns';
 
@@ -27,6 +28,8 @@ export default function Documents() {
   const [ownerTypeFilter, setOwnerTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [selectedForApproval, setSelectedForApproval] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const [form, setForm] = useState({ owner_type: 'driver', owner_id: '', owner_name: '', document_type: '', expiry_date: '' });
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -48,8 +51,35 @@ export default function Documents() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Document.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['documents'] }),
+    mutationFn: async ({ id, data, doc }) => {
+      const result = await base44.entities.Document.update(id, data);
+      
+      // Notify driver if approved/rejected
+      if ((data.status === 'approved' || data.status === 'rejected') && doc.owner_type === 'driver') {
+        const driver = drivers.find(d => d.id === doc.owner_id);
+        if (driver) {
+          try {
+            await base44.functions.invoke('notifyDocumentApproval', {
+              driverId: driver.id,
+              driverEmail: driver.email,
+              driverName: driver.full_name,
+              docType: DOC_TYPE_LABELS[doc.document_type],
+              status: data.status,
+              rejectionReason: data.rejection_reason || '',
+            });
+          } catch (e) {
+            console.error('Error notifying:', e);
+          }
+        }
+      }
+      return result;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['documents'] });
+      qc.invalidateQueries({ queryKey: ['my-docs'] });
+      setSelectedForApproval(null);
+      setRejectionReason('');
+    },
   });
 
   const createMutation = useMutation({
@@ -200,10 +230,10 @@ export default function Documents() {
                         )}
                         {r.status === 'pending' && (
                           <>
-                            <button onClick={() => updateMutation.mutate({ id: r.id, data: { status: 'approved' } })} className="p-1.5 hover:bg-emerald-50 rounded">
+                            <button onClick={() => updateMutation.mutate({ id: r.id, data: { status: 'approved' }, doc: r })} className="p-1.5 hover:bg-emerald-50 rounded">
                               <Check className="w-4 h-4 text-emerald-600" />
                             </button>
-                            <button onClick={() => updateMutation.mutate({ id: r.id, data: { status: 'rejected' } })} className="p-1.5 hover:bg-red-50 rounded">
+                            <button onClick={() => setSelectedForApproval(r)} className="p-1.5 hover:bg-red-50 rounded">
                               <X className="w-4 h-4 text-red-500" />
                             </button>
                           </>
@@ -220,6 +250,49 @@ export default function Documents() {
           </table>
         )}
       </div>
+
+      {/* Rejection dialog */}
+      <Dialog open={!!selectedForApproval} onOpenChange={(open) => !open && setSelectedForApproval(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rejeitar documento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium mb-1">{selectedForApproval?.owner_name}</p>
+              <p className="text-xs text-gray-500">{DOC_TYPE_LABELS[selectedForApproval?.document_type]}</p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium">Motivo da rejeição *</label>
+              <Textarea 
+                placeholder="Ex: Documento ilegível, fora de validade..." 
+                value={rejectionReason} 
+                onChange={e => setRejectionReason(e.target.value)} 
+                className="h-20"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button 
+                onClick={() => setSelectedForApproval(null)} 
+                className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => updateMutation.mutate({ 
+                  id: selectedForApproval.id, 
+                  data: { status: 'rejected', rejection_reason: rejectionReason },
+                  doc: selectedForApproval
+                })} 
+                disabled={!rejectionReason.trim()}
+                className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                Rejeitar
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add form dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
