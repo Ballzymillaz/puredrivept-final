@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { createPageUrl } from '@/utils';
+import { Link } from 'react-router-dom';
 
 export default function TopBar({ user, pageTitle }) {
   const [lang, setLang] = useState(localStorage.getItem('lang') || 'pt');
