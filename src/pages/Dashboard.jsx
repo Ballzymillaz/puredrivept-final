@@ -1,266 +1,210 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import StatCard from '../components/dashboard/StatCard';
-import StatusBadge from '../components/shared/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, Car, CreditCard, TrendingUp, Coins, AlertTriangle, UserPlus, FileText } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Rocket, TrendingUp, TrendingDown, Users, Zap, Award, BarChart3, Coins } from 'lucide-react';
 
-const PIE_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'];
-
-export default function Dashboard({ currentUser }) {
-  const [detailsDialog, setDetailsDialog] = useState(null);
-  
-  const { data: drivers = [] } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list(),
-  });
-  const { data: vehicles = [] } = useQuery({
-    queryKey: ['vehicles'],
-    queryFn: () => base44.entities.Vehicle.list(),
-  });
-  const { data: payments = [] } = useQuery({
-    queryKey: ['payments-recent'],
-    queryFn: () => base44.entities.WeeklyPayment.list('-week_start', 50),
-  });
-  const { data: documents = [] } = useQuery({
-    queryKey: ['docs-expiring'],
-    queryFn: () => base44.entities.Document.list('-expiry_date', 100),
-  });
-  const { data: applications = [] } = useQuery({
-    queryKey: ['apps-new'],
-    queryFn: () => base44.entities.Application.filter({ status: 'new' }),
+export default function Dashboard() {
+  const { data: metrics, isLoading } = useQuery({
+    queryKey: ['dashboard-metrics'],
+    queryFn: () => base44.functions.invoke('getDashboardMetrics').then(res => res.data),
+    refetchInterval: 60000, // Refresh every minute
   });
 
-  const activeDriversList = drivers.filter(d => d.status === 'active');
-  const activeDrivers = activeDriversList.length;
-  const assignedVehiclesList = vehicles.filter(v => v.status === 'assigned');
-  const assignedVehicles = assignedVehiclesList.length;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-indigo-100 mb-4">
+            <Rocket className="w-6 h-6 text-indigo-600 animate-pulse" />
+          </div>
+          <p className="text-gray-600">Carregando performance...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const totalRevenue = payments.reduce((s, p) => s + (p.total_gross || 0), 0);
-  const totalNet = payments.reduce((s, p) => s + (p.net_amount || 0), 0);
-
-  const today = new Date();
-  const expiringDocs = documents.filter(d => {
-    if (!d.expiry_date || d.status === 'expired') return false;
-    const diff = differenceInDays(new Date(d.expiry_date), today);
-    return diff >= 0 && diff <= 15;
-  });
-
-  // Revenue by contract type
-  const contractData = ['slot_standard', 'slot_premium', 'slot_black', 'location'].map(type => {
-    const driversOfType = drivers.filter(d => d.contract_type === type);
-    return {
-      name: type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      count: driversOfType.length,
-    };
-  }).filter(d => d.count > 0);
+  if (!metrics) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <p className="text-gray-500">Dados não disponíveis</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('drivers')}>
-          <StatCard title="Motoristas ativos" value={activeDrivers} subtitle={`${drivers.length} total`} icon={Users} color="indigo" />
-        </div>
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('vehicles')}>
-          <StatCard title="Veículos atribuídos" value={assignedVehicles} subtitle={`${vehicles.length} total`} icon={Car} color="blue" />
-        </div>
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('revenue')}>
-          <StatCard title="Receita bruta" value={`€${totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`} subtitle="Períodos recentes" icon={TrendingUp} color="green" />
-        </div>
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('applications')}>
-          <StatCard title="Candidaturas" value={applications.length} subtitle="Em espera" icon={UserPlus} color="amber" />
-        </div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">PureDrive em crescimento sustentável 🚀</h1>
+        <p className="text-gray-600 mt-2">Performance baseada em consistência (últimas 4 semanas)</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Contract distribution */}
-        <Card className="border-0 shadow-sm lg:col-span-1">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700">Repartição dos contratos</CardTitle>
+      {/* BLOCO 1: Performance 4 Weeks */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <PerformanceCard
+          title="Receita Média Frota"
+          value={`€${metrics.performance4weeks.fleetAvg.toLocaleString('pt-PT')}`}
+          variation={metrics.performance4weeks.variation}
+          icon={TrendingUp}
+          color="emerald"
+        />
+        <PerformanceCard
+          title="Receita Média Motorista"
+          value={`€${metrics.performance4weeks.driverAvg.toLocaleString('pt-PT')}`}
+          icon={Users}
+          color="indigo"
+        />
+        <PerformanceCard
+          title="Taxa Ocupação"
+          value={`${metrics.performance4weeks.occupancyRate}%`}
+          icon={BarChart3}
+          color="blue"
+        />
+        <PerformanceCard
+          title="Variação vs 4 Sem."
+          value={`${metrics.performance4weeks.variation > 0 ? '+' : ''}${metrics.performance4weeks.variation}%`}
+          variation={metrics.performance4weeks.variation}
+          icon={metrics.performance4weeks.variationPositive ? TrendingUp : TrendingDown}
+          color={metrics.performance4weeks.variationPositive ? 'emerald' : 'rose'}
+        />
+      </div>
+
+      {/* BLOCO 2: Ranking Consistência */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Award className="w-5 h-5 text-amber-500" />
+            Ranking de Consistência – Últimas 4 Semanas
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {metrics.rankingConsistency.length === 0 ? (
+              <p className="text-center text-gray-400 py-8">Sem dados de consistência</p>
+            ) : (
+              metrics.rankingConsistency.map((driver, idx) => (
+                <div key={idx} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-transparent rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl font-bold text-gray-300">#{driver.rank}</span>
+                    <div>
+                      <p className="font-semibold text-gray-900">{driver.badge} {driver.name}</p>
+                      <p className="text-sm text-gray-500">Média: €{driver.avg.toLocaleString('pt-PT', { maximumFractionDigits: 0 })}</p>
+                    </div>
+                  </div>
+                  {driver.rank <= 3 && (
+                    <span className="text-3xl">{driver.badge}</span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* BLOCO 3: Sistema UPI */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-500" />
+              Sistema UPI
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            {contractData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={contractData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="count" paddingAngle={3}>
-                    {contractData.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v) => `${v} motoristas`} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[200px] flex items-center justify-center text-sm text-gray-400">Aucune donnée</div>
-            )}
-            <div className="flex flex-wrap gap-3 mt-2 justify-center">
-              {contractData.map((d, i) => (
-                <div key={d.name} className="flex items-center gap-1.5 text-xs text-gray-600">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
-                  {d.name}
+            <div className="space-y-6">
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+                <p className="text-sm text-gray-600 mb-1">Total UPI Acumulado</p>
+                <p className="text-3xl font-bold text-yellow-600">{metrics.upiSystem.totalAccumulated.toLocaleString('pt-PT')}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Último Preço</p>
+                  <p className="text-xl font-semibold text-gray-900">€{metrics.upiSystem.lastPrice.toLocaleString('pt-PT')}</p>
                 </div>
-              ))}
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs text-gray-600 mb-1">Motoristas com UPI</p>
+                  <p className="text-xl font-semibold text-gray-900">{metrics.upiSystem.driversActive}</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">Crescimento</p>
+                  <span className={`text-lg font-bold ${metrics.upiSystem.growthPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {metrics.upiSystem.growthPositive ? '↑' : '↓'} {Math.abs(metrics.upiSystem.growth)}%
+                  </span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Expiring documents */}
-        <Card className="border-0 shadow-sm lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              Documentos a vencer em breve ({expiringDocs.length})
+        {/* BLOCO 4: Crescimento Estrutural */}
+        <Card className="border-0 shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Coins className="w-5 h-5 text-emerald-500" />
+              Crescimento Estrutural
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {expiringDocs.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-400">Nenhum documento próximo do vencimento</div>
-            ) : (
-              <div className="space-y-2 max-h-[240px] overflow-y-auto">
-                {expiringDocs.slice(0, 10).map(doc => {
-                  const days = differenceInDays(new Date(doc.expiry_date), today);
-                  const urgency = days <= 3 ? 'text-red-600 bg-red-50' : days <= 7 ? 'text-orange-600 bg-orange-50' : 'text-amber-600 bg-amber-50';
-                  return (
-                    <div key={doc.id} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{doc.owner_name}</p>
-                          <p className="text-xs text-gray-500">{doc.document_type?.replace(/_/g, ' ')}</p>
-                        </div>
-                      </div>
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${urgency}`}>
-                        {days === 0 ? 'Hoje' : `${days}d`}
-                      </span>
-                    </div>
-                  );
-                })}
+            <div className="space-y-4">
+              <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                <p className="text-sm text-gray-600 mb-1">Veículos Ativos</p>
+                <p className="text-3xl font-bold text-emerald-600">{metrics.structuralGrowth.activeVehicles}</p>
               </div>
-            )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                  <p className="text-xs text-gray-600 mb-2">Novos Veículos (mês)</p>
+                  <p className="text-2xl font-bold text-blue-600">+{metrics.structuralGrowth.newVehiclesMonth}</p>
+                </div>
+                <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                  <p className="text-xs text-gray-600 mb-2">Novos Motoristas (mês)</p>
+                  <p className="text-2xl font-bold text-indigo-600">+{metrics.structuralGrowth.newDriversMonth}</p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-1">Semanas Processadas</p>
+                <p className="text-2xl font-bold text-gray-900">{metrics.structuralGrowth.totalWeeksProcessed}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
-
-      <Dialog open={!!detailsDialog} onOpenChange={(open) => !open && setDetailsDialog(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {detailsDialog === 'drivers' && 'Motoristas ativos'}
-              {detailsDialog === 'vehicles' && 'Veículos atribuídos'}
-              {detailsDialog === 'revenue' && 'Receita bruta'}
-              {detailsDialog === 'applications' && 'Candidaturas'}
-            </DialogTitle>
-          </DialogHeader>
-          <DashboardDetailsContent 
-            type={detailsDialog} 
-            drivers={activeDriversList}
-            vehicles={assignedVehiclesList}
-            payments={payments}
-            applications={applications}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
 
-function DashboardDetailsContent({ type, drivers, vehicles, payments, applications }) {
-  if (type === 'drivers') {
-    return (
-      <div className="space-y-2">
-        {drivers.length === 0 ? (
-          <p className="text-center py-4 text-gray-400">Nenhum motorista ativo</p>
-        ) : (
-          drivers.map(d => (
-            <div key={d.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
-              <div>
-                <p className="font-medium">{d.full_name}</p>
-                <p className="text-sm text-gray-500">{d.email}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm">{d.phone}</p>
-                <p className="text-xs text-gray-500">{d.contract_type?.replace('_', ' ')}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    );
-  }
+function PerformanceCard({ title, value, variation, icon: Icon, color = 'gray' }) {
+  const colorClasses = {
+    emerald: 'bg-emerald-50 text-emerald-600',
+    indigo: 'bg-indigo-50 text-indigo-600',
+    blue: 'bg-blue-50 text-blue-600',
+    rose: 'bg-rose-50 text-rose-600',
+  };
 
-  if (type === 'vehicles') {
-    return (
-      <div className="space-y-2">
-        {vehicles.length === 0 ? (
-          <p className="text-center py-4 text-gray-400">Nenhum veículo atribuído</p>
-        ) : (
-          vehicles.map(v => (
-            <div key={v.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
-              <div>
-                <p className="font-medium">{v.brand} {v.model}</p>
-                <p className="text-sm text-gray-500">{v.license_plate}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm">{v.assigned_driver_name || 'N/A'}</p>
-                <p className="text-xs text-gray-500">{v.year || ''}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    );
-  }
-
-  if (type === 'revenue') {
-    const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
-    const total = payments.reduce((s, p) => s + (p.total_gross || 0), 0);
-    return (
-      <div className="space-y-3">
-        <div className="p-3 bg-green-50 rounded-lg">
-          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
+  return (
+    <Card className="border-0 shadow-sm hover:shadow-md transition-shadow">
+      <div className="p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{title}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
+          </div>
+          <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
+            <Icon className="w-5 h-5" />
+          </div>
         </div>
-        <div className="space-y-2">
-          {payments.map(p => (
-            <div key={p.id} className="flex justify-between p-2 border-b hover:bg-gray-50">
-              <div>
-                <p className="font-medium text-sm">{p.driver_name}</p>
-                <p className="text-xs text-gray-500">{p.period_label}</p>
-              </div>
-              <p className="font-medium">{fmt(p.total_gross)}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (type === 'applications') {
-    return (
-      <div className="space-y-2">
-        {applications.length === 0 ? (
-          <p className="text-center py-4 text-gray-400">Nenhuma candidatura pendente</p>
-        ) : (
-          applications.map(a => (
-            <div key={a.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
-              <div>
-                <p className="font-medium">{a.full_name}</p>
-                <p className="text-sm text-gray-500">{a.email}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm">{a.phone}</p>
-                <p className="text-xs text-gray-500 capitalize">{a.applicant_type?.replace('_', ' ')}</p>
-              </div>
-            </div>
-          ))
+        {variation !== undefined && (
+          <div className={`text-sm font-semibold ${variation >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            {variation >= 0 ? '↑' : '↓'} {Math.abs(variation)}%
+          </div>
         )}
       </div>
-    );
-  }
-
-  return null;
+    </Card>
+  );
 }

@@ -57,26 +57,26 @@ import Documents from './pages/Documents';
 import DriverDashboard from './pages/DriverDashboard';
 import Drivers from './pages/Drivers';
 import FleetManagers from './pages/FleetManagers';
+import Fleets from './pages/Fleets';
 import Goals from './pages/Goals';
 import IVA from './pages/IVA';
 import Loans from './pages/Loans';
 import Messaging from './pages/Messaging';
+import Notifications from './pages/Notifications';
 import Payments from './pages/Payments';
 import PublicSite from './pages/PublicSite';
 import Rankings from './pages/Rankings';
 import Referrals from './pages/Referrals';
 import Reimbursements from './pages/Reimbursements';
+import RelatorioFrotas from './pages/RelatorioFrotas';
+import RelatorioVeiculos from './pages/RelatorioVeiculos';
 import Relatorios from './pages/Relatorios';
 import RelatoriosFrota from './pages/RelatoriosFrota';
 import UPI from './pages/UPI';
+import UserManagement from './pages/UserManagement';
+import VehicleDetail from './pages/VehicleDetail';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import VehicleDetail from './pages/VehicleDetail';
-import Notifications from './pages/Notifications';
-import RelatorioVeiculos from './pages/RelatorioVeiculos';
-import UserManagement from './pages/UserManagement';
-import Fleets from './pages/Fleets';
-import RelatorioFrotas from './pages/RelatorioFrotas';
 import __Layout from './Layout.jsx';
 
 
@@ -91,26 +91,26 @@ export const PAGES = {
     "DriverDashboard": DriverDashboard,
     "Drivers": Drivers,
     "FleetManagers": FleetManagers,
+    "Fleets": Fleets,
     "Goals": Goals,
     "IVA": IVA,
     "Loans": Loans,
     "Messaging": Messaging,
+    "Notifications": Notifications,
     "Payments": Payments,
     "PublicSite": PublicSite,
     "Rankings": Rankings,
     "Referrals": Referrals,
     "Reimbursements": Reimbursements,
+    "RelatorioFrotas": RelatorioFrotas,
+    "RelatorioVeiculos": RelatorioVeiculos,
     "Relatorios": Relatorios,
     "RelatoriosFrota": RelatoriosFrota,
     "UPI": UPI,
+    "UserManagement": UserManagement,
+    "VehicleDetail": VehicleDetail,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "VehicleDetail": VehicleDetail,
-    "Notifications": Notifications,
-    "RelatorioVeiculos": RelatorioVeiculos,
-    "UserManagement": UserManagement,
-    "Fleets": Fleets,
-    "RelatorioFrotas": RelatorioFrotas,
 }
 
 export const pagesConfig = {
