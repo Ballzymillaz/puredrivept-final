@@ -95,9 +95,13 @@ export default function Apply() {
                 Código de indicação: <strong>{referralCode}</strong>
               </div>
             )}
+            {createMutation.isError && (
+              <p className="text-sm text-red-600 text-center">Erro ao enviar. Tente novamente.</p>
+            )}
             <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700 h-11">
               {createMutation.isPending ? 'A enviar...' : 'Enviar candidatura'}
             </Button>
+            <p className="text-xs text-gray-400 text-center">Após o envio, a sua candidatura será analisada pela nossa equipa. Receberá um email de confirmação assim que for validada.</p>
           </form>
         </CardContent>
       </Card>
