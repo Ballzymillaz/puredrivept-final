@@ -18,6 +18,8 @@ export default function Drivers() {
   const [editingDriver, setEditingDriver] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showAutoAssign, setShowAutoAssign] = useState(false);
+  const [autoAssignDriver, setAutoAssignDriver] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: drivers = [], isLoading } = useQuery({
@@ -112,14 +114,28 @@ export default function Drivers() {
         </span>
       ),
     },
+    { header: 'Estado', render: (row) => <StatusBadge status={row.status} /> },
     {
-      header: 'Estado',
-      render: (row) => <StatusBadge status={row.status} />,
+      header: '',
+      render: (row) => !row.assigned_vehicle_id ? (
+        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-yellow-600 hover:bg-yellow-50"
+          onClick={e => { e.stopPropagation(); setAutoAssignDriver(row); setShowAutoAssign(true); }}>
+          <Zap className="w-3 h-3" /> Atribuir
+        </Button>
+      ) : null,
     },
   ];
 
   return (
     <div className="space-y-4">
+      <AutoAssignDialog
+        open={showAutoAssign}
+        onClose={() => { setShowAutoAssign(false); setAutoAssignDriver(null); }}
+        drivers={drivers}
+        vehicles={vehicles}
+        preselectedDriverId={autoAssignDriver?.id}
+        onSuccess={() => { queryClient.invalidateQueries({ queryKey: ['drivers'] }); queryClient.invalidateQueries({ queryKey: ['vehicles'] }); setShowAutoAssign(false); setAutoAssignDriver(null); }}
+      />
       <PageHeader
         title="Motoristas"
         subtitle={`${drivers.length} motoristas registados`}
