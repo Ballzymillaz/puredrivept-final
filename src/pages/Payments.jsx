@@ -387,7 +387,7 @@ function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
           <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
           <SelectContent>
             {drivers.map(d => (
-              <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>
+              <SelectItem key={d.id} value={String(d.id)}>{d.full_name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
