@@ -8,8 +8,9 @@ import DriverForm from '../components/drivers/DriverForm';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, Users, Zap } from 'lucide-react';
+import { Search, Users, Zap, ChevronRight } from 'lucide-react';
 import AutoAssignDialog from '../components/vehicles/AutoAssignDialog';
+import { createPageUrl } from '@/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from '@/components/ui/dialog';
@@ -173,7 +174,7 @@ export default function Drivers() {
         columns={columns}
         data={filtered}
         isLoading={isLoading}
-        onRowClick={(row) => { setEditingDriver(row); setShowForm(true); }}
+        onRowClick={(row) => window.location.href = createPageUrl(`DriverDetail?driverId=${row.id}`)}
         emptyMessage="Nenhum motorista encontrado"
       />
 
