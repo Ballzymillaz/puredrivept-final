@@ -29,7 +29,7 @@ export default function Payments() {
 
   const { data: drivers = [] } = useQuery({
     queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list(),
+    queryFn: () => base44.entities.Drivers.list(),
   });
 
   const { data: ledger = [] } = useQuery({
