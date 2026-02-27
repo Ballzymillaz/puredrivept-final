@@ -250,9 +250,9 @@ export default function Payments() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between p-3 bg-indigo-50 rounded-lg text-indigo-900 font-bold">
+              <div className={`flex justify-between p-3 rounded-lg font-bold ${selected.net_amount >= 0 ? 'bg-green-50 text-green-900' : 'bg-red-50 text-red-900'}`}>
                 <span>Líquido a pagar</span>
-                <span>{fmt(selected.net_amount)}</span>
+                <span className={selected.net_amount >= 0 ? 'text-green-600' : 'text-red-600'}>{fmt(selected.net_amount)}</span>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setEditMode(true)} variant="outline" className="flex-1">Editar</Button>
@@ -361,8 +361,8 @@ function PaymentDetailsContent({ type, payments, fmt }) {
     const total = payments.reduce((s, p) => s + (p.net_amount || 0), 0);
     return (
       <div className="space-y-3">
-        <div className="p-3 bg-indigo-50 rounded-lg">
-          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
+        <div className={`p-3 rounded-lg ${total >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+          <p className={`text-sm font-semibold ${total >= 0 ? 'text-green-900' : 'text-red-900'}`}>Total: <span className={total >= 0 ? 'text-green-600' : 'text-red-600'}>{fmt(total)}</span></p>
         </div>
         <div className="space-y-2">
           {payments.map(p => (
@@ -372,7 +372,7 @@ function PaymentDetailsContent({ type, payments, fmt }) {
                 <p className="text-xs text-gray-500">{p.period_label}</p>
               </div>
               <div className="text-right">
-                <p className="font-bold text-indigo-700">{fmt(p.net_amount)}</p>
+                <p className={`font-bold ${p.net_amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>{fmt(p.net_amount)}</p>
                 <p className="text-xs text-gray-500">Bruto: {fmt(p.total_gross)} - Deduções: {fmt(p.total_deductions)}</p>
               </div>
             </div>
