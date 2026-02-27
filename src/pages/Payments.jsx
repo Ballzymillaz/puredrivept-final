@@ -48,8 +48,18 @@ export default function Payments() {
       if (data.status === 'paid' && oldPayment.status !== 'paid') {
         try {
           await base44.functions.invoke('syncPaymentToExpenses', { paymentId: id });
+          await base44.functions.invoke('notifyPaymentStatus', { paymentId: id, status: 'paid' });
         } catch (error) {
           console.error('Error syncing payment:', error);
+        }
+      }
+      
+      // Notify on approval
+      if (data.status === 'approved' && oldPayment.status !== 'approved') {
+        try {
+          await base44.functions.invoke('notifyPaymentStatus', { paymentId: id, status: 'approved' });
+        } catch (error) {
+          console.error('Error notifying:', error);
         }
         
         // Update driver caução if applicable

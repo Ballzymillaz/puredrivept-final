@@ -5,6 +5,30 @@ Deno.serve(async (req) => {
     const { driverId, driverEmail, driverName, docType, status, rejectionReason } = await req.json();
     const base44 = createClientFromRequest(req);
 
+    const users = await base44.asServiceRole.entities.User.list();
+    const driverUser = users.find(u => u.email === driverEmail);
+
+    const title = status === 'approved'
+      ? '✅ Documento aprovado'
+      : '❌ Documento rejeitado';
+
+    const message = status === 'approved'
+      ? `${docType} foi aprovado com sucesso`
+      : `${docType} foi rejeitado: ${rejectionReason || 'Sem especificação'}`;
+
+    // Create notification for driver
+    if (driverUser) {
+      await base44.asServiceRole.entities.Notification.create({
+        user_id: driverUser.id,
+        user_email: driverEmail,
+        title,
+        message,
+        type: status === 'approved' ? 'document_approved' : 'document_rejected',
+        email_sent: false,
+      });
+    }
+
+    // Send email
     const subject = status === 'approved' 
       ? `✅ Documento aprovado - ${docType}`
       : `❌ Documento rejeitado - ${docType}`;

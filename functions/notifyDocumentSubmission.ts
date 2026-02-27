@@ -5,20 +5,29 @@ Deno.serve(async (req) => {
     const { driverId, driverName, docType } = await req.json();
     const base44 = createClientFromRequest(req);
     
-    // Get admins
-    const admins = await base44.asServiceRole.entities.User.list();
-    const adminEmails = admins.filter(u => u.role === 'admin').map(u => u.email);
+    const users = await base44.asServiceRole.entities.User.list();
+    const adminUsers = users.filter(u => u.role === 'admin');
 
-    // Send email to admins
-    for (const email of adminEmails) {
+    // Create notifications for admins
+    for (const admin of adminUsers) {
+      await base44.asServiceRole.entities.Notification.create({
+        user_id: admin.id,
+        user_email: admin.email,
+        title: '📄 Novo documento',
+        message: `${driverName} enviou ${docType} para aprovação`,
+        type: 'document_approved',
+        email_sent: false,
+      });
+
+      // Send email
       await base44.asServiceRole.integrations.Core.SendEmail({
-        to: email,
+        to: admin.email,
         subject: `📄 Novo documento enviado - ${driverName} (${docType})`,
-        body: `O motorista ${driverName} submeteu um novo documento para aprovação.\n\nTipo: ${docType}\n\nAcesse a página de Documentos para revisar.`,
+        body: `O motorista ${driverName} submeteu um novo documento para aprovação.\n\nTipo: ${docType}`,
       });
     }
 
-    return Response.json({ success: true, notified: adminEmails.length });
+    return Response.json({ success: true, notified: adminUsers.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
