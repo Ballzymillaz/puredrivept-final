@@ -38,6 +38,8 @@ const PAGE_TITLES = {
   Relatorios: 'Relatórios Gerais',
   AdvancedReports: 'Relatórios Avançados',
   FleetCommunications: 'Comunicações da Frota',
+  VehicleAssignment: 'Atribuição de Veículos',
+  DocumentManagement: 'Gestão de Documentos',
 };
 
 // Public pages that don't need auth or sidebar

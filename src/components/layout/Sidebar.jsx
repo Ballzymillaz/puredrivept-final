@@ -15,10 +15,12 @@ const NAV_ITEMS = [
     { name: 'Veículos', icon: Car, page: 'FleetVehicles' },
     { name: 'Motoristas', icon: Users, page: 'FleetDrivers' },
     { name: 'Frotas', icon: Building2, page: 'Fleets' },
+    { name: 'Atribuição de Veículos', icon: Truck, page: 'VehicleAssignment' },
   ]},
   { section: 'Gestão', items: [
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
     { name: 'Documentos', icon: FileText, page: 'DocumentsHub' },
+    { name: 'Gestão de Documentos', icon: FileText, page: 'DocumentManagement' },
     { name: 'Aprovação de Docs', icon: FileText, page: 'DocumentApproval' },
     { name: 'Gestão de Veículos', icon: Car, page: 'VehicleManagement' },
     { name: 'Onboarding', icon: UserPlus, page: 'Onboarding' },
