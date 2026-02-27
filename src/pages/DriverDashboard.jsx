@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, TrendingUp, TrendingDown, Zap, Shield, FileText, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { Wallet, TrendingUp, TrendingDown, Zap, Shield, FileText, AlertCircle, CheckCircle2, Clock, Car } from 'lucide-react';
+import { format, isPast, differenceInDays } from 'date-fns';
 import StatusBadge from '../components/shared/StatusBadge';
 
 const fmt = (v) => `€${(v || 0).toFixed(2)}`;
@@ -41,9 +41,40 @@ export default function DriverDashboard({ currentUser }) {
   });
 
   const { data: documents = [] } = useQuery({
-    queryKey: ['my-docs', driver?.id],
-    queryFn: () => base44.entities.Document.filter({ owner_id: driver.id }, '-created_date'),
+    queryKey: ['my-docs', currentUser?.email],
+    queryFn: () => base44.entities.Document.filter({ driver_email: currentUser?.email }, '-created_date'),
+    enabled: !!currentUser?.email,
+  });
+
+  const { data: onboarding = null } = useQuery({
+    queryKey: ['my-onboarding', driver?.id],
+    queryFn: async () => {
+      const results = await base44.entities.DriverOnboarding.filter({ driver_id: driver?.id });
+      return results?.[0] || null;
+    },
     enabled: !!driver?.id,
+  });
+
+  const { data: vehicle = null } = useQuery({
+    queryKey: ['my-vehicle', driver?.assigned_vehicle_id],
+    queryFn: async () => {
+      if (!driver?.assigned_vehicle_id) return null;
+      const results = await base44.entities.Vehicle.filter({ id: driver.assigned_vehicle_id });
+      return results?.[0] || null;
+    },
+    enabled: !!driver?.assigned_vehicle_id,
+  });
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ['my-notifications', currentUser?.email],
+    queryFn: () => base44.entities.Notification.filter({ 
+      $or: [
+        { recipient_email: currentUser?.email },
+        { recipient_email: 'all' },
+        { recipient_role: 'driver' }
+      ]
+    }, '-created_date', 10),
+    enabled: !!currentUser?.email,
   });
 
   const paidPayments = payments.filter(p => p.status === 'paid');
@@ -54,8 +85,13 @@ export default function DriverDashboard({ currentUser }) {
 
   const expiringDocs = documents.filter(d => {
     if (!d.expiry_date) return false;
-    const days = Math.ceil((new Date(d.expiry_date) - new Date()) / (1000 * 60 * 60 * 24));
-    return days <= 30;
+    const days = differenceInDays(new Date(d.expiry_date), new Date());
+    return days <= 30 && days > 0;
+  });
+
+  const expiredDocs = documents.filter(d => {
+    if (!d.expiry_date) return false;
+    return isPast(new Date(d.expiry_date));
   });
 
   if (loadingDriver) {
@@ -81,26 +117,143 @@ export default function DriverDashboard({ currentUser }) {
     );
   }
 
+  const ONBOARDING_STEPS = {
+    documents: { label: 'Documentos', icon: FileText },
+    background_check: { label: 'Antecedentes', icon: Shield },
+    vehicle_assignment: { label: 'Veículo', icon: Car },
+    completed: { label: 'Concluído', icon: CheckCircle2 },
+  };
+
   return (
     <div className="space-y-5">
-      <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-xl p-5 text-white">
-        <h1 className="text-xl font-bold">{driver.full_name}</h1>
-        <p className="text-indigo-200 text-sm mt-0.5">{driver.email} · {driver.assigned_vehicle_plate || 'Sem veículo'}</p>
-        <div className="flex gap-3 mt-3">
+      <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-xl p-6 text-white">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">{driver.full_name}</h1>
+            <p className="text-indigo-200 text-sm mt-0.5">{driver.email}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-indigo-200 text-xs">Tipo de contrato</p>
+            <p className="text-white font-semibold">{driver.contract_type?.replace('_', ' ') || '—'}</p>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-4">
           <Badge className="bg-white/20 text-white border-0 text-xs">{driver.status}</Badge>
-          <Badge className="bg-white/20 text-white border-0 text-xs">{driver.contract_type?.replace('_', ' ')}</Badge>
+          {vehicle && <Badge className="bg-white/20 text-white border-0 text-xs">{vehicle.brand} {vehicle.model}</Badge>}
         </div>
       </div>
 
-      {/* Alert expiring docs */}
-      {expiringDocs.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-amber-800">{expiringDocs.length} documento(s) a expirar em breve</p>
-            <p className="text-xs text-amber-600 mt-0.5">{expiringDocs.map(d => DOC_TYPE_LABELS[d.document_type] || d.document_type).join(', ')}</p>
+      {/* Alerts */}
+      <div className="space-y-2">
+        {expiredDocs.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex gap-2">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-800">{expiredDocs.length} documento(s) expirado(s)</p>
+              <p className="text-xs text-red-600">Ação necessária para manter a sua conta ativa</p>
+            </div>
           </div>
-        </div>
+        )}
+        {expiringDocs.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex gap-2">
+            <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">{expiringDocs.length} documento(s) a expirar em breve</p>
+              <p className="text-xs text-amber-600">{expiringDocs.map(d => DOC_TYPE_LABELS[d.doc_type] || d.doc_type).join(', ')}</p>
+            </div>
+          </div>
+        )}
+        {vehicle && vehicle.inspection_expiry && differenceInDays(new Date(vehicle.inspection_expiry), new Date()) <= 30 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex gap-2">
+            <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-orange-800">Inspeção do veículo a vencer</p>
+              <p className="text-xs text-orange-600">{format(new Date(vehicle.inspection_expiry), 'dd/MM/yyyy')}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Onboarding Progress */}
+      {onboarding && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              Estado do Onboarding
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              {Object.entries(ONBOARDING_STEPS).map(([key, step]) => {
+                const isCompleted = 
+                  (key === 'documents' && onboarding.documents_status === 'approved') ||
+                  (key === 'background_check' && onboarding.background_check_status === 'approved') ||
+                  (key === 'vehicle_assignment' && onboarding.vehicle_assignment_status === 'assigned') ||
+                  (key === 'completed' && onboarding.current_step === 'completed');
+                const isCurrent = onboarding.current_step === key;
+                const StepIcon = step.icon;
+
+                return (
+                  <div key={key} className="flex items-start gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      isCompleted ? 'bg-green-100' : isCurrent ? 'bg-indigo-100' : 'bg-gray-100'
+                    }`}>
+                      {isCompleted ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <StepIcon className={`w-4 h-4 ${isCurrent ? 'text-indigo-600' : 'text-gray-400'}`} />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${isCompleted ? 'text-green-700' : isCurrent ? 'text-indigo-700' : 'text-gray-500'}`}>
+                        {step.label}
+                      </p>
+                      {isCurrent && <p className="text-xs text-indigo-600">Etapa atual</p>}
+                      {isCompleted && <p className="text-xs text-green-600">Concluída</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Vehicle Info */}
+      {vehicle && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Car className="w-4 h-4" />
+              Veículo Atribuído
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-500 text-xs">Marca e Modelo</p>
+                <p className="font-semibold">{vehicle.brand} {vehicle.model}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Matrícula</p>
+                <p className="font-semibold">{vehicle.license_plate}</p>
+              </div>
+              {vehicle.color && (
+                <div>
+                  <p className="text-gray-500 text-xs">Cor</p>
+                  <p className="font-semibold">{vehicle.color}</p>
+                </div>
+              )}
+              {vehicle.fuel_type && (
+                <div>
+                  <p className="text-gray-500 text-xs">Combustível</p>
+                  <p className="font-semibold capitalize">{vehicle.fuel_type}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Stats */}
@@ -209,24 +362,25 @@ export default function DriverDashboard({ currentUser }) {
         </CardHeader>
         <CardContent className="p-0">
           {documents.length === 0 ? (
-            <p className="text-center py-6 text-sm text-gray-400">Sem documentos.</p>
+            <p className="text-center py-6 text-sm text-gray-400">Nenhum documento submetido ainda.</p>
           ) : (
             documents.map(d => {
-              const days = d.expiry_date ? Math.ceil((new Date(d.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+              const days = d.expiry_date ? differenceInDays(new Date(d.expiry_date), new Date()) : null;
+              const isExpired = d.expiry_date && isPast(new Date(d.expiry_date));
               return (
                 <div key={d.id} className="flex items-center justify-between px-4 py-3 border-b last:border-0">
                   <div>
-                    <p className="text-sm font-medium">{DOC_TYPE_LABELS[d.document_type] || d.document_type}</p>
+                    <p className="text-sm font-medium">{DOC_TYPE_LABELS[d.doc_type] || d.doc_type}</p>
                     {d.expiry_date && (
-                      <p className={`text-xs ${days < 0 ? 'text-red-600' : days <= 30 ? 'text-orange-500' : 'text-gray-400'}`}>
-                        {days < 0 ? 'Expirado!' : `Expira em ${days} dias (${d.expiry_date})`}
+                      <p className={`text-xs ${isExpired ? 'text-red-600 font-semibold' : days <= 30 ? 'text-orange-500 font-semibold' : 'text-gray-400'}`}>
+                        {isExpired ? '❌ Expirado' : days <= 30 ? `⚠ Expira em ${days} dias (${format(new Date(d.expiry_date), 'dd/MM')})` : `Válido até ${format(new Date(d.expiry_date), 'dd/MM/yyyy')}`}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={d.status} />
                     {d.file_url && (
-                      <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 underline">Ver</a>
+                      <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline font-medium">Ver</a>
                     )}
                   </div>
                 </div>
@@ -235,6 +389,26 @@ export default function DriverDashboard({ currentUser }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Notifications */}
+      {notifications.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Notificações Recentes</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {notifications.slice(0, 5).map(notif => (
+              <div key={notif.id} className="px-4 py-3 border-b last:border-0 text-sm">
+                <p className="font-medium text-gray-900">{notif.title}</p>
+                <p className="text-xs text-gray-600 mt-0.5">{notif.message}</p>
+                {notif.created_date && (
+                  <p className="text-xs text-gray-400 mt-1">{format(new Date(notif.created_date), 'dd/MM/yyyy HH:mm')}</p>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

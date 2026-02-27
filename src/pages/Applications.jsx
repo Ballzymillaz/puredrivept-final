@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 
-const TYPE_LABELS = { driver: 'Motorista', fleet_manager: 'Gestor de frota', commercial: 'Comercial' };
+const TYPE_LABELS = { driver: 'Motorista', fleet_manager: 'Gestor de frota' };
 
 export default function Applications() {
   const [selected, setSelected] = useState(null);
@@ -37,16 +37,14 @@ export default function Applications() {
           referred_by: application.referral_code || '',
         };
 
-        // Map applicant_type to platform role
-        const roleMap = { driver: 'driver', fleet_manager: 'fleet_manager', commercial: 'commercial' };
-        const role = roleMap[application.applicant_type] || 'user';
+        // Map applicant_type to platform role - NEVER use 'user' as fallback
+        const roleMap = { driver: 'driver', fleet_manager: 'fleet_manager' };
+        const role = roleMap[application.applicant_type];
 
         if (application.applicant_type === 'driver') {
           await base44.entities.Driver.create({ ...entityData, vehicle_deposit: 0, vehicle_deposit_paid: false, upi_balance: 0 });
         } else if (application.applicant_type === 'fleet_manager') {
           await base44.entities.FleetManager.create({ ...entityData, total_drivers: 0, total_earnings: 0 });
-        } else if (application.applicant_type === 'commercial') {
-          await base44.entities.Commercial.create({ ...entityData, total_drivers: 0, total_earnings: 0 });
         }
 
         // Update User role for the applicant's email
