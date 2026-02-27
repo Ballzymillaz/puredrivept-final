@@ -39,7 +39,6 @@ const NAV_ITEMS = [
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
     { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
     { name: 'Relatório Veículos', icon: Car, page: 'RelatorioVeiculos' },
-    { name: 'Relatório Veículos', icon: Car, page: 'RelatorioVeiculos' },
     { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
     { name: 'Notificações', icon: Bell, page: 'Notifications' },
     { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
