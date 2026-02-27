@@ -51,8 +51,10 @@ import Applications from './pages/Applications';
 import Apply from './pages/Apply';
 import CashFlow from './pages/CashFlow';
 import Commercials from './pages/Commercials';
+import Configuracoes from './pages/Configuracoes';
 import Contracts from './pages/Contracts';
 import Dashboard from './pages/Dashboard';
+import DashboardModular from './pages/DashboardModular';
 import Documents from './pages/Documents';
 import DriverDashboard from './pages/DriverDashboard';
 import Drivers from './pages/Drivers';
@@ -63,6 +65,7 @@ import IVA from './pages/IVA';
 import Loans from './pages/Loans';
 import Messaging from './pages/Messaging';
 import Notifications from './pages/Notifications';
+import Onboarding from './pages/Onboarding';
 import Payments from './pages/Payments';
 import PublicSite from './pages/PublicSite';
 import Rankings from './pages/Rankings';
@@ -72,16 +75,15 @@ import RelatorioFrotas from './pages/RelatorioFrotas';
 import RelatorioVeiculos from './pages/RelatorioVeiculos';
 import Relatorios from './pages/Relatorios';
 import RelatoriosFrota from './pages/RelatoriosFrota';
+import ReportBuilder from './pages/ReportBuilder';
+import ReportScheduler from './pages/ReportScheduler';
 import UPI from './pages/UPI';
 import UserManagement from './pages/UserManagement';
 import VehicleDetail from './pages/VehicleDetail';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import Onboarding from './pages/Onboarding';
-import Configuracoes from './pages/Configuracoes';
-import ReportBuilder from './pages/ReportBuilder';
-import ReportScheduler from './pages/ReportScheduler';
-import DashboardModular from './pages/DashboardModular';
+import FleetVehicles from './pages/FleetVehicles';
+import FleetDrivers from './pages/FleetDrivers';
 import __Layout from './Layout.jsx';
 
 
@@ -90,8 +92,10 @@ export const PAGES = {
     "Apply": Apply,
     "CashFlow": CashFlow,
     "Commercials": Commercials,
+    "Configuracoes": Configuracoes,
     "Contracts": Contracts,
     "Dashboard": Dashboard,
+    "DashboardModular": DashboardModular,
     "Documents": Documents,
     "DriverDashboard": DriverDashboard,
     "Drivers": Drivers,
@@ -102,6 +106,7 @@ export const PAGES = {
     "Loans": Loans,
     "Messaging": Messaging,
     "Notifications": Notifications,
+    "Onboarding": Onboarding,
     "Payments": Payments,
     "PublicSite": PublicSite,
     "Rankings": Rankings,
@@ -111,16 +116,15 @@ export const PAGES = {
     "RelatorioVeiculos": RelatorioVeiculos,
     "Relatorios": Relatorios,
     "RelatoriosFrota": RelatoriosFrota,
+    "ReportBuilder": ReportBuilder,
+    "ReportScheduler": ReportScheduler,
     "UPI": UPI,
     "UserManagement": UserManagement,
     "VehicleDetail": VehicleDetail,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "Onboarding": Onboarding,
-    "Configuracoes": Configuracoes,
-    "ReportBuilder": ReportBuilder,
-    "ReportScheduler": ReportScheduler,
-    "DashboardModular": DashboardModular,
+    "FleetVehicles": FleetVehicles,
+    "FleetDrivers": FleetDrivers,
 }
 
 export const pagesConfig = {
