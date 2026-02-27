@@ -30,6 +30,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Send notification if vehicle was newly assigned
+    const vehicleChanged = driver.assigned_vehicle_id && driver.assigned_vehicle_id !== oldDriver.assigned_vehicle_id;
+    if (vehicleChanged && driver.assigned_vehicle_id) {
+      const vehicle = await base44.asServiceRole.entities.Vehicle.get(driver.assigned_vehicle_id);
+      await base44.asServiceRole.entities.Notification.create({
+        title: '🚗 Veículo atribuído — Contrato pendente',
+        message: `O veículo ${vehicle?.brand || ''} ${vehicle?.model || ''} (${vehicle?.license_plate || ''}) foi atribuído a ${driver.full_name}. Lembrete: emitir e assinar o contrato com o motorista.`,
+        type: 'warning',
+        category: 'vehicle',
+        recipient_role: 'admin',
+        related_entity: driver.id,
+        is_read: false,
+        read_by: []
+      });
+    }
+
     return Response.json({ success: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
