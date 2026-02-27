@@ -83,6 +83,7 @@ import DocumentApproval from './pages/DocumentApproval';
 import PaymentHistory from './pages/PaymentHistory';
 import AdvanceRequest from './pages/AdvanceRequest';
 import AdvanceApproval from './pages/AdvanceApproval';
+import FleetCommunications from './pages/FleetCommunications';
 import __Layout from './Layout.jsx';
 
 
@@ -123,6 +124,7 @@ export const PAGES = {
     "PaymentHistory": PaymentHistory,
     "AdvanceRequest": AdvanceRequest,
     "AdvanceApproval": AdvanceApproval,
+    "FleetCommunications": FleetCommunications,
 }
 
 export const pagesConfig = {
