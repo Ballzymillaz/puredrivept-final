@@ -9,7 +9,7 @@ export default function VehicleForm({ vehicle, onSubmit, isLoading, drivers }) {
   const [form, setForm] = useState({
     brand: vehicle?.brand || '',
     model: vehicle?.model || '',
-    year: vehicle?.year || '',
+    first_registration_date: vehicle?.first_registration_date || '',
     license_plate: vehicle?.license_plate || '',
     color: vehicle?.color || '',
     vin: vehicle?.vin || '',
@@ -32,7 +32,7 @@ export default function VehicleForm({ vehicle, onSubmit, isLoading, drivers }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = { ...form };
-    ['year', 'mileage', 'weekly_rental_price', 'base_purchase_price', 'market_price'].forEach(k => {
+    ['mileage', 'weekly_rental_price', 'base_purchase_price', 'market_price'].forEach(k => {
       if (data[k]) data[k] = parseFloat(data[k]);
     });
 
@@ -53,7 +53,7 @@ export default function VehicleForm({ vehicle, onSubmit, isLoading, drivers }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5"><Label className="text-xs">Marca *</Label><Input value={form.brand} onChange={(e) => handleChange('brand', e.target.value)} required /></div>
         <div className="space-y-1.5"><Label className="text-xs">Modelo *</Label><Input value={form.model} onChange={(e) => handleChange('model', e.target.value)} required /></div>
-        <div className="space-y-1.5"><Label className="text-xs">Ano</Label><Input type="number" value={form.year} onChange={(e) => handleChange('year', e.target.value)} /></div>
+        <div className="space-y-1.5"><Label className="text-xs">1ª Data de Immatriculation</Label><Input type="date" value={form.first_registration_date} onChange={(e) => handleChange('first_registration_date', e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">Matrícula *</Label><Input value={form.license_plate} onChange={(e) => handleChange('license_plate', e.target.value)} required /></div>
         <div className="space-y-1.5"><Label className="text-xs">Cor</Label><Input value={form.color} onChange={(e) => handleChange('color', e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">Combustível</Label>
