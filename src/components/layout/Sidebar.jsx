@@ -73,7 +73,7 @@ export default function Sidebar({ currentPage, userRole }) {
       }
 
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'DocumentApproval', 'AdvanceApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'FleetCommunications', 'Configuracoes'].includes(item.page);
+        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'VehicleAssignment', 'DocumentsHub', 'DocumentManagement', 'DocumentApproval', 'AdvanceApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'FleetCommunications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('admin')) {
