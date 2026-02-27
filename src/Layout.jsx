@@ -9,11 +9,7 @@ const PAGE_TITLES = {
   Drivers: 'Gestão de motoristas',
   Vehicles: 'Gestão de veículos',
   FleetManagers: 'Gestores de frota',
-  Commercials: 'Comerciais',
   Documents: 'Documentos',
-  Applications: 'Candidaturas',
-  Payments: 'Pagamentos semanais',
-  AdvancedPayments: 'Pagamentos Avançados',
   CashFlow: 'Fluxo de caixa',
   IVA: 'IVA',
   Loans: 'Empréstimos & Adiantamentos',
@@ -23,32 +19,23 @@ const PAGE_TITLES = {
   Goals: 'Objetivos',
   Rankings: 'Classificação',
   UPI: 'Moeda UPI',
-  Messaging: 'Mensagens',
-  RelatoriosFrota: 'Relatório de Frota',
-  RelatorioVeiculos: 'Relatório de Veículos',
   Notifications: 'Notificações',
-  VehicleDetail: 'Detalhe do Veículo',
   UserManagement: 'Gestão de Utilizadores',
   PublicSite: 'Site público',
-  Apply: 'Candidatura',
   Fleets: 'Gestão de Frotas',
   FleetVehicles: 'Veículos de Frota',
   FleetDrivers: 'Motoristas de Frota',
   DocumentManagement: 'Gestão de Documentos',
   VehicleManagement: 'Gestão de Veículos',
   DriverPerformance: 'Análise de Performance de Motoristas',
-  RelatorioFrotas: 'Relatório de Desempenho de Frotas',
   Configuracoes: 'Configurações',
-  ReportBuilder: 'Construtor de Relatórios',
-  ReportScheduler: 'Scheduler de Relatórios',
-  ReportVehiclePerformance: 'Desempenho de Veículos',
-  ReportDriverUtilization: 'Utilização de Motoristas',
-  DashboardModular: 'Dashboard Modular',
+  Onboarding: 'Onboarding',
+  Relatorios: 'Relatórios Gerais',
   AdvancedReports: 'Relatórios Avançados',
 };
 
 // Public pages that don't need auth or sidebar
-const PUBLIC_PAGES = ['PublicSite', 'Apply'];
+const PUBLIC_PAGES = ['PublicSite'];
 
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
@@ -80,17 +67,17 @@ export default function Layout({ children, currentPageName }) {
       setLoading(false);
 
       // Redirect pure drivers (no admin/fleet role) to their allowed pages
-      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'];
+      const DRIVER_ALLOWED_PAGES = ['Onboarding', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'];
       if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
         if (!DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
-          window.location.href = createPageUrl('DriverDashboard');
+          window.location.href = createPageUrl('Onboarding');
           return;
         }
       }
       // Redirect pure fleet_manager away from admin-only pages
-      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'];
+      const FLEET_ALLOWED_PAGES = ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'];
       if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
-        window.location.href = createPageUrl('RelatoriosFrota');
+        window.location.href = createPageUrl('Onboarding');
         return;
       }
     };
