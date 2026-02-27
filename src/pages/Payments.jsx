@@ -344,8 +344,7 @@ function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
     const driver = drivers.find(d => d.id === form.driver_id);
     if (!driver) return;
 
-    // Send only input fields, let backend calculate financials
-    onSubmit({
+    const payload = {
       driver_id: form.driver_id,
       city_id: driver.city_id,
       week_start_date: form.week_start_date,
@@ -353,7 +352,10 @@ function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
       uber_revenue: parseFloat(form.uber_revenue) || 0,
       bolt_revenue: parseFloat(form.bolt_revenue) || 0,
       other_revenue: parseFloat(form.other_revenue) || 0,
-    });
+    };
+
+    console.log('Payload enviado:', payload); // DEBUG
+    onSubmit(payload);
   };
 
   return (
