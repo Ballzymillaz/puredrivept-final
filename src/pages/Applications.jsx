@@ -49,14 +49,15 @@ export default function Applications() {
           await base44.entities.Commercial.create({ ...entityData, total_drivers: 0, total_earnings: 0 });
         }
 
-        // Update User role if user account exists with this email
+        // Update User role for the applicant's email
         try {
-          const users = await base44.entities.User.list();
-          const matchedUser = users.find(u => u.email === application.email);
-          if (matchedUser) {
-            await base44.entities.User.update(matchedUser.id, { role });
-          }
-        } catch (_) {}
+          await base44.functions.invoke('updateApplicantRole', { 
+            email: application.email, 
+            role: role 
+          });
+        } catch (err) {
+          console.error('Failed to update user role:', err);
+        }
 
         // Send approval email
         try {
