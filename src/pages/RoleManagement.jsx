@@ -38,15 +38,37 @@ export default function RoleManagement() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (d) => base44.entities.RolePermission.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['rolePermissions'] }); setShowDialog(false); setFormData({ role: '', page: '', access_level: 'read' }); },
-    onError: (e) => alert(`Erreur: ${e.message}`),
+    mutationFn: (d) => {
+      console.log('Creating permission:', d);
+      return base44.entities.RolePermission.create(d);
+    },
+    onSuccess: (data) => { 
+      console.log('Permission created:', data);
+      qc.invalidateQueries({ queryKey: ['rolePermissions'] }); 
+      setShowDialog(false); 
+      setFormData({ role: '', page: '', access_level: 'read' }); 
+    },
+    onError: (e) => {
+      console.error('Create error:', e);
+      alert(`Erreur: ${e.message}`);
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.RolePermission.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['rolePermissions'] }); setShowDialog(false); setEditingPermission(null); },
-    onError: (e) => alert(`Erreur: ${e.message}`),
+    mutationFn: ({ id, data }) => {
+      console.log('Updating permission:', id, data);
+      return base44.entities.RolePermission.update(id, data);
+    },
+    onSuccess: (data) => {
+      console.log('Permission updated:', data);
+      qc.invalidateQueries({ queryKey: ['rolePermissions'] }); 
+      setShowDialog(false); 
+      setEditingPermission(null); 
+    },
+    onError: (e) => {
+      console.error('Update error:', e);
+      alert(`Erreur: ${e.message}`);
+    },
   });
 
   const deleteMutation = useMutation({
