@@ -37,6 +37,10 @@ export default function Applications() {
           referred_by: application.referral_code || '',
         };
 
+        // Map applicant_type to platform role
+        const roleMap = { driver: 'driver', fleet_manager: 'fleet_manager', commercial: 'commercial' };
+        const role = roleMap[application.applicant_type] || 'user';
+
         if (application.applicant_type === 'driver') {
           await base44.entities.Driver.create({ ...entityData, vehicle_deposit: 0, vehicle_deposit_paid: false, upi_balance: 0 });
         } else if (application.applicant_type === 'fleet_manager') {
@@ -44,6 +48,15 @@ export default function Applications() {
         } else if (application.applicant_type === 'commercial') {
           await base44.entities.Commercial.create({ ...entityData, total_drivers: 0, total_earnings: 0 });
         }
+
+        // Update User role if user account exists with this email
+        try {
+          const users = await base44.entities.User.list();
+          const matchedUser = users.find(u => u.email === application.email);
+          if (matchedUser) {
+            await base44.entities.User.update(matchedUser.id, { role });
+          }
+        } catch (_) {}
 
         // Send approval email
         try {
