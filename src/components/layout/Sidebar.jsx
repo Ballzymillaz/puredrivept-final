@@ -18,8 +18,7 @@ const NAV_ITEMS = [
   ]},
   { section: 'Gestão', items: [
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
-    { name: 'Documentos', icon: FileText, page: 'Documents' },
-    { name: 'Gestão de Docs', icon: FileText, page: 'DocumentManagement' },
+    { name: 'Documentos', icon: FileText, page: 'DocumentsHub' },
     { name: 'Gestão de Veículos', icon: Car, page: 'VehicleManagement' },
     { name: 'Onboarding', icon: UserPlus, page: 'Onboarding' },
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
@@ -67,11 +66,11 @@ export default function Sidebar({ currentPage, userRole }) {
       }
 
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
+        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('driver')) {
-        return ['Onboarding', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'].includes(item.page);
+        return ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'].includes(item.page);
       }
       // No valid role: no access
       return false;

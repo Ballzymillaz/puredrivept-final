@@ -9,7 +9,6 @@ const PAGE_TITLES = {
   Drivers: 'Gestão de motoristas',
   Vehicles: 'Gestão de veículos',
   FleetManagers: 'Gestores de frota',
-  Documents: 'Documentos',
   CashFlow: 'Fluxo de caixa',
   IVA: 'IVA',
   Loans: 'Empréstimos & Adiantamentos',
@@ -25,11 +24,12 @@ const PAGE_TITLES = {
   Fleets: 'Gestão de Frotas',
   FleetVehicles: 'Veículos de Frota',
   FleetDrivers: 'Motoristas de Frota',
-  DocumentManagement: 'Gestão de Documentos',
   VehicleManagement: 'Gestão de Veículos',
   DriverPerformance: 'Análise de Performance de Motoristas',
   Configuracoes: 'Configurações',
   Onboarding: 'Onboarding',
+  DriverDashboard: 'Dashboard do Motorista',
+  DocumentsHub: 'Gestão de Documentos',
   Relatorios: 'Relatórios Gerais',
   AdvancedReports: 'Relatórios Avançados',
 };
@@ -74,17 +74,17 @@ export default function Layout({ children, currentPageName }) {
         }
       }
       // Redirect pure drivers (no admin/fleet role) to their allowed pages
-      const DRIVER_ALLOWED_PAGES = ['Onboarding', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'];
+      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'];
       if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
         if (!DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
-          window.location.href = createPageUrl('Onboarding');
+          window.location.href = createPageUrl('DriverDashboard');
           return;
         }
       }
       // Redirect pure fleet_manager away from admin-only pages
-      const FLEET_ALLOWED_PAGES = ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'];
+      const FLEET_ALLOWED_PAGES = ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'];
       if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
-        window.location.href = createPageUrl('Onboarding');
+        window.location.href = createPageUrl('FleetVehicles');
         return;
       }
     };
