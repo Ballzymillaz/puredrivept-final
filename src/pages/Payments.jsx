@@ -227,26 +227,26 @@ export default function Payments() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {[
-                  ['Uber', fmt(selected.uber_gross)],
-                  ['Bolt', fmt(selected.bolt_gross)],
-                  ['Outros', fmt(selected.other_platform_gross)],
-                  ['Comissão', fmt(selected.commission_amount)],
-                  ['Taxa slot', fmt(selected.slot_fee)],
-                  ['Aluguer veículo', fmt(selected.vehicle_rental)],
-                  ['Via Verde', fmt(selected.via_verde_amount)],
-                  ['MyPRIO', fmt(selected.myprio_amount)],
-                  ['Miio', fmt(selected.miio_amount)],
-                  ['Empréstimo', fmt(selected.loan_installment)],
-                  ['Compra veículo', fmt(selected.vehicle_purchase_installment)],
-                  ['Reembolsos', fmt(selected.reimbursement_credit)],
-                  ['Bónus objetivo', fmt(selected.goal_bonus)],
-                  ['6% IVA (obrigatorio estado)', fmt(selected.iva_amount)],
-                  ['Caução', fmt(selected.irs_retention)],
-                  ['UPI ganhos', selected.upi_earned],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex justify-between p-2 bg-gray-50 rounded">
-                    <span className="text-gray-600">{label}</span>
-                    <span className="font-medium">{value}</span>
+                  ['Uber', fmt(selected.uber_gross), 'positive'],
+                  ['Bolt', fmt(selected.bolt_gross), 'positive'],
+                  ['Outros', fmt(selected.other_platform_gross), 'positive'],
+                  ['Comissão', fmt(selected.commission_amount), 'negative'],
+                  ['Taxa slot', fmt(selected.slot_fee), 'negative'],
+                  ['Aluguer veículo', fmt(selected.vehicle_rental), 'negative'],
+                  ['Via Verde', fmt(selected.via_verde_amount), 'negative'],
+                  ['MyPRIO', fmt(selected.myprio_amount), 'negative'],
+                  ['Miio', fmt(selected.miio_amount), 'negative'],
+                  ['Empréstimo', fmt(selected.loan_installment), 'negative'],
+                  ['Compra veículo', fmt(selected.vehicle_purchase_installment), 'negative'],
+                  ['Reembolsos', fmt(selected.reimbursement_credit), 'positive'],
+                  ['Bónus objetivo', fmt(selected.goal_bonus), 'positive'],
+                  ['6% IVA (obrigatorio estado)', fmt(selected.iva_amount), 'negative'],
+                  ['Caução', fmt(selected.irs_retention), 'negative'],
+                  ['UPI ganhos', selected.upi_earned, 'negative'],
+                ].map(([label, value, type]) => (
+                  <div key={label} className={`flex justify-between p-2 rounded ${type === 'positive' ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <span className={type === 'positive' ? 'text-green-700' : 'text-red-700'}>{label}</span>
+                    <span className={`font-medium ${type === 'positive' ? 'text-green-600' : 'text-red-600'}`}>{value}</span>
                   </div>
                 ))}
               </div>
