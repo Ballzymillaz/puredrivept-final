@@ -488,6 +488,43 @@ export default function UPI({ currentUser }) {
         </TabsContent>
       </Tabs>
 
+      {/* Auto-buy dialog */}
+      {isAdmin && (
+        <Dialog open={showAutoBuyDialog} onOpenChange={setShowAutoBuyDialog}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>Auto-compra UPI</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Define um preço máximo. Todas as ordens abertas com preço ≤ ao limite serão compradas automaticamente.
+              </p>
+              {openOrders.length > 0 && (
+                <div className="bg-violet-50 p-3 rounded-lg text-sm">
+                  <p>Melhor ASK: <strong className="text-violet-700">€{openOrders[0].price_per_upi.toFixed(2)}</strong></p>
+                  <p className="text-gray-500">{openOrders.length} ordem(ns) abertas</p>
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label className="text-xs">Preço máximo por UPI (€)</Label>
+                <Input type="number" step="0.01" min="0.01" value={autoBuyThreshold}
+                  onChange={e => setAutoBuyThreshold(e.target.value)} placeholder="Ex: 1.50" />
+              </div>
+              {autoBuyThreshold && (
+                <p className="text-xs text-gray-500">
+                  {openOrders.filter(o => o.price_per_upi <= parseFloat(autoBuyThreshold)).length} ordem(ns) elegível(eis)
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setShowAutoBuyDialog(false)}>Cancelar</Button>
+                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={!autoBuyThreshold || autoBuyMutation.isPending}
+                  onClick={() => autoBuyMutation.mutate(parseFloat(autoBuyThreshold))}>
+                  {autoBuyMutation.isPending ? 'A executar...' : 'Executar'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Admin: adjust UPI dialog */}
       {isAdmin && (
         <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setEditing(null); }}>
