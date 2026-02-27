@@ -27,13 +27,18 @@ export default function Payments() {
     queryFn: () => base44.entities.WeeklyRevenues.list('-week_start_date', 100),
   });
 
-  const { data: drivers = [] } = useQuery({
+  const { data: drivers = [], isLoading: driversLoading, error: driversError } = useQuery({
     queryKey: ['drivers'],
     queryFn: async () => {
       console.log('Fetching drivers...');
-      const result = await base44.entities.Drivers.list();
-      console.log('Drivers loaded:', result);
-      return result;
+      try {
+        const result = await base44.entities.Drivers.list();
+        console.log('Drivers loaded:', result);
+        return result;
+      } catch (err) {
+        console.error('Error loading drivers:', err);
+        throw err;
+      }
     },
   });
 
