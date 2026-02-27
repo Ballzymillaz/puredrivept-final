@@ -342,7 +342,15 @@ function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
     if (!form.driver_id || !form.week_start_date) return;
 
     const driver = drivers.find(d => d.id === form.driver_id);
-    if (!driver) return;
+    if (!driver) {
+      console.error('Driver not found');
+      return;
+    }
+
+    if (!driver.city_id) {
+      console.error('Driver does not have city_id:', driver);
+      return;
+    }
 
     const payload = {
       driver_id: form.driver_id,
@@ -354,7 +362,8 @@ function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
       other_revenue: parseFloat(form.other_revenue) || 0,
     };
 
-    console.log('Payload enviado:', payload); // DEBUG
+    console.log('Selected Driver:', driver);
+    console.log('Payload enviado:', payload);
     onSubmit(payload);
   };
 
