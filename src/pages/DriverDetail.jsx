@@ -88,19 +88,24 @@ export default function DriverDetail() {
 
   // Document upload mutation
   const uploadDocumentMutation = useMutation({
-    mutationFn: async ({ file, docType }) => {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.Document.create({
-        doc_type: docType,
-        driver_email: driver.email,
-        driver_id: driver.id,
-        file_url,
-        status: 'pending',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['documents', driver?.email] });
-    },
+   mutationFn: async ({ file, docType }) => {
+     const { file_url } = await base44.integrations.Core.UploadFile({ file });
+     if (!file_url) throw new Error('Falha ao fazer upload do ficheiro');
+
+     await base44.entities.Document.create({
+       doc_type: docType,
+       driver_email: driver?.email,
+       driver_id: driver?.id,
+       file_url,
+       status: 'pending',
+     });
+   },
+   onSuccess: () => {
+     queryClient.invalidateQueries({ queryKey: ['documents', driver?.email] });
+   },
+   onError: (error) => {
+     console.error('Erro ao fazer upload do documento:', error);
+   },
   });
 
   // Document delete mutation
@@ -113,12 +118,10 @@ export default function DriverDetail() {
 
   const handleFileUpload = async (e, docType) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (file && driver?.email) {
       uploadDocumentMutation.mutate({ file, docType });
     }
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    e.target.value = '';
   };
 
   const getStatusIcon = (status) => {
@@ -341,9 +344,9 @@ export default function DriverDetail() {
             {DOC_TYPES.map(docType => (
               <label key={docType.value} className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                 <input
-                  ref={fileInputRef}
                   type="file"
                   onChange={(e) => handleFileUpload(e, docType.value)}
+                  disabled={uploadDocumentMutation.isPending}
                   className="hidden"
                   accept=".pdf,.jpg,.jpeg,.png"
                 />
