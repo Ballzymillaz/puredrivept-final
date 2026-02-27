@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
 import NotificationCenter from './components/shared/NotificationCenter';
+import FleetManagerNotifications from './components/layout/FleetManagerNotifications';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 
@@ -120,7 +121,8 @@ export default function Layout({ children, currentPageName }) {
       <Sidebar currentPage={currentPageName} userRole={user?.role || 'admin'} currentUser={user} />
       <div className="lg:ml-60 min-h-screen flex flex-col">
         <TopBar user={user} pageTitle={PAGE_TITLES[currentPageName] || currentPageName} />
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-6 space-y-6">
+          <FleetManagerNotifications currentUser={user} />
           {React.cloneElement(children, { currentUser: user })}
         </main>
       </div>
