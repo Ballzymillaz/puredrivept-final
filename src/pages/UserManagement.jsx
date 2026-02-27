@@ -22,12 +22,11 @@ const ALL_ROLES = [
 const EXCLUDED_ROLES = ['user'];
 
 export default function UserManagement({ currentUser }) {
-  const [editing, setEditing] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRoles, setInviteRoles] = useState([]);
   const [showInvite, setShowInvite] = useState(false);
-  const [selectedRoles, setSelectedRoles] = useState([]);
   const qc = useQueryClient();
 
   const isAdmin = currentUser?.role?.includes('admin');
@@ -37,28 +36,18 @@ export default function UserManagement({ currentUser }) {
     queryFn: () => base44.entities.User.list('-created_date'),
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, role }) => base44.entities.User.update(id, { role }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setShowForm(false); setEditing(null); },
+  // Filter users by search and role
+  const filteredUsers = users.filter(user => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchSearch = !searchQuery || 
+      user.full_name?.toLowerCase().includes(searchLower) ||
+      user.email?.toLowerCase().includes(searchLower);
+    
+    const matchRole = roleFilter === 'all' || 
+      (user.role && user.role.split(',').map(r => r.trim()).includes(roleFilter));
+    
+    return matchSearch && matchRole;
   });
-
-  const openEdit = (user) => {
-    setEditing(user);
-    const roles = user.role ? user.role.split(',').map(r => r.trim()).filter(Boolean) : [];
-    setSelectedRoles(roles);
-    setShowForm(true);
-  };
-
-  const toggleRole = (role) => {
-    setSelectedRoles(prev =>
-      prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]
-    );
-  };
-
-  const handleSave = () => {
-    const role = selectedRoles.join(',') || '';
-    updateMutation.mutate({ id: editing.id, role });
-  };
 
   const handleInvite = async () => {
     const platformRole = inviteRoles.includes('admin') ? 'admin' : 'user';
@@ -103,68 +92,55 @@ export default function UserManagement({ currentUser }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Gestão de Utilizadores" subtitle={`${users.length} utilizadores`}>
+      <PageHeader title="Gestão de Utilizadores" subtitle={`${filteredUsers.length} de ${users.length} utilizadores`}>
         <Button onClick={() => setShowInvite(true)} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
           <Users className="w-4 h-4" /> Convidar utilizador
         </Button>
       </PageHeader>
 
+      <div className="bg-white rounded-lg border shadow-sm p-4 space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input 
+            placeholder="Pesquisar por nome, email..." 
+            value={searchQuery} 
+            onChange={e => setSearchQuery(e.target.value)} 
+            className="pl-9"
+          />
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setRoleFilter('all')}
+            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+              roleFilter === 'all' 
+                ? 'bg-indigo-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Todos
+          </button>
+          {ALL_ROLES.map(role => (
+            <button
+              key={role.value}
+              onClick={() => setRoleFilter(role.value)}
+              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+                roleFilter === role.value 
+                  ? `${role.color}` 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {role.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <DataTable
         columns={columns}
-        data={users}
+        data={filteredUsers}
         isLoading={isLoading}
-        onRowClick={openEdit}
         emptyMessage="Nenhum utilizador"
       />
-
-      {/* Edit roles dialog */}
-      <Dialog open={showForm} onOpenChange={(o) => { setShowForm(o); if (!o) setEditing(null); }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-indigo-500" />
-              Editar roles — {editing?.full_name}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-500">Seleciona os roles do utilizador. Múltiplos roles são permitidos.</p>
-            <div className="space-y-2">
-              {ALL_ROLES.map(role => (
-                <label key={role.value} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedRoles.includes(role.value) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                  <input
-                    type="checkbox"
-                    checked={selectedRoles.includes(role.value)}
-                    onChange={() => toggleRole(role.value)}
-                    className="w-4 h-4 accent-indigo-600"
-                  />
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{role.label}</p>
-                    <p className="text-xs text-gray-400">
-                      {role.value === 'admin' && 'Acesso total à plataforma'}
-                      {role.value === 'fleet_manager' && 'Gestão de motoristas e veículos'}
-                      {role.value === 'commercial' && 'Indicações e referências'}
-                      {role.value === 'driver' && 'Dashboard do motorista'}
-                    </p>
-                  </div>
-                  <Badge className={`${role.color} border-0 text-xs`}>{role.label}</Badge>
-                </label>
-              ))}
-            </div>
-            {selectedRoles.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-3 text-sm">
-                <p className="text-xs text-gray-500 mb-1">Roles resultantes:</p>
-                <p className="font-mono text-xs text-indigo-700">{selectedRoles.join(', ')}</p>
-              </div>
-            )}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
-              <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleSave} disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'A guardar...' : 'Guardar roles'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Invite dialog */}
       <Dialog open={showInvite} onOpenChange={setShowInvite}>
