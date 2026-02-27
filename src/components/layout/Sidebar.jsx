@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Car, FileText, CreditCard, TrendingUp,
   Target, Wallet, ShoppingCart, UserPlus, Coins, Receipt,
   ChevronLeft, ChevronRight, Settings, LogOut, Menu, X,
-  Building2, HandCoins, FileBarChart, PieChart, MessageCircle
+  Building2, HandCoins, FileBarChart, PieChart, MessageCircle, Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -38,7 +38,9 @@ const NAV_ITEMS = [
     { name: 'UPI', icon: Coins, page: 'UPI' },
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
     { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
+    { name: 'Relatório Veículos', icon: Car, page: 'RelatorioVeiculos' },
     { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
+    { name: 'Notificações', icon: Bell, page: 'Notifications' },
     { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
   ]},
 ];
@@ -56,13 +58,13 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging', 'FleetManagers'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioVeiculos', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
       }
       if (hasRole('commercial') && !hasRole('admin')) {
         return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings', 'Messaging'].includes(item.page);
       }
       if (hasRole('driver')) {
-        return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'].includes(item.page);
+        return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'].includes(item.page);
       }
       return true;
     })
