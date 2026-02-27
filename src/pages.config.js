@@ -79,6 +79,7 @@ import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
 import DriverDashboard from './pages/DriverDashboard';
 import DocumentsHub from './pages/DocumentsHub';
+import DocumentApproval from './pages/DocumentApproval';
 import __Layout from './Layout.jsx';
 
 
@@ -115,6 +116,7 @@ export const PAGES = {
     "Vehicles": Vehicles,
     "DriverDashboard": DriverDashboard,
     "DocumentsHub": DocumentsHub,
+    "DocumentApproval": DocumentApproval,
 }
 
 export const pagesConfig = {
