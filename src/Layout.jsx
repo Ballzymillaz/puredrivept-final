@@ -28,6 +28,7 @@ const PAGE_TITLES = {
   PublicSite: 'Site público',
   Apply: 'Candidatura',
   Contracts: 'Contratos',
+  DriverDashboard: 'Dashboard Motorista',
 };
 
 // Public pages that don't need auth or sidebar
