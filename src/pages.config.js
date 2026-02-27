@@ -88,6 +88,7 @@ import FleetContracts from './pages/FleetContracts';
 import ReportVehiclePerformance from './pages/ReportVehiclePerformance';
 import ReportDriverUtilization from './pages/ReportDriverUtilization';
 import ReportContractStatus from './pages/ReportContractStatus';
+import RelatoriosFrotas from './pages/RelatoriosFrotas';
 import __Layout from './Layout.jsx';
 
 
@@ -133,6 +134,7 @@ export const PAGES = {
     "ReportVehiclePerformance": ReportVehiclePerformance,
     "ReportDriverUtilization": ReportDriverUtilization,
     "ReportContractStatus": ReportContractStatus,
+    "RelatoriosFrotas": RelatoriosFrotas,
 }
 
 export const pagesConfig = {
