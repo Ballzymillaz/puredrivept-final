@@ -60,7 +60,7 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioVeiculos', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
       }
       if (hasRole('commercial') && !hasRole('admin')) {
         return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings', 'Messaging'].includes(item.page);
