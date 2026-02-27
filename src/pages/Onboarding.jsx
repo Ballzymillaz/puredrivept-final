@@ -68,13 +68,14 @@ const STATUS_COLORS = {
 
 export default function Onboarding({ currentUser }) {
   const qc = useQueryClient();
-  const isAdmin = currentUser?.role?.includes('admin') || currentUser?.role?.includes('fleet_manager');
+  const isAdmin = currentUser?.role?.includes('admin');
+  const isFleetManager = currentUser?.role?.includes('fleet_manager');
   const isDriver = currentUser?.role?.includes('driver');
 
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(null);
   const [showNew, setShowNew] = useState(false);
-  const [newForm, setNewForm] = useState({ driver_name: '', driver_email: '', driver_id: '' });
+  const [newForm, setNewForm] = useState({ name: '', email: '', applicant_type: 'driver' });
   const [creating, setCreating] = useState(false);
 
   const { data: onboardings = [], isLoading } = useQuery({
@@ -82,16 +83,10 @@ export default function Onboarding({ currentUser }) {
     queryFn: () => base44.entities.DriverOnboarding.list('-created_date'),
   });
 
-  const { data: drivers = [] } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list(),
-    enabled: isAdmin,
-  });
-
   const { data: users = [] } = useQuery({
     queryKey: ['invited-users'],
     queryFn: () => base44.entities.User.list(),
-    enabled: isAdmin,
+    enabled: isAdmin || isFleetManager,
   });
 
   // Driver sees only their own onboarding
@@ -107,7 +102,8 @@ export default function Onboarding({ currentUser }) {
     setCreating(true);
     try {
       const record = await base44.entities.DriverOnboarding.create({
-        ...newForm,
+        driver_name: newForm.name,
+        driver_email: newForm.email,
         current_step: 'documents',
         status: 'in_progress',
         documents_status: 'pending',
@@ -117,18 +113,13 @@ export default function Onboarding({ currentUser }) {
       
       setCreating(false);
       setShowNew(false);
-      setNewForm({ driver_name: '', driver_email: '', driver_id: '' });
+      setNewForm({ name: '', email: '', applicant_type: 'driver' });
       qc.invalidateQueries({ queryKey: ['onboardings'] });
     } catch (error) {
       console.error('Erro ao criar onboarding:', error);
       alert(`Erro: ${error.message}`);
       setCreating(false);
     }
-  };
-
-  const handleDriverSelect = (driverId) => {
-    const d = drivers.find(dr => dr.id === driverId);
-    if (d) setNewForm({ driver_id: d.id, driver_name: d.full_name, driver_email: d.email });
   };
 
   const handleUpdate = () => {
@@ -151,13 +142,13 @@ export default function Onboarding({ currentUser }) {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Onboarding de Motoristas"
+        title="Onboarding"
         subtitle={`${stats.inProgress} em curso · ${stats.completed} concluídos`}
-        actionLabel={isAdmin ? "Iniciar Onboarding" : null}
+        actionLabel={isAdmin || isFleetManager ? "Novo Onboarding" : null}
         onAction={() => setShowNew(true)}
         actionIcon={Plus}
       >
-        {isAdmin && (
+        {(isAdmin || isFleetManager) && (
           <div className="flex gap-3 text-xs">
             <span className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded-full text-blue-700">
               <Clock className="w-3 h-3" />{stats.inProgress} em curso
