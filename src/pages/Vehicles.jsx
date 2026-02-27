@@ -109,9 +109,9 @@ export default function Vehicles({ currentUser }) {
     { header: '', render: (r) => (
       <div className="flex items-center gap-2">
         {vehicleAlerts(r.id) && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" title="Manutenção próxima" />}
-        <a href={createPageUrl(`VehicleDetail?id=${r.id}`)} onClick={e => e.stopPropagation()} className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5">
+        <Link to={createPageUrl(`VehicleDetail?id=${r.id}`)} onClick={e => e.stopPropagation()} className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5">
           Detalhes <ExternalLink className="w-3 h-3" />
-        </a>
+        </Link>
       </div>
     )},
   ];
