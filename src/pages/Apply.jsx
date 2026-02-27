@@ -84,7 +84,6 @@ export default function Apply() {
                 <SelectContent>
                   <SelectItem value="driver">Motorista TVDE</SelectItem>
                   <SelectItem value="fleet_manager">Gestor de frota</SelectItem>
-                  <SelectItem value="commercial">Comercial</SelectItem>
                 </SelectContent>
               </Select>
             </div>

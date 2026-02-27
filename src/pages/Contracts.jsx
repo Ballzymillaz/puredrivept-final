@@ -2,322 +2,386 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import PageHeader from '../components/shared/PageHeader';
-import DataTable from '../components/shared/DataTable';
-import StatusBadge from '../components/shared/StatusBadge';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Search, FileText, Download, Trash2, Send, Printer } from 'lucide-react';
-import { generateContractPDF } from '../components/contracts/ContractPDF';
+import { Plus, Search, Edit2, Trash2, FileText, Download, Upload } from 'lucide-react';
+import { format } from 'date-fns';
 
-const CONTRACT_LABELS = {
-  slot_standard: 'Slot Standard (35€)',
-  slot_premium: 'Slot Premium (45€)',
-  slot_black: 'Slot Black (99€)',
-  location: 'Aluguer',
-};
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Ativo', color: 'bg-green-100 text-green-700' },
+  { value: 'expired', label: 'Expirado', color: 'bg-red-100 text-red-700' },
+  { value: 'cancelled', label: 'Cancelado', color: 'bg-gray-100 text-gray-700' },
+];
 
-export default function Contracts() {
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
+const CONTRACT_TYPES = [
+  { value: 'slot_standard', label: 'Slot Standard' },
+  { value: 'slot_premium', label: 'Slot Premium' },
+  { value: 'slot_black', label: 'Slot Black' },
+  { value: 'location', label: 'Aluguel de Veículo' },
+];
+
+export default function Contracts({ currentUser }) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sendingEmail, setSendingEmail] = useState(null);
-  const qc = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [selectedContract, setSelectedContract] = useState(null);
+  const [formData, setFormData] = useState({
+    driver_id: '', driver_name: '', vehicle_id: '', vehicle_info: '',
+    contract_type: 'slot_standard', slot_fee: '', weekly_rental_price: '',
+    start_date: '', end_date: '', status: 'active', contract_file_url: '', notes: ''
+  });
+
+  const isAdmin = currentUser?.role?.includes('admin');
+  const isFleetManager = currentUser?.role?.includes('fleet_manager');
 
   const { data: contracts = [], isLoading } = useQuery({
     queryKey: ['contracts'],
-    queryFn: () => base44.entities.Contract.list('-created_date'),
+    queryFn: () => base44.entities.Contract.list('-start_date'),
   });
-  const { data: drivers = [] } = useQuery({ queryKey: ['drivers'], queryFn: () => base44.entities.Driver.list() });
-  const { data: vehicles = [] } = useQuery({ queryKey: ['vehicles'], queryFn: () => base44.entities.Vehicle.list() });
+
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers-contracts'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
+
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles-contracts'],
+    queryFn: () => base44.entities.Vehicle.list(),
+  });
 
   const createMutation = useMutation({
-    mutationFn: (d) => base44.entities.Contract.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['contracts'] }); setShowForm(false); },
+    mutationFn: (data) => base44.entities.Contract.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['contracts'] });
+      handleCloseForm();
+    },
   });
+
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Contract.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['contracts'] }); setShowForm(false); setEditing(null); },
+    mutationFn: (data) => base44.entities.Contract.update(selectedContract.id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['contracts'] });
+      handleCloseForm();
+    },
   });
+
   const deleteMutation = useMutation({
     mutationFn: (id) => base44.entities.Contract.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['contracts'] }); setEditing(null); setShowForm(false); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['contracts'] });
+    },
   });
 
-  const handleSubmit = (data) => {
-    if (editing) updateMutation.mutate({ id: editing.id, data });
-    else createMutation.mutate(data);
+  const qc = useQueryClient();
+
+  // Filter contracts
+  const filteredContracts = contracts.filter(c => {
+    const searchLower = search.toLowerCase();
+    const matchSearch = !search || 
+      c.driver_name?.toLowerCase().includes(searchLower) ||
+      c.vehicle_info?.toLowerCase().includes(searchLower);
+    
+    const matchStatus = statusFilter === 'all' || c.status === statusFilter;
+    
+    return matchSearch && matchStatus;
+  }).sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+
+  const handleOpenForm = (contract = null) => {
+    if (contract) {
+      setSelectedContract(contract);
+      setFormData(contract);
+    } else {
+      setSelectedContract(null);
+      setFormData({
+        driver_id: '', driver_name: '', vehicle_id: '', vehicle_info: '',
+        contract_type: 'slot_standard', slot_fee: '', weekly_rental_price: '',
+        start_date: '', end_date: '', status: 'active', contract_file_url: '', notes: ''
+      });
+    }
+    setShowForm(true);
   };
 
-  const handleDownloadPDF = (contract) => {
-    const driver = drivers.find(d => d.id === contract.driver_id);
-    const vehicle = vehicles.find(v => v.id === contract.vehicle_id);
-    const doc = generateContractPDF(contract, driver, vehicle);
-    doc.save(`contrato_${contract.driver_name?.replace(/\s/g, '_') || contract.id}.pdf`);
+  const handleCloseForm = () => {
+    setShowForm(false);
+    setSelectedContract(null);
   };
 
-  const handleSendEmail = async (contract) => {
-    setSendingEmail(contract.id);
-    await base44.functions.invoke('sendContract', { contract_id: contract.id });
-    qc.invalidateQueries({ queryKey: ['contracts'] });
-    setSendingEmail(null);
-    alert('Email de assinatura enviado com sucesso!');
+  const handleUploadContract = async (file) => {
+    if (!file) return;
+    const uploadRes = await base44.integrations.Core.UploadFile({ file });
+    setFormData(p => ({ ...p, contract_file_url: uploadRes.file_url }));
   };
 
-  const filtered = contracts.filter(c => {
-    if (search && !c.driver_name?.toLowerCase().includes(search.toLowerCase()) && !c.vehicle_info?.toLowerCase().includes(search.toLowerCase())) return false;
-    if (statusFilter !== 'all' && c.status !== statusFilter) return false;
-    return true;
-  });
+  const handleSave = () => {
+    const data = {
+      driver_id: formData.driver_id,
+      driver_name: formData.driver_name,
+      vehicle_id: formData.vehicle_id || undefined,
+      vehicle_info: formData.vehicle_info || undefined,
+      contract_type: formData.contract_type,
+      slot_fee: formData.slot_fee ? parseFloat(formData.slot_fee) : undefined,
+      weekly_rental_price: formData.weekly_rental_price ? parseFloat(formData.weekly_rental_price) : undefined,
+      start_date: formData.start_date,
+      end_date: formData.end_date || undefined,
+      status: formData.status,
+      contract_file_url: formData.contract_file_url || undefined,
+      notes: formData.notes || undefined,
+    };
 
-  const columns = [
-    {
-      header: 'Motorista',
-      render: (r) => (
-        <div>
-          <p className="font-medium text-gray-900 text-sm">{r.driver_name}</p>
-          <p className="text-xs text-gray-500">{r.vehicle_info || '—'}</p>
-        </div>
-      ),
-    },
-    { header: 'Tipo', render: (r) => <span className="text-sm">{CONTRACT_LABELS[r.contract_type] || r.contract_type}</span> },
-    { header: 'Valor/sem', render: (r) => <span className="text-sm font-medium">€{r.slot_fee || r.weekly_rental_price || 0}</span> },
-    { header: 'Início', render: (r) => <span className="text-xs">{r.start_date ? new Date(r.start_date).toLocaleDateString('pt-PT') : '—'}</span> },
-    {
-      header: 'PDF',
-      render: (r) => (
-        <span className={`text-xs font-medium ${r.contract_file_url ? 'text-emerald-600' : 'text-gray-400'}`}>
-          {r.contract_file_url ? '✓ Upload' : '—'}
-        </span>
-      ),
-    },
-    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
-    {
-      header: 'Ações',
-      render: (r) => (
-        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-indigo-600" onClick={() => handleDownloadPDF(r)} title="Gerar PDF">
-            <Printer className="w-3.5 h-3.5" />
-          </Button>
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-green-600" onClick={() => handleSendEmail(r)}
-            disabled={sendingEmail === r.id} title="Enviar para assinatura">
-            {sendingEmail === r.id ? <span className="text-[10px]">...</span> : <Send className="w-3.5 h-3.5" />}
-          </Button>
-        </div>
-      ),
-    },
-  ];
+    if (selectedContract) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleDriverSelect = (driverId) => {
+    const driver = drivers.find(d => d.id === driverId);
+    if (driver) {
+      setFormData(p => ({ ...p, driver_id: driverId, driver_name: driver.full_name }));
+    }
+  };
+
+  const handleVehicleSelect = (vehicleId) => {
+    const vehicle = vehicles.find(v => v.id === vehicleId);
+    if (vehicle) {
+      setFormData(p => ({ ...p, vehicle_id: vehicleId, vehicle_info: `${vehicle.brand} ${vehicle.model} - ${vehicle.license_plate}` }));
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      <PageHeader title="Contratos" subtitle={`${contracts.length} contratos`} actionLabel="Novo contrato" onAction={() => { setEditing(null); setShowForm(true); }} />
+    <div className="space-y-6">
+      <PageHeader
+        title="Gestão de Contratos"
+        subtitle={`${filteredContracts.length} contratos`}
+        actionLabel={isAdmin || isFleetManager ? "Novo Contrato" : null}
+        onAction={() => handleOpenForm()}
+        actionIcon={Plus}
+      />
 
-      <div className="flex flex-wrap gap-3">
+      <div className="bg-white rounded-lg border shadow-sm p-4 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Pesquisar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-52" />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="active">Ativo</SelectItem>
-            <SelectItem value="expired">Expirado</SelectItem>
-            <SelectItem value="cancelled">Cancelado</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <DataTable columns={columns} data={filtered} isLoading={isLoading}
-        onRowClick={(r) => { setEditing(r); setShowForm(true); }}
-        emptyMessage="Nenhum contrato encontrado" />
-
-      <Dialog open={showForm} onOpenChange={(o) => { setShowForm(o); if (!o) setEditing(null); }}>
-        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing ? 'Editar contrato' : 'Novo contrato'}</DialogTitle></DialogHeader>
-          <ContractForm
-            key={editing?.id || 'new'}
-            contract={editing}
-            drivers={drivers}
-            vehicles={vehicles}
-            onSubmit={handleSubmit}
-            onDelete={editing ? () => { if (confirm('Eliminar?')) deleteMutation.mutate(editing.id); } : null}
-            onDownloadPDF={editing ? () => handleDownloadPDF(editing) : null}
-            onSendEmail={editing ? () => handleSendEmail(editing) : null}
-            isSending={sendingEmail === editing?.id}
-            isLoading={createMutation.isPending || updateMutation.isPending || deleteMutation.isPending}
+          <Input
+            placeholder="Pesquisar por motorista ou veículo..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
           />
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-function ContractForm({ contract, drivers, vehicles, onSubmit, onDelete, onDownloadPDF, onSendEmail, isSending, isLoading }) {
-  const [form, setForm] = useState({
-    driver_id: contract?.driver_id || '',
-    vehicle_id: contract?.vehicle_id || '',
-    contract_type: contract?.contract_type || '',
-    slot_fee: contract?.slot_fee || '',
-    weekly_rental_price: contract?.weekly_rental_price || '',
-    start_date: contract?.start_date || '',
-    end_date: contract?.end_date || '',
-    status: contract?.status || 'active',
-    contract_file_url: contract?.contract_file_url || '',
-    notes: contract?.notes || '',
-  });
-  const [uploadingFile, setUploadingFile] = useState(false);
-
-  const CONTRACT_CONFIG = {
-    slot_standard: { slot_fee: 35 },
-    slot_premium: { slot_fee: 45 },
-    slot_black: { slot_fee: 99 },
-    location: {},
-  };
-
-  const handleChange = (field, value) => setForm(f => ({ ...f, [field]: value }));
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setUploadingFile(true);
-    const result = await base44.integrations.Core.UploadFile({ file });
-    setForm(f => ({ ...f, contract_file_url: result.file_url }));
-    setUploadingFile(false);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const data = { ...form };
-    const driver = drivers.find(d => d.id === data.driver_id);
-    if (driver) { data.driver_name = driver.full_name; }
-    const vehicle = vehicles.find(v => v.id === data.vehicle_id);
-    if (vehicle) { data.vehicle_info = `${vehicle.brand} ${vehicle.model} - ${vehicle.license_plate}`; }
-    if (data.contract_type && CONTRACT_CONFIG[data.contract_type]) {
-      const cfg = CONTRACT_CONFIG[data.contract_type];
-      if (cfg.slot_fee) data.slot_fee = cfg.slot_fee;
-    }
-    if (!data.end_date) delete data.end_date;
-    if (!data.vehicle_id) delete data.vehicle_id;
-    onSubmit(data);
-  };
-
-  const availableVehicles = vehicles.filter(v => v.status === 'available' || v.id === form.vehicle_id);
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2 space-y-1.5">
-          <Label className="text-xs">Motorista *</Label>
-          <Select value={form.driver_id} onValueChange={v => handleChange('driver_id', v)}>
-            <SelectTrigger><SelectValue placeholder="Selecionar motorista..." /></SelectTrigger>
-            <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name} ({d.email})</SelectItem>)}</SelectContent>
-          </Select>
         </div>
-        <div className="sm:col-span-2 space-y-1.5">
-          <Label className="text-xs">Veículo (opcional)</Label>
-          <Select value={form.vehicle_id} onValueChange={v => handleChange('vehicle_id', v)}>
-            <SelectTrigger><SelectValue placeholder="Sem veículo..." /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Nenhum</SelectItem>
-              {availableVehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="sm:col-span-2 space-y-1.5">
-          <Label className="text-xs">Tipo de contrato *</Label>
-          <Select value={form.contract_type} onValueChange={v => handleChange('contract_type', v)}>
-            <SelectTrigger><SelectValue placeholder="Escolher..." /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="slot_standard">Slot Standard (35€/sem)</SelectItem>
-              <SelectItem value="slot_premium">Slot Premium (45€/sem)</SelectItem>
-              <SelectItem value="slot_black">Slot Black (99€/sem)</SelectItem>
-              <SelectItem value="location">Aluguer de veículo</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {form.contract_type === 'location' && (
-          <div className="sm:col-span-2 space-y-1.5">
-            <Label className="text-xs">Preço aluguer/semana (€) *</Label>
-            <Input type="number" step="0.01" value={form.weekly_rental_price} onChange={e => handleChange('weekly_rental_price', e.target.value)} placeholder="0.00" />
-          </div>
-        )}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Data início *</Label>
-          <Input type="date" value={form.start_date} onChange={e => handleChange('start_date', e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Data fim (opcional)</Label>
-          <Input type="date" value={form.end_date} onChange={e => handleChange('end_date', e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Estado</Label>
-          <Select value={form.status} onValueChange={v => handleChange('status', v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Ativo</SelectItem>
-              <SelectItem value="expired">Expirado</SelectItem>
-              <SelectItem value="cancelled">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+              statusFilter === 'all'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Todos
+          </button>
+          {STATUS_OPTIONS.map(status => (
+            <button
+              key={status.value}
+              onClick={() => setStatusFilter(status.value)}
+              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+                statusFilter === status.value
+                  ? status.color
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {status.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label className="text-xs">Documento PDF (upload opcional)</Label>
-        {form.contract_file_url ? (
-          <div className="flex items-center gap-2">
-            <a href={form.contract_file_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:underline flex items-center gap-1">
-              <Download className="w-4 h-4" /> Ver documento
-            </a>
-            <Button type="button" size="sm" variant="ghost" onClick={() => handleChange('contract_file_url', '')} className="text-red-600">
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploadingFile} />
-            {uploadingFile && <span className="text-xs text-gray-500">A enviar...</span>}
-          </div>
-        )}
-      </div>
+      {isLoading ? (
+        <div className="text-center py-12 text-gray-400">A carregar...</div>
+      ) : filteredContracts.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Nenhum contrato encontrado</p>
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {filteredContracts.map(contract => {
+            const statusConfig = STATUS_OPTIONS.find(s => s.value === contract.status);
+            const typeLabel = CONTRACT_TYPES.find(t => t.value === contract.contract_type)?.label;
 
-      <div className="space-y-1.5">
-        <Label className="text-xs">Observações</Label>
-        <Textarea value={form.notes} onChange={e => handleChange('notes', e.target.value)} rows={3} />
-      </div>
-
-      {/* Action buttons for existing contracts */}
-      {contract && (
-        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-          <p className="text-xs font-medium text-gray-600">Ações do contrato</p>
-          <div className="flex gap-2">
-            <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onDownloadPDF}>
-              <Printer className="w-3.5 h-3.5" /> Gerar PDF
-            </Button>
-            <Button type="button" variant="outline" size="sm" className="gap-1.5 text-green-700 border-green-200 hover:bg-green-50"
-              onClick={onSendEmail} disabled={isSending}>
-              <Send className="w-3.5 h-3.5" /> {isSending ? 'A enviar...' : 'Enviar para assinatura'}
-            </Button>
-          </div>
+            return (
+              <div
+                key={contract.id}
+                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-sm text-gray-900">
+                        {contract.driver_name}
+                      </h3>
+                      <Badge className={`text-xs border-0 ${statusConfig?.color || 'bg-gray-100 text-gray-700'}`}>
+                        {statusConfig?.label || 'Desconhecido'}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-gray-500 mb-2">
+                      {contract.vehicle_info || '—'} • {typeLabel}
+                    </p>
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <p className="text-gray-400">Início</p>
+                        <p className="font-semibold text-gray-900">
+                          {contract.start_date ? format(new Date(contract.start_date), 'dd/MM/yyyy') : '—'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400">Fim</p>
+                        <p className="font-semibold text-gray-900">
+                          {contract.end_date ? format(new Date(contract.end_date), 'dd/MM/yyyy') : 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400">{contract.contract_type === 'location' ? 'Aluguel' : 'Taxa'}</p>
+                        <p className="font-semibold text-gray-900">
+                          €{(contract.weekly_rental_price || contract.slot_fee || 0).toFixed(2)}/sem
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {(isAdmin || isFleetManager) && (
+                    <div className="flex gap-1 shrink-0">
+                      {contract.contract_file_url && (
+                        <button
+                          onClick={() => window.open(contract.contract_file_url, '_blank')}
+                          className="p-2 hover:bg-gray-100 rounded text-gray-600"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleOpenForm(contract)}
+                        className="p-2 hover:bg-gray-100 rounded text-gray-600"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteMutation.mutate(contract.id)}
+                        className="p-2 hover:bg-red-100 rounded text-red-600"
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      <div className="flex gap-2">
-        {onDelete && (
-          <Button type="button" variant="outline" onClick={onDelete} disabled={isLoading} className="text-red-600 border-red-200">
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        )}
-        <Button type="submit" disabled={isLoading} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
-          {isLoading ? 'A guardar...' : contract ? 'Atualizar' : 'Criar contrato'}
-        </Button>
-      </div>
-    </form>
+      {/* Form Dialog */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{selectedContract ? 'Editar Contrato' : 'Novo Contrato'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Motorista *</Label>
+              <select
+                value={formData.driver_id}
+                onChange={e => handleDriverSelect(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="">Selecionar motorista...</option>
+                {drivers.map(d => (
+                  <option key={d.id} value={d.id}>{d.full_name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Veículo</Label>
+              <select
+                value={formData.vehicle_id}
+                onChange={e => handleVehicleSelect(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                <option value="">Nenhum</option>
+                {vehicles.map(v => (
+                  <option key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Tipo de Contrato *</Label>
+              <select value={formData.contract_type} onChange={e => setFormData(p => ({ ...p, contract_type: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                {CONTRACT_TYPES.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Início *</Label>
+                <Input type="date" value={formData.start_date} onChange={e => setFormData(p => ({ ...p, start_date: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Fim</Label>
+                <Input type="date" value={formData.end_date} onChange={e => setFormData(p => ({ ...p, end_date: e.target.value }))} />
+              </div>
+            </div>
+            {formData.contract_type === 'location' ? (
+              <div>
+                <Label className="text-xs">Aluguel Semanal (€)</Label>
+                <Input type="number" step="0.01" value={formData.weekly_rental_price} onChange={e => setFormData(p => ({ ...p, weekly_rental_price: e.target.value }))} placeholder="0.00" />
+              </div>
+            ) : (
+              <div>
+                <Label className="text-xs">Taxa Semanal (€)</Label>
+                <Input type="number" step="0.01" value={formData.slot_fee} onChange={e => setFormData(p => ({ ...p, slot_fee: e.target.value }))} placeholder="0.00" />
+              </div>
+            )}
+            <div>
+              <Label className="text-xs">Estado</Label>
+              <select value={formData.status} onChange={e => setFormData(p => ({ ...p, status: e.target.value }))} className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                {STATUS_OPTIONS.map(s => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs">Documento do Contrato</Label>
+              <input
+                type="file"
+                onChange={e => handleUploadContract(e.target.files?.[0])}
+                className="w-full text-sm"
+              />
+              {formData.contract_file_url && (
+                <p className="text-xs text-green-600 mt-1">✓ Ficheiro carregado</p>
+              )}
+            </div>
+            <div>
+              <Label className="text-xs">Notas</Label>
+              <textarea
+                value={formData.notes}
+                onChange={e => setFormData(p => ({ ...p, notes: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                rows={2}
+              />
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button variant="outline" onClick={handleCloseForm}>Cancelar</Button>
+              <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700" onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending || !formData.driver_id || !formData.start_date}>
+                {createMutation.isPending || updateMutation.isPending ? 'A guardar...' : 'Guardar'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
