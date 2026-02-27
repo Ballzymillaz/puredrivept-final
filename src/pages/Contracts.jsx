@@ -57,10 +57,12 @@ export default function Contracts() {
     else createMutation.mutate(data);
   };
 
-  const filtered = contracts.filter(c =>
-    !search || c.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
-    c.vehicle_info?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = contracts.filter(c => {
+    if (search && !c.driver_name?.toLowerCase().includes(search.toLowerCase()) && !c.vehicle_info?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (vehicleFilter !== 'all' && c.vehicle_id !== vehicleFilter) return false;
+    if (statusFilter !== 'all' && c.status !== statusFilter) return false;
+    return true;
+  });
 
   const CONTRACT_LABELS = {
     slot_standard: 'Slot Standard (35€)',
