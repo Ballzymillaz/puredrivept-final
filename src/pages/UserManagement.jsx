@@ -52,9 +52,16 @@ export default function UserManagement({ currentUser }) {
     );
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const role = selectedRoles.join(',') || 'user';
     updateMutation.mutate({ id: editing.id, role });
+    // Sync to corresponding entities
+    await base44.functions.invoke('syncUserRole', {
+      targetUserId: editing.id,
+      targetEmail: editing.email,
+      targetName: editing.full_name,
+      newRoles: selectedRoles,
+    });
   };
 
   const handleInvite = async () => {
