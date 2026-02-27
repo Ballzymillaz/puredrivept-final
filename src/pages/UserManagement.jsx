@@ -15,7 +15,6 @@ import { format } from 'date-fns';
 const ALL_ROLES = [
   { value: 'admin', label: 'Administrador', color: 'bg-red-100 text-red-700' },
   { value: 'fleet_manager', label: 'Gestor de frota', color: 'bg-blue-100 text-blue-700' },
-  { value: 'commercial', label: 'Comercial', color: 'bg-green-100 text-green-700' },
   { value: 'driver', label: 'Motorista', color: 'bg-indigo-100 text-indigo-700' },
 ];
 

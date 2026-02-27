@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, TrendingUp, TrendingDown, Zap, Shield, FileText, AlertCircle, CheckCircle2, Clock, Car } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Wallet, TrendingUp, TrendingDown, Zap, Shield, FileText, AlertCircle, CheckCircle2, Clock, Car, Upload, Loader2 } from 'lucide-react';
 import { format, isPast, differenceInDays } from 'date-fns';
 import StatusBadge from '../components/shared/StatusBadge';
 
@@ -20,8 +22,11 @@ const DOC_TYPE_LABELS = {
 };
 
 export default function DriverDashboard({ currentUser }) {
+  const qc = useQueryClient();
   const [driver, setDriver] = useState(null);
   const [loadingDriver, setLoadingDriver] = useState(true);
+  const [renewalDoc, setRenewalDoc] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   // Find driver by email from currentUser prop (passed by Layout)
   useEffect(() => {
@@ -93,6 +98,42 @@ export default function DriverDashboard({ currentUser }) {
     if (!d.expiry_date) return false;
     return isPast(new Date(d.expiry_date));
   });
+
+  const rejectedDocs = documents.filter(d => d.status === 'rejected');
+
+  const handleRenewDoc = async (file) => {
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+
+      await base44.entities.Document.update(renewalDoc.id, {
+        file_url,
+        status: 'pending',
+        rejection_reason: null,
+      });
+
+      // Trigger AI verification
+      await base44.functions.invoke('verifyDocumentAI', {
+        documentId: renewalDoc.id,
+        fileUrl: file_url,
+        docType: renewalDoc.doc_type,
+      });
+
+      await base44.integrations.Core.SendEmail({
+        to: currentUser.email,
+        subject: '✅ Documento Renovado',
+        body: `O seu documento foi re-enviado com sucesso e está a aguardar verificação.`,
+      });
+
+      setUploading(false);
+      setRenewalDoc(null);
+      qc.invalidateQueries({ queryKey: ['my-docs'] });
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Erro ao fazer upload do documento');
+      setUploading(false);
+    }
+  };
 
   if (loadingDriver) {
     return (
@@ -353,6 +394,36 @@ export default function DriverDashboard({ currentUser }) {
         </CardContent>
       </Card>
 
+      {/* Rejected Documents - Allow Re-upload */}
+      {rejectedDocs.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2 text-red-800">
+              <AlertCircle className="w-4 h-4" /> Documentos Rejeitados ({rejectedDocs.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {rejectedDocs.map(d => (
+              <div key={d.id} className="flex items-center justify-between bg-white rounded p-3 border border-red-200">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800">{DOC_TYPE_LABELS[d.doc_type] || d.doc_type}</p>
+                  {d.rejection_reason && (
+                    <p className="text-xs text-red-600 mt-1">Motivo: {d.rejection_reason}</p>
+                  )}
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setRenewalDoc(d)}
+                  className="bg-red-600 hover:bg-red-700 text-white gap-1"
+                >
+                  <Upload className="w-3 h-3" /> Reenviar
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Documents */}
       <Card>
         <CardHeader className="pb-3">
@@ -369,7 +440,7 @@ export default function DriverDashboard({ currentUser }) {
               const isExpired = d.expiry_date && isPast(new Date(d.expiry_date));
               return (
                 <div key={d.id} className="flex items-center justify-between px-4 py-3 border-b last:border-0">
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium">{DOC_TYPE_LABELS[d.doc_type] || d.doc_type}</p>
                     {d.expiry_date && (
                       <p className={`text-xs ${isExpired ? 'text-red-600 font-semibold' : days <= 30 ? 'text-orange-500 font-semibold' : 'text-gray-400'}`}>
@@ -382,6 +453,15 @@ export default function DriverDashboard({ currentUser }) {
                     {d.file_url && (
                       <a href={d.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline font-medium">Ver</a>
                     )}
+                    {(isExpired || (days && days <= 30)) && !rejectedDocs.some(rd => rd.id === d.id) && (
+                      <Button
+                        size="sm"
+                        onClick={() => setRenewalDoc(d)}
+                        className="bg-amber-600 hover:bg-amber-700 text-white gap-1"
+                      >
+                        <Upload className="w-3 h-3" /> Renovar
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
@@ -389,6 +469,51 @@ export default function DriverDashboard({ currentUser }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Document Renewal Dialog */}
+      <Dialog open={!!renewalDoc} onOpenChange={(o) => { if (!o) setRenewalDoc(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Renovar Documento</DialogTitle>
+          </DialogHeader>
+          {renewalDoc && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {DOC_TYPE_LABELS[renewalDoc.doc_type] || renewalDoc.doc_type}
+                </p>
+                {renewalDoc.rejection_reason && (
+                  <p className="text-xs text-red-600 mt-1">Motivo anterior: {renewalDoc.rejection_reason}</p>
+                )}
+              </div>
+              <label className="flex items-center justify-center w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 transition-colors">
+                <div className="text-center">
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-8 h-8 text-indigo-600 mx-auto animate-spin mb-2" />
+                      <p className="text-sm text-gray-600">A fazer upload...</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm font-medium text-gray-900">Clique para selecionar ficheiro</p>
+                      <p className="text-xs text-gray-500">PDF, PNG, JPG até 10MB</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  disabled={uploading}
+                  onChange={e => e.target.files?.[0] && handleRenewDoc(e.target.files[0])}
+                />
+              </label>
+              <Button variant="outline" onClick={() => setRenewalDoc(null)}>Cancelar</Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Notifications */}
       {notifications.length > 0 && (

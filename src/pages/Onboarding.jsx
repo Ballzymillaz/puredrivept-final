@@ -22,6 +22,44 @@ const STEP_LABELS = {
   completed: 'Concluído',
 };
 
+function ProgressBar({ currentStep }) {
+  const steps = ['documents', 'background_check', 'vehicle_assignment', 'completed'];
+  const currentIndex = steps.indexOf(currentStep);
+  const progress = ((currentIndex + 1) / steps.length) * 100;
+
+  return (
+    <div className="space-y-2 mb-4">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs font-semibold text-gray-700">Progresso do Onboarding</span>
+        <span className="text-xs text-gray-500">{currentIndex + 1} de {steps.length}</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+        <div
+          className="bg-indigo-600 h-full transition-all duration-300 rounded-full"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="flex justify-between text-xs text-gray-600 mt-2">
+        {steps.map((step, idx) => (
+          <div
+            key={step}
+            className={`flex flex-col items-center gap-1 flex-1 ${idx <= currentIndex ? 'text-indigo-700 font-semibold' : ''}`}
+          >
+            <div
+              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                idx <= currentIndex ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'
+              }`}
+            >
+              {idx + 1}
+            </div>
+            <span className="hidden sm:block text-[10px]">{STEP_LABELS[step]}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const STATUS_COLORS = {
   in_progress: 'bg-blue-100 text-blue-700',
   blocked: 'bg-red-100 text-red-700',
@@ -249,6 +287,7 @@ export default function Onboarding({ currentUser }) {
                   Onboarding — {selected.driver_name}
                 </DialogTitle>
               </DialogHeader>
+              <ProgressBar currentStep={selected.current_step} />
               <OnboardingSteps currentStep={selected.current_step} status={selected.status} />
 
               {selected.current_step === 'documents' && (
