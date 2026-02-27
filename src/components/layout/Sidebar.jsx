@@ -22,9 +22,8 @@ const NAV_ITEMS = [
   ]},
   { section: 'Gestão', items: [
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
-    { name: 'Comerciais', icon: HandCoins, page: 'Commercials' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
-    { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
+    { name: 'Onboarding', icon: UserPlus, page: 'Onboarding' },
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
   ]},
   { section: 'Finanças', items: [
@@ -49,6 +48,7 @@ const NAV_ITEMS = [
     { name: 'Relatório Frotas', icon: PieChart, page: 'RelatorioFrotas' },
     { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrotas' },
     { name: 'Relatório Veículos', icon: Car, page: 'RelatorioVeiculos' },
+    { name: 'Relatórios Avançados', icon: FileBarChart, page: 'AdvancedReports' },
     { name: 'Construtor Relatórios', icon: FileBarChart, page: 'ReportBuilder' },
     { name: 'Scheduler Relatórios', icon: FileBarChart, page: 'ReportScheduler' },
   ]},
@@ -78,9 +78,7 @@ export default function Sidebar({ currentPage, userRole }) {
       if (hasRole('fleet_manager') && !hasRole('driver')) {
         return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'FleetContracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'ReportContractStatus', 'DashboardModular', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
-      if (hasRole('commercial') && !hasRole('admin')) {
-        return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings', 'Messaging', 'Notifications'].includes(item.page);
-      }
+
       if (hasRole('driver')) {
         return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'].includes(item.page);
       }
