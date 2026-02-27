@@ -1,101 +1,112 @@
-import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import PageHeader from '../components/shared/PageHeader';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Search, CheckCircle2, XCircle, Clock, FileText } from 'lucide-react';
-import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FileText, CheckCircle2, Clock, AlertTriangle, Search, Filter } from 'lucide-react';
+import { differenceInDays, addDays, format } from 'date-fns';
 
-const DOC_LABELS = {
-  driving_license: 'Carta de Condução',
-  tvde_certificate: 'Certificado TVDE',
-  id_card: 'CC / Passaporte',
-  iban_proof: 'Comprovativo IBAN',
-  insurance: 'Seguro',
-  inspection: 'Inspeção',
-  other: 'Outro'
-};
-
-const STATUS_COLORS = {
-  pending: 'bg-gray-100 text-gray-700',
-  approved: 'bg-emerald-100 text-emerald-700',
-  rejected: 'bg-red-100 text-red-700'
-};
-
-const STATUS_ICONS = {
-  pending: Clock,
-  approved: CheckCircle2,
-  rejected: XCircle
-};
+const DOC_CATEGORIES = [
+  { value: 'driving_license', label: 'Carta de Condução', expiryMonths: 12 },
+  { value: 'id_card', label: 'CC/Passaporte', expiryMonths: 60 },
+  { value: 'tvde_certificate', label: 'Certificado TVDE', expiryMonths: 12 },
+  { value: 'iban_proof', label: 'Comprovativo IBAN', expiryMonths: null },
+  { value: 'insurance', label: 'Seguro', expiryMonths: 12 },
+  { value: 'inspection', label: 'Inspeção', expiryMonths: 12 },
+  { value: 'other', label: 'Outro', expiryMonths: null },
+];
 
 export default function DocumentManagement({ currentUser }) {
-  const qc = useQueryClient();
   const isAdmin = currentUser?.role?.includes('admin');
-  
-  const [search, setSearch] = useState('');
-  const [selectedDoc, setSelectedDoc] = useState(null);
-  const [reviewForm, setReviewForm] = useState({ action: '', notes: '' });
-  const [reviewing, setReviewing] = useState(false);
+  const qc = useQueryClient();
 
-  const { data: documents = [], isLoading } = useQuery({
-    queryKey: ['documents'],
-    queryFn: () => base44.entities.Document.list('-created_date'),
-    enabled: isAdmin,
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('pending');
+  const [selectedDoc, setSelectedDoc] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectionDialog, setShowRejectionDialog] = useState(false);
+
+  // Fetch documents
+  const { data: documents = [] } = useQuery({
+    queryKey: ['all-documents'],
+    queryFn: async () => await base44.entities.Document.list('-created_date'),
   });
 
-  const filtered = documents.filter(doc =>
-    !search ||
-    doc.driver_email?.toLowerCase().includes(search.toLowerCase()) ||
-    DOC_LABELS[doc.doc_type]?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Fetch drivers
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: async () => await base44.entities.Driver.list(),
+  });
 
-  const handleReview = async () => {
-    setReviewing(true);
-    try {
-      const newStatus = reviewForm.action === 'approve' ? 'approved' : 'rejected';
-      
-      await base44.entities.Document.update(selectedDoc.id, {
-        status: newStatus,
-        rejection_reason: reviewForm.notes || undefined,
+  // Approve mutation
+  const approveMutation = useMutation({
+    mutationFn: (docId) => 
+      base44.entities.Document.update(docId, {
+        status: 'approved',
         approved_by: currentUser.email,
         approved_at: new Date().toISOString(),
-      });
-
-      // Notify driver
-      const statusMsg = newStatus === 'approved' 
-        ? `O seu documento ${DOC_LABELS[selectedDoc.doc_type]} foi aprovado.`
-        : `O seu documento ${DOC_LABELS[selectedDoc.doc_type]} foi rejeitado. Motivo: ${reviewForm.notes}`;
-
-      await base44.entities.Notification.create({
-        title: newStatus === 'approved' ? '✅ Documento aprovado' : '❌ Documento rejeitado',
-        message: statusMsg,
-        type: newStatus === 'approved' ? 'success' : 'alert',
-        category: 'document_expiry',
-        recipient_email: selectedDoc.driver_email,
-        related_entity: selectedDoc.id,
-        sent_email: false,
-      });
-
-      setReviewing(false);
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['all-documents'] });
       setSelectedDoc(null);
-      setReviewForm({ action: '', notes: '' });
-      qc.invalidateQueries({ queryKey: ['documents'] });
-    } catch (error) {
-      console.error('Review error:', error);
-      alert('Erro ao revisar documento');
-      setReviewing(false);
-    }
+    },
+  });
+
+  // Reject mutation
+  const rejectMutation = useMutation({
+    mutationFn: (docId) => 
+      base44.entities.Document.update(docId, {
+        status: 'rejected',
+        rejection_reason: rejectionReason,
+        approved_by: currentUser.email,
+        approved_at: new Date().toISOString(),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['all-documents'] });
+      setSelectedDoc(null);
+      setRejectionReason('');
+      setShowRejectionDialog(false);
+    },
+  });
+
+  // Filter and categorize documents
+  const filtered = documents.filter(doc => {
+    const matchSearch = !search || 
+      doc.driver_email?.toLowerCase().includes(search.toLowerCase()) ||
+      DOC_CATEGORIES.find(c => c.value === doc.doc_type)?.label?.toLowerCase().includes(search.toLowerCase());
+    
+    const matchStatus = !statusFilter || doc.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  // Calculate expiry info
+  const getExpiryInfo = (doc) => {
+    if (!doc.expiry_date) return null;
+    const days = differenceInDays(new Date(doc.expiry_date), new Date());
+    if (days <= 0) return { status: 'expired', days, text: 'Expirado' };
+    if (days <= 30) return { status: 'expiring', days, text: `${days} dias` };
+    return { status: 'valid', days, text: `Válido por ${days} dias` };
   };
 
+  // Stats
   const stats = {
-    total: documents.length,
     pending: documents.filter(d => d.status === 'pending').length,
     approved: documents.filter(d => d.status === 'approved').length,
     rejected: documents.filter(d => d.status === 'rejected').length,
+    expiring: documents.filter(d => {
+      const info = getExpiryInfo(d);
+      return info?.status === 'expiring';
+    }).length,
+    expired: documents.filter(d => {
+      const info = getExpiryInfo(d);
+      return info?.status === 'expired';
+    }).length,
   };
 
   if (!isAdmin) {
@@ -110,167 +121,175 @@ export default function DocumentManagement({ currentUser }) {
     <div className="space-y-6">
       <PageHeader
         title="Gestão de Documentos"
-        subtitle={`${stats.pending} pendentes · ${stats.approved} aprovados · ${stats.rejected} rejeitados`}
+        subtitle="Aprovação e validação de documentos enviados por motoristas"
       >
-        <div className="flex gap-3 text-xs">
-          <span className="flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-full text-gray-700">
-            <Clock className="w-3 h-3" />{stats.pending} pendentes
+        <div className="flex gap-2 text-xs">
+          <span className="flex items-center gap-1 px-2 py-1 bg-yellow-50 rounded-full text-yellow-700">
+            <Clock className="w-3 h-3" />{stats.pending} Pendentes
           </span>
-          <span className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 rounded-full text-emerald-700">
-            <CheckCircle2 className="w-3 h-3" />{stats.approved} aprovados
+          <span className="flex items-center gap-1 px-2 py-1 bg-emerald-50 rounded-full text-emerald-700">
+            <CheckCircle2 className="w-3 h-3" />{stats.approved} Aprovados
           </span>
-          <span className="flex items-center gap-1.5 px-2 py-1 bg-red-50 rounded-full text-red-700">
-            <XCircle className="w-3 h-3" />{stats.rejected} rejeitados
-          </span>
+          {stats.expired > 0 && (
+            <span className="flex items-center gap-1 px-2 py-1 bg-red-50 rounded-full text-red-700">
+              <AlertTriangle className="w-3 h-3" />{stats.expired} Expirados
+            </span>
+          )}
         </div>
       </PageHeader>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <Input
-          placeholder="Pesquisar por email ou tipo de documento..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="pl-9"
-        />
-      </div>
-
-      {isLoading ? (
-        <div className="text-center text-gray-400 py-12">A carregar...</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
-          <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Nenhum documento encontrado</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map(doc => {
-            const IconStatus = STATUS_ICONS[doc.status];
-            return (
-              <div
-                key={doc.id}
-                onClick={() => setSelectedDoc(doc)}
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm text-gray-900">{DOC_LABELS[doc.doc_type]}</p>
-                    <p className="text-xs text-gray-500">{doc.driver_email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {doc.expiry_date && (
-                    <span className="text-xs text-gray-500">
-                      Válido até: {format(new Date(doc.expiry_date), 'dd/MM/yyyy')}
-                    </span>
-                  )}
-                  <Badge className={`${STATUS_COLORS[doc.status]} flex items-center gap-1`}>
-                    {IconStatus && <IconStatus className="w-3 h-3" />}
-                    {doc.status === 'pending' ? 'Pendente' : doc.status === 'approved' ? 'Aprovado' : 'Rejeitado'}
-                  </Badge>
-                  {doc.created_date && (
-                    <span className="text-xs text-gray-400 hidden md:block">
-                      {format(new Date(doc.created_date), 'dd/MM/yyyy')}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      {/* Alerts */}
+      {stats.expired > 0 && (
+        <Alert className="border-red-200 bg-red-50">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            {stats.expired} documento(s) expirado(s) que requerem ação imediata
+          </AlertDescription>
+        </Alert>
       )}
 
-      {/* Document Review Dialog */}
-      <Dialog open={!!selectedDoc} onOpenChange={(o) => { if (!o) setSelectedDoc(null); }}>
-        <DialogContent className="max-w-md">
-          {selectedDoc && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Revisar Documento</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{DOC_LABELS[selectedDoc.doc_type]}</p>
-                  <p className="text-xs text-gray-500">{selectedDoc.driver_email}</p>
-                </div>
+      <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="pending">Pendentes ({stats.pending})</TabsTrigger>
+          <TabsTrigger value="approved">Aprovados ({stats.approved})</TabsTrigger>
+          <TabsTrigger value="rejected">Rejeitados ({stats.rejected})</TabsTrigger>
+        </TabsList>
 
-                {selectedDoc.file_url && (
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <a
-                      href={selectedDoc.file_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm text-indigo-600 hover:underline"
-                    >
-                      Ver documento →
-                    </a>
-                  </div>
-                )}
+        {['pending', 'approved', 'rejected'].map(status => (
+          <TabsContent key={status} value={status}>
+            {filtered.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <FileText className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                  <p className="text-gray-500">Nenhum documento encontrado</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {filtered.map(doc => {
+                  const expiryInfo = getExpiryInfo(doc);
+                  const driver = drivers.find(d => d.email === doc.driver_email);
+                  const docCategory = DOC_CATEGORIES.find(c => c.value === doc.doc_type);
 
-                {selectedDoc.status === 'pending' && (
-                  <>
-                    <div>
-                      <label className="text-xs font-semibold text-gray-700 block mb-2">
-                        Notas (opcional)
-                      </label>
-                      <Textarea
-                        placeholder="Adicionar motivo de rejeição ou observações..."
-                        value={reviewForm.notes}
-                        onChange={e => setReviewForm(p => ({ ...p, notes: e.target.value }))}
-                        className="h-20 text-xs"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={() => {
-                          setReviewForm({ action: 'approve', notes: '' });
-                          setTimeout(handleReview, 0);
-                        }}
-                        disabled={reviewing}
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-                      >
-                        ✅ Aprovar
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setReviewForm(p => ({ ...p, action: 'reject' }));
-                          setTimeout(handleReview, 0);
-                        }}
-                        disabled={reviewing}
-                        variant="destructive"
-                        className="flex-1"
-                      >
-                        ❌ Rejeitar
-                      </Button>
-                    </div>
-                  </>
-                )}
+                  return (
+                    <Card key={doc.id}>
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-5 gap-4 items-center">
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase">Documento</p>
+                            <p className="font-semibold text-sm">{docCategory?.label}</p>
+                          </div>
 
-                {selectedDoc.status === 'approved' && (
-                  <div className="p-3 bg-emerald-50 rounded-lg text-sm text-emerald-700">
-                    ✅ Documento aprovado por {selectedDoc.approved_by}
-                    {selectedDoc.approved_at && (
-                      <p className="text-xs mt-1">
-                        {format(new Date(selectedDoc.approved_at), 'dd/MM/yyyy HH:mm')}
-                      </p>
-                    )}
-                  </div>
-                )}
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase">Motorista</p>
+                            <p className="font-semibold text-sm">{driver?.full_name || doc.driver_email}</p>
+                            <p className="text-xs text-gray-600">{doc.driver_email}</p>
+                          </div>
 
-                {selectedDoc.status === 'rejected' && (
-                  <div className="p-3 bg-red-50 rounded-lg text-sm text-red-700">
-                    ❌ Documento rejeitado
-                    {selectedDoc.rejection_reason && (
-                      <p className="text-xs mt-2">Motivo: {selectedDoc.rejection_reason}</p>
-                    )}
-                  </div>
-                )}
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase">Validade</p>
+                            {expiryInfo ? (
+                              <p className={`text-sm font-medium ${
+                                expiryInfo.status === 'expired' ? 'text-red-600' :
+                                expiryInfo.status === 'expiring' ? 'text-yellow-600' :
+                                'text-emerald-600'
+                              }`}>
+                                {expiryInfo.text}
+                              </p>
+                            ) : (
+                              <p className="text-sm text-gray-600">Sem data</p>
+                            )}
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-gray-500 uppercase">Status</p>
+                            <Badge className={`text-xs ${
+                              status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                              status === 'rejected' ? 'bg-red-100 text-red-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {status === 'approved' ? '✓ Aprovado' :
+                               status === 'rejected' ? '✗ Rejeitado' :
+                               '⏳ Pendente'}
+                            </Badge>
+                          </div>
+
+                          <div className="flex gap-2 justify-end">
+                            <a
+                              href={doc.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                            >
+                              Ver
+                            </a>
+
+                            {status === 'pending' && (
+                              <>
+                                <Button
+                                  onClick={() => approveMutation.mutate(doc.id)}
+                                  disabled={approveMutation.isPending}
+                                  size="sm"
+                                  className="bg-emerald-600 hover:bg-emerald-700"
+                                >
+                                  Aprovar
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    setSelectedDoc(doc);
+                                    setShowRejectionDialog(true);
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  Rejeitar
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            </>
-          )}
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      {/* Rejection Dialog */}
+      <Dialog open={showRejectionDialog} onOpenChange={setShowRejectionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rejeitar Documento</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700">
+              Documento: <strong>{selectedDoc && DOC_CATEGORIES.find(c => c.value === selectedDoc.doc_type)?.label}</strong>
+            </p>
+            <div>
+              <label className="block text-sm font-medium mb-2">Motivo da Rejeição</label>
+              <Textarea
+                placeholder="Explique por que o documento foi rejeitado..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowRejectionDialog(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => selectedDoc && rejectMutation.mutate(selectedDoc.id)}
+                disabled={!rejectionReason.trim() || rejectMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Confirmar Rejeição
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
