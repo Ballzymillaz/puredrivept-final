@@ -39,6 +39,9 @@ const PAGE_TITLES = {
   Configuracoes: 'Configurações',
   ReportBuilder: 'Construtor de Relatórios',
   ReportScheduler: 'Scheduler de Relatórios',
+  ReportVehiclePerformance: 'Desempenho de Veículos',
+  ReportDriverUtilization: 'Utilização de Motoristas',
+  ReportContractStatus: 'Situação de Contratos',
   DashboardModular: 'Dashboard Modular',
 };
 

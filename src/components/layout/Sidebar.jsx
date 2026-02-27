@@ -40,12 +40,19 @@ const NAV_ITEMS = [
     { name: 'Objetivos', icon: Target, page: 'Goals' },
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
+  ]},
+  { section: 'Relatórios', items: [
+    { name: 'Desempenho de Veículos', icon: Car, page: 'ReportVehiclePerformance' },
+    { name: 'Utilização de Motoristas', icon: Users, page: 'ReportDriverUtilization' },
+    { name: 'Situação de Contratos', icon: FileText, page: 'ReportContractStatus' },
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
     { name: 'Relatório Frotas', icon: PieChart, page: 'RelatorioFrotas' },
-    { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
+    { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrotas' },
     { name: 'Relatório Veículos', icon: Car, page: 'RelatorioVeiculos' },
     { name: 'Construtor Relatórios', icon: FileBarChart, page: 'ReportBuilder' },
     { name: 'Scheduler Relatórios', icon: FileBarChart, page: 'ReportScheduler' },
+  ]},
+  { section: 'Outros', items: [
     { name: 'Dashboard Modular', icon: LayoutDashboard, page: 'DashboardModular' },
     { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
     { name: 'Notificações', icon: Bell, page: 'Notifications' },
@@ -69,7 +76,7 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'FleetContracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'DashboardModular', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'FleetContracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'ReportContractStatus', 'DashboardModular', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
       if (hasRole('commercial') && !hasRole('admin')) {
         return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings', 'Messaging', 'Notifications'].includes(item.page);
