@@ -69,6 +69,7 @@ import Contracts from './pages/Contracts';
 import Applications from './pages/Applications';
 import Apply from './pages/Apply';
 import Payments from './pages/Payments';
+import AdvancedPayments from './pages/AdvancedPayments';
 import __Layout from './Layout.jsx';
 
 
@@ -95,6 +96,7 @@ export const PAGES = {
     "Applications": Applications,
     "Apply": Apply,
     "Payments": Payments,
+    "AdvancedPayments": AdvancedPayments,
 }
 
 export const pagesConfig = {
