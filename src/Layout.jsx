@@ -66,10 +66,17 @@ export default function Layout({ children, currentPageName }) {
       setLoading(false);
 
       // Redirect pure drivers (no admin/fleet role) to their allowed pages
-      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'];
-      if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager') && !DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
-        window.location.href = createPageUrl('DriverDashboard');
-        return;
+      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications', 'Dashboard'];
+      if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
+        // Auto-redirect driver from root Dashboard to DriverDashboard
+        if (currentPageName === 'Dashboard') {
+          window.location.href = createPageUrl('DriverDashboard');
+          return;
+        }
+        if (!DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
+          window.location.href = createPageUrl('DriverDashboard');
+          return;
+        }
       }
       // Redirect pure fleet_manager away from admin-only pages
       const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'];
