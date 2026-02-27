@@ -20,7 +20,10 @@ export default function Vehicles({ currentUser }) {
 
   const { data: vehicles = [], isLoading } = useQuery({
     queryKey: ['vehicles'],
-    queryFn: () => base44.entities.Vehicle.list('-created_date'),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getVehiclesByFleet', {});
+      return res.data.vehicles || [];
+    },
   });
 
   const { data: drivers = [] } = useQuery({
