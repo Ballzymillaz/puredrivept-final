@@ -56,21 +56,25 @@ export default function Layout({ children, currentPageName }) {
       const me = await base44.auth.me();
       setUser(me);
 
-      // Check page permissions
-      try {
-        const perms = await base44.entities.RolePermission.filter({ 
-          role: me.role, 
-          page: currentPageName 
-        });
-        const perm = perms[0];
-        if (!perm || perm.access_level === 'none') {
-          setHasAccess(false);
-        } else {
+      // Check page permissions (admins always have access)
+      if (me.role === 'admin') {
+        setHasAccess(true);
+      } else {
+        try {
+          const perms = await base44.entities.RolePermission.filter({ 
+            role: me.role, 
+            page: currentPageName 
+          });
+          const perm = perms[0];
+          if (!perm || perm.access_level === 'none') {
+            setHasAccess(false);
+          } else {
+            setHasAccess(true);
+          }
+        } catch (e) {
+          // If RolePermission check fails, allow access (backward compatibility)
           setHasAccess(true);
         }
-      } catch (e) {
-        // If RolePermission check fails, allow access (backward compatibility)
-        setHasAccess(true);
       }
 
       setLoading(false);
