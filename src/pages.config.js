@@ -47,74 +47,14 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import Applications from './pages/Applications';
-import Apply from './pages/Apply';
-import CashFlow from './pages/CashFlow';
-import Commercials from './pages/Commercials';
-import Contracts from './pages/Contracts';
-import Dashboard from './pages/Dashboard';
-import Documents from './pages/Documents';
-import DriverDashboard from './pages/DriverDashboard';
-import Drivers from './pages/Drivers';
-import FleetManagers from './pages/FleetManagers';
-import Goals from './pages/Goals';
-import IVA from './pages/IVA';
-import Loans from './pages/Loans';
-import Messaging from './pages/Messaging';
-import Payments from './pages/Payments';
-import PublicSite from './pages/PublicSite';
-import Rankings from './pages/Rankings';
-import Referrals from './pages/Referrals';
-import Reimbursements from './pages/Reimbursements';
-import Relatorios from './pages/Relatorios';
-import RelatoriosFrota from './pages/RelatoriosFrota';
-import UPI from './pages/UPI';
-import VehiclePurchases from './pages/VehiclePurchases';
-import Vehicles from './pages/Vehicles';
-import VehicleDetail from './pages/VehicleDetail';
-import Notifications from './pages/Notifications';
-import RelatorioVeiculos from './pages/RelatorioVeiculos';
-import UserManagement from './pages/UserManagement';
-import Fleets from './pages/Fleets';
-import RelatorioFrotas from './pages/RelatorioFrotas';
-import __Layout from './Layout.jsx';
+import Onboarding from './pages/Onboarding';
 
 
 export const PAGES = {
-    "Applications": Applications,
-    "Apply": Apply,
-    "CashFlow": CashFlow,
-    "Commercials": Commercials,
-    "Contracts": Contracts,
-    "Dashboard": Dashboard,
-    "Documents": Documents,
-    "DriverDashboard": DriverDashboard,
-    "Drivers": Drivers,
-    "FleetManagers": FleetManagers,
-    "Goals": Goals,
-    "IVA": IVA,
-    "Loans": Loans,
-    "Messaging": Messaging,
-    "Payments": Payments,
-    "PublicSite": PublicSite,
-    "Rankings": Rankings,
-    "Referrals": Referrals,
-    "Reimbursements": Reimbursements,
-    "Relatorios": Relatorios,
-    "RelatoriosFrota": RelatoriosFrota,
-    "UPI": UPI,
-    "VehiclePurchases": VehiclePurchases,
-    "Vehicles": Vehicles,
-    "VehicleDetail": VehicleDetail,
-    "Notifications": Notifications,
-    "RelatorioVeiculos": RelatorioVeiculos,
-    "UserManagement": UserManagement,
-    "Fleets": Fleets,
-    "RelatorioFrotas": RelatorioFrotas,
+    "Onboarding": Onboarding,
 }
 
 export const pagesConfig = {
-    mainPage: "Dashboard",
+    mainPage: "Onboarding",
     Pages: PAGES,
-    Layout: __Layout,
 };
