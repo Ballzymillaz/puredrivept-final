@@ -53,8 +53,6 @@ import Apply from './pages/Apply';
 import CashFlow from './pages/CashFlow';
 import Commercials from './pages/Commercials';
 import Configuracoes from './pages/Configuracoes';
-import Contracts from './pages/Contracts';
-import Dashboard from './pages/Dashboard';
 import DashboardModular from './pages/DashboardModular';
 import DocumentManagement from './pages/DocumentManagement';
 import Documents from './pages/Documents';
@@ -106,8 +104,6 @@ export const PAGES = {
     "CashFlow": CashFlow,
     "Commercials": Commercials,
     "Configuracoes": Configuracoes,
-    "Contracts": Contracts,
-    "Dashboard": Dashboard,
     "DashboardModular": DashboardModular,
     "DocumentManagement": DocumentManagement,
     "Documents": Documents,
