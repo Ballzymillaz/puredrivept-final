@@ -94,6 +94,7 @@ import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
 import DriverDetail from './pages/DriverDetail';
 import FleetManagerDashboard from './pages/FleetManagerDashboard';
+import AdvancedPayments from './pages/AdvancedPayments';
 import __Layout from './Layout.jsx';
 
 
@@ -145,6 +146,7 @@ export const PAGES = {
     "Vehicles": Vehicles,
     "DriverDetail": DriverDetail,
     "FleetManagerDashboard": FleetManagerDashboard,
+    "AdvancedPayments": AdvancedPayments,
 }
 
 export const pagesConfig = {
