@@ -91,6 +91,8 @@ import VehicleDetail from './pages/VehicleDetail';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
 import DocumentManagement from './pages/DocumentManagement';
+import VehicleManagement from './pages/VehicleManagement';
+import DriverPerformance from './pages/DriverPerformance';
 import __Layout from './Layout.jsx';
 
 
@@ -139,6 +141,8 @@ export const PAGES = {
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
     "DocumentManagement": DocumentManagement,
+    "VehicleManagement": VehicleManagement,
+    "DriverPerformance": DriverPerformance,
 }
 
 export const pagesConfig = {

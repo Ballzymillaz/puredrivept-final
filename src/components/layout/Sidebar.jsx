@@ -24,6 +24,7 @@ const NAV_ITEMS = [
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
     { name: 'Gestão de Documentos', icon: FileText, page: 'DocumentManagement' },
+    { name: 'Gestão de Veículos', icon: Car, page: 'VehicleManagement' },
     { name: 'Onboarding', icon: UserPlus, page: 'Onboarding' },
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
   ]},
@@ -37,6 +38,7 @@ const NAV_ITEMS = [
     { name: 'Compra veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
   ]},
   { section: 'Desempenho', items: [
+    { name: 'Análise de Motoristas', icon: FileBarChart, page: 'DriverPerformance' },
     { name: 'Objetivos', icon: Target, page: 'Goals' },
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
@@ -77,7 +79,7 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'FleetContracts', 'Documents', 'DocumentManagement', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'ReportContractStatus', 'DashboardModular', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'FleetContracts', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'ReportContractStatus', 'DashboardModular', 'DriverPerformance', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('driver')) {

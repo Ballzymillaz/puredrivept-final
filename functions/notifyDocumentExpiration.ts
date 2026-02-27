@@ -28,17 +28,19 @@ Deno.serve(async (req) => {
           category: 'document_expiry',
           recipient_email: doc.driver_email,
           related_entity: doc.id,
+          action_url: '/pages/DriverDashboard',
           sent_email: false,
         });
 
-        // Create notification for admin
+        // Create notification for admin with link to management page
         await base44.asServiceRole.entities.Notification.create({
           title: '⛔ Documento Expirado — ' + doc.driver_email,
-          message: `Documento expirado em ${expiryDate.toLocaleDateString('pt-PT')}. Motorista precisa renovar.`,
+          message: `Documento expirado em ${expiryDate.toLocaleDateString('pt-PT')}. Motorista precisa renovar. [Ver detalhes]`,
           type: 'alert',
           category: 'document_expiry',
           recipient_role: 'admin',
           related_entity: doc.id,
+          action_url: '/pages/DocumentManagement',
           sent_email: false,
         });
 
@@ -46,25 +48,27 @@ Deno.serve(async (req) => {
       }
       // Check if expiring soon (within 30 days)
       else if (daysUntilExpiry <= 30 && daysUntilExpiry > 0) {
-        // Create notification for driver
+        // Create notification for driver with renewal link
         await base44.asServiceRole.entities.Notification.create({
           title: '⚠️ Documento a expirar em breve',
-          message: `Seu documento expirará em ${daysUntilExpiry} dias (${expiryDate.toLocaleDateString('pt-PT')}). Prepare a renovação.`,
+          message: `Seu documento expirará em ${daysUntilExpiry} dias (${expiryDate.toLocaleDateString('pt-PT')}). [Renovar agora]`,
           type: 'warning',
           category: 'document_expiry',
           recipient_email: doc.driver_email,
           related_entity: doc.id,
+          action_url: '/pages/DriverDashboard',
           sent_email: false,
         });
 
-        // Create notification for admin
+        // Create notification for admin with link to management page
         await base44.asServiceRole.entities.Notification.create({
           title: '⚠️ Documento a expirar — ' + doc.driver_email,
-          message: `Documento expira em ${daysUntilExpiry} dias (${expiryDate.toLocaleDateString('pt-PT')}).`,
+          message: `Documento expira em ${daysUntilExpiry} dias (${expiryDate.toLocaleDateString('pt-PT')}). [Ver detalhes]`,
           type: 'warning',
           category: 'document_expiry',
           recipient_role: 'admin',
           related_entity: doc.id,
+          action_url: '/pages/DocumentManagement',
           sent_email: false,
         });
 

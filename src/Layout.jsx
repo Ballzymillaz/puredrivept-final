@@ -37,6 +37,8 @@ const PAGE_TITLES = {
   FleetDrivers: 'Motoristas de Frota',
   FleetContracts: 'Contratos de Frota',
   DocumentManagement: 'Gestão de Documentos',
+  VehicleManagement: 'Gestão de Veículos',
+  DriverPerformance: 'Análise de Performance de Motoristas',
   RelatorioFrotas: 'Relatório de Desempenho de Frotas',
   Configuracoes: 'Configurações',
   ReportBuilder: 'Construtor de Relatórios',
