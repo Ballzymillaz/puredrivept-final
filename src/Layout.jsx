@@ -30,6 +30,7 @@ const PAGE_TITLES = {
   Onboarding: 'Onboarding',
   DriverDashboard: 'Dashboard do Motorista',
   DocumentsHub: 'Gestão de Documentos',
+  DocumentApproval: 'Aprovação de Documentos',
   Relatorios: 'Relatórios Gerais',
   AdvancedReports: 'Relatórios Avançados',
 };
@@ -82,7 +83,7 @@ export default function Layout({ children, currentPageName }) {
         }
       }
       // Redirect pure fleet_manager away from admin-only pages
-      const FLEET_ALLOWED_PAGES = ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'];
+      const FLEET_ALLOWED_PAGES = ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'DocumentApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'];
       if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('FleetVehicles');
         return;

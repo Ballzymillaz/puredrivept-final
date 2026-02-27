@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { section: 'Gestão', items: [
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
     { name: 'Documentos', icon: FileText, page: 'DocumentsHub' },
+    { name: 'Aprovação de Docs', icon: FileText, page: 'DocumentApproval' },
     { name: 'Gestão de Veículos', icon: Car, page: 'VehicleManagement' },
     { name: 'Onboarding', icon: UserPlus, page: 'Onboarding' },
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
@@ -66,7 +67,7 @@ export default function Sidebar({ currentPage, userRole }) {
       }
 
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
+        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'DocumentApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('driver')) {
