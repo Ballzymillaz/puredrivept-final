@@ -69,6 +69,7 @@ import Payments from './pages/Payments';
 import PublicSite from './pages/PublicSite';
 import Drivers from './pages/Drivers';
 import Vehicles from './pages/Vehicles';
+import DriverFinancialDashboard from './pages/DriverFinancialDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -95,6 +96,7 @@ export const PAGES = {
     "PublicSite": PublicSite,
     "Drivers": Drivers,
     "Vehicles": Vehicles,
+    "DriverFinancialDashboard": DriverFinancialDashboard,
 }
 
 export const pagesConfig = {
