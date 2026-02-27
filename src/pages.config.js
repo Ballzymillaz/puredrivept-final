@@ -64,10 +64,10 @@ import PublicSite from './pages/PublicSite';
 import Rankings from './pages/Rankings';
 import Referrals from './pages/Referrals';
 import Reimbursements from './pages/Reimbursements';
-import Relatorios from './pages/Relatorios';
 import UPI from './pages/UPI';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
+import Relatorios from './pages/Relatorios';
 import __Layout from './Layout.jsx';
 
 
@@ -89,10 +89,10 @@ export const PAGES = {
     "Rankings": Rankings,
     "Referrals": Referrals,
     "Reimbursements": Reimbursements,
-    "Relatorios": Relatorios,
     "UPI": UPI,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
+    "Relatorios": Relatorios,
 }
 
 export const pagesConfig = {

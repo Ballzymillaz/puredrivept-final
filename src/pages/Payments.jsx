@@ -227,32 +227,32 @@ export default function Payments() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 {[
-                  ['Uber', fmt(selected.uber_gross), 'positive'],
-                  ['Bolt', fmt(selected.bolt_gross), 'positive'],
-                  ['Outros', fmt(selected.other_platform_gross), 'positive'],
-                  ['Comissão', fmt(selected.commission_amount), 'negative'],
-                  ['Taxa slot', fmt(selected.slot_fee), 'negative'],
-                  ['Aluguer veículo', fmt(selected.vehicle_rental), 'negative'],
-                  ['Via Verde', fmt(selected.via_verde_amount), 'negative'],
-                  ['MyPRIO', fmt(selected.myprio_amount), 'negative'],
-                  ['Miio', fmt(selected.miio_amount), 'negative'],
-                  ['Empréstimo', fmt(selected.loan_installment), 'negative'],
-                  ['Compra veículo', fmt(selected.vehicle_purchase_installment), 'negative'],
-                  ['Reembolsos', fmt(selected.reimbursement_credit), 'positive'],
-                  ['Bónus objetivo', fmt(selected.goal_bonus), 'positive'],
-                  ['6% IVA (obrigatorio estado)', fmt(selected.iva_amount), 'negative'],
-                  ['Caução', fmt(selected.irs_retention), 'negative'],
-                  ['UPI ganhos', selected.upi_earned, 'negative'],
-                ].map(([label, value, type]) => (
-                  <div key={label} className={`flex justify-between p-2 rounded ${type === 'positive' ? 'bg-green-50' : 'bg-red-50'}`}>
-                    <span className={type === 'positive' ? 'text-green-700' : 'text-red-700'}>{label}</span>
-                    <span className={`font-medium ${type === 'positive' ? 'text-green-600' : 'text-red-600'}`}>{value}</span>
+                  ['Uber', fmt(selected.uber_gross)],
+                  ['Bolt', fmt(selected.bolt_gross)],
+                  ['Outros', fmt(selected.other_platform_gross)],
+                  ['Comissão', fmt(selected.commission_amount)],
+                  ['Taxa slot', fmt(selected.slot_fee)],
+                  ['Aluguer veículo', fmt(selected.vehicle_rental)],
+                  ['Via Verde', fmt(selected.via_verde_amount)],
+                  ['MyPRIO', fmt(selected.myprio_amount)],
+                  ['Miio', fmt(selected.miio_amount)],
+                  ['Empréstimo', fmt(selected.loan_installment)],
+                  ['Compra veículo', fmt(selected.vehicle_purchase_installment)],
+                  ['Reembolsos', fmt(selected.reimbursement_credit)],
+                  ['Bónus objetivo', fmt(selected.goal_bonus)],
+                  ['6% IVA (obrigatorio estado)', fmt(selected.iva_amount)],
+                  ['Caução', fmt(selected.irs_retention)],
+                  ['UPI ganhos', selected.upi_earned],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between p-2 bg-gray-50 rounded">
+                    <span className="text-gray-600">{label}</span>
+                    <span className="font-medium">{value}</span>
                   </div>
                 ))}
               </div>
-              <div className={`flex justify-between p-3 rounded-lg font-bold ${selected.net_amount >= 0 ? 'bg-green-50 text-green-900' : 'bg-red-50 text-red-900'}`}>
+              <div className="flex justify-between p-3 bg-indigo-50 rounded-lg text-indigo-900 font-bold">
                 <span>Líquido a pagar</span>
-                <span className={selected.net_amount >= 0 ? 'text-green-600' : 'text-red-600'}>{fmt(selected.net_amount)}</span>
+                <span>{fmt(selected.net_amount)}</span>
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => setEditMode(true)} variant="outline" className="flex-1">Editar</Button>
@@ -361,8 +361,8 @@ function PaymentDetailsContent({ type, payments, fmt }) {
     const total = payments.reduce((s, p) => s + (p.net_amount || 0), 0);
     return (
       <div className="space-y-3">
-        <div className={`p-3 rounded-lg ${total >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-          <p className={`text-sm font-semibold ${total >= 0 ? 'text-green-900' : 'text-red-900'}`}>Total: <span className={total >= 0 ? 'text-green-600' : 'text-red-600'}>{fmt(total)}</span></p>
+        <div className="p-3 bg-indigo-50 rounded-lg">
+          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
         </div>
         <div className="space-y-2">
           {payments.map(p => (
@@ -372,7 +372,7 @@ function PaymentDetailsContent({ type, payments, fmt }) {
                 <p className="text-xs text-gray-500">{p.period_label}</p>
               </div>
               <div className="text-right">
-                <p className={`font-bold ${p.net_amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>{fmt(p.net_amount)}</p>
+                <p className="font-bold text-indigo-700">{fmt(p.net_amount)}</p>
                 <p className="text-xs text-gray-500">Bruto: {fmt(p.total_gross)} - Deduções: {fmt(p.total_deductions)}</p>
               </div>
             </div>
