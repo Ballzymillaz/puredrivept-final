@@ -53,7 +53,9 @@ const NAV_ITEMS = [
     { name: 'Relatório Veículos', icon: Car, page: 'RelatorioVeiculos' },
     { name: 'Relatórios Avançados', icon: FileBarChart, page: 'AdvancedReports' },
     { name: 'Construtor Relatórios', icon: FileBarChart, page: 'ReportBuilder' },
-    { name: 'Scheduler Relatórios', icon: FileBarChart, page: 'ReportScheduler' },
+  ]},
+  { section: 'Automação', items: [
+    { name: 'Agendamento de Relatórios', icon: FileBarChart, page: 'ReportScheduler' },
   ]},
   { section: 'Outros', items: [
     { name: 'Dashboard Modular', icon: LayoutDashboard, page: 'DashboardModular' },
