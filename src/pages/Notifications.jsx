@@ -65,6 +65,20 @@ export default function Notifications({ currentUser }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   });
 
+  const markUnreadMutation = useMutation({
+    mutationFn: (n) => base44.entities.Notification.update(n.id, { read_by: (n.read_by || []).filter(e => e !== myEmail) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
+  const clearAllMutation = useMutation({
+    mutationFn: async () => {
+      for (const n of myNotifications) {
+        await base44.entities.Notification.delete(n.id);
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+
   // Filter notifications visible to this user
   const myNotifications = useMemo(() => {
     const roles = currentUser?.role ? currentUser.role.split(',').map(r => r.trim()) : [];

@@ -18,6 +18,9 @@ const ALL_ROLES = [
   { value: 'driver', label: 'Motorista', color: 'bg-indigo-100 text-indigo-700' },
 ];
 
+// Roles that should never appear as assignable options
+const EXCLUDED_ROLES = ['user'];
+
 export default function UserManagement({ currentUser }) {
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
