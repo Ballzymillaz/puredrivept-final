@@ -37,7 +37,6 @@ const NAV_ITEMS = [
     { name: 'Objetivos', icon: Target, page: 'Goals' },
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
-    { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
     { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
     { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
     { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
