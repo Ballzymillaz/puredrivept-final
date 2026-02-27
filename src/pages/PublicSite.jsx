@@ -32,8 +32,8 @@ export default function PublicSite() {
     { type: 'location', name: 'Aluguer de Veículo', price: 'À medida', features: ['20% comissão', 'Aluguer longa duração', 'Flexibilidade total', 'Opção de compra', 'Assistência completa', 'Veículos disponíveis'] },
   ];
 
-  const fleetManagerOffer = {
-    title: 'Torne-se Gestor de Frota PureDrive',
+  const commercialOffer = {
+    title: 'Torne-se Comercial PureDrive',
     benefits: [
       { plan: 'Slot Standard', weekly: '5€/semana', description: 'Por cada motorista ativo' },
       { plan: 'Slot Premium', weekly: '5€/semana', description: 'Por cada motorista ativo' },
@@ -41,7 +41,7 @@ export default function PublicSite() {
       { plan: 'Aluguer', weekly: '15€/semana', description: 'Por motorista + 60€ bónus após 30 dias' },
       { plan: 'Venda Veículo', weekly: '250€', description: 'Bónus por venda em auto-financiamento', isBonus: true },
     ],
-    extraBenefits: ['Gestão completa de motoristas', 'Pagamentos semanais', 'Rastreamento em tempo real', 'Suporte dedicado', 'Rendimento ilimitado', 'Dashboard de frota']
+    extraBenefits: ['Sem limite de indicações', 'Pagamentos semanais', 'Rastreamento em tempo real', 'Suporte dedicado', 'Rendimento ilimitado']
   };
 
   return (
@@ -107,17 +107,17 @@ export default function PublicSite() {
             </CardContent>
           </Card>
 
-          <Card className={`cursor-pointer transition-all hover:shadow-xl border-2 ${selectedRole === 'fleet_manager' ? 'border-emerald-600 bg-emerald-50' : 'border-gray-200'}`} onClick={() => setSelectedRole('fleet_manager')}>
+          <Card className={`cursor-pointer transition-all hover:shadow-xl border-2 ${selectedRole === 'commercial' ? 'border-emerald-600 bg-emerald-50' : 'border-gray-200'}`} onClick={() => setSelectedRole('commercial')}>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-lg bg-emerald-600 flex items-center justify-center"><Target className="w-6 h-6 text-white" /></div>
-                <div><CardTitle className="text-xl">Gestor de Frota</CardTitle><p className="text-sm text-gray-500">Gerir motoristas e ganhar rendimento</p></div>
+                <div><CardTitle className="text-xl">Comercial</CardTitle><p className="text-sm text-gray-500">Ganhe indicando motoristas</p></div>
               </div>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2 text-sm text-gray-600">
-                <li>✓ Gestão de equipa</li>
-                <li>✓ Rendimento por motorista</li>
+                <li>✓ Rendimento passivo</li>
+                <li>✓ Sem limite de indicações</li>
                 <li>✓ Pagamentos semanais</li>
                 <li>✓ Bónus atrativos</li>
               </ul>
@@ -159,21 +159,21 @@ export default function PublicSite() {
         </section>
       )}
 
-      {/* Fleet Manager Offer */}
-      {selectedRole === 'fleet_manager' && (
+      {/* Commercial Offer */}
+      {selectedRole === 'commercial' && (
         <section className="max-w-5xl mx-auto px-6 py-16 bg-white rounded-2xl shadow-sm my-8">
-          <h3 className="text-3xl font-bold text-center mb-4 text-gray-900">{fleetManagerOffer.title}</h3>
-          <p className="text-xl text-center text-gray-600 mb-12">Gerir uma equipa de motoristas e ganhar rendimento</p>
+          <h3 className="text-3xl font-bold text-center mb-4 text-gray-900">{commercialOffer.title}</h3>
+          <p className="text-xl text-center text-gray-600 mb-12">Ganhe indicando motoristas</p>
 
           <div className="space-y-4 mb-12">
-            {fleetManagerOffer.benefits.map((b, i) => (
+            {commercialOffer.benefits.map((b, i) => (
               <Card key={i} className={`border-2 ${b.isBonus ? 'border-amber-200 bg-amber-50' : 'border-emerald-200'}`}><CardContent className="p-6 flex items-center justify-between"><div><p className="font-bold text-lg text-gray-900">{b.plan}</p><p className="text-sm text-gray-600">{b.description}</p></div><div className="text-right"><p className={`text-2xl font-bold ${b.isBonus ? 'text-amber-600' : 'text-emerald-600'}`}>{b.weekly}</p><p className="text-xs text-gray-500">{b.isBonus ? 'por venda' : 'por motorista'}</p></div></CardContent></Card>
             ))}
           </div>
 
-          <Card className="bg-emerald-50 border-2 border-emerald-200 mb-8"><CardHeader><CardTitle className="text-lg">Benefícios Adicionais</CardTitle></CardHeader><CardContent><ul className="space-y-2">{fleetManagerOffer.extraBenefits.map((b, i) => (<li key={i} className="flex items-center gap-2"><Award className="w-4 h-4 text-emerald-600" /><span>{b}</span></li>))}</ul></CardContent></Card>
+          <Card className="bg-emerald-50 border-2 border-emerald-200 mb-8"><CardHeader><CardTitle className="text-lg">Benefícios Adicionais</CardTitle></CardHeader><CardContent><ul className="space-y-2">{commercialOffer.extraBenefits.map((b, i) => (<li key={i} className="flex items-center gap-2"><Award className="w-4 h-4 text-emerald-600" /><span>{b}</span></li>))}</ul></CardContent></Card>
 
-          <div className="text-center"><Link to={createPageUrl('Apply')}><Button className="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-lg">Candidatar como Gestor de Frota</Button></Link></div>
+          <div className="text-center"><Link to={createPageUrl('Apply')}><Button className="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-lg">Candidatar como Comercial</Button></Link></div>
         </section>
       )}
 

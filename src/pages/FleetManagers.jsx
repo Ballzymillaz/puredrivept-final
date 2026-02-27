@@ -10,38 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Car, ChevronRight } from 'lucide-react';
 
-export default function FleetManagers({ currentUser }) {
+export default function FleetManagers() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [selectedFleet, setSelectedFleet] = useState(null);
   const qc = useQueryClient();
-  const isAdmin = currentUser?.role?.includes('admin');
 
   const { data: managers = [], isLoading } = useQuery({
     queryKey: ['fleet-managers'],
     queryFn: () => base44.entities.FleetManager.list('-created_date'),
-  });
-  const { data: drivers = [] } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list(),
-  });
-  const { data: vehicles = [] } = useQuery({
-    queryKey: ['vehicles'],
-    queryFn: () => base44.entities.Vehicle.list(),
-  });
-
-  const assignDriverMutation = useMutation({
-    mutationFn: ({ driverId, managerId, managerName }) =>
-      base44.entities.Driver.update(driverId, { fleet_manager_id: managerId, fleet_manager_name: managerName }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['drivers'] }),
-  });
-  const unassignDriverMutation = useMutation({
-    mutationFn: (driverId) => base44.entities.Driver.update(driverId, { fleet_manager_id: '', fleet_manager_name: '' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['drivers'] }),
   });
 
   const createMutation = useMutation({
@@ -81,83 +58,14 @@ export default function FleetManagers({ currentUser }) {
     },
     { header: 'Telefone', accessor: 'phone' },
     { header: 'Código indicação', render: (r) => <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{r.referral_code || '—'}</span> },
-    { header: 'Motoristas', render: (r) => {
-      const count = drivers.filter(d => d.fleet_manager_id === r.id).length;
-      return <Badge className="bg-indigo-100 text-indigo-700 border-0">{count}</Badge>;
-    }},
+    { header: 'Motoristas', render: (r) => r.total_drivers || 0 },
     { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
-    { header: '', render: (r) => <button onClick={(e) => { e.stopPropagation(); setSelectedFleet(r); }} className="text-indigo-600 hover:underline text-xs flex items-center gap-1">Ver frota <ChevronRight className="w-3 h-3" /></button> },
   ];
-
-  const fleetDrivers = selectedFleet ? drivers.filter(d => d.fleet_manager_id === selectedFleet.id) : [];
-  const unassignedDrivers = drivers.filter(d => !d.fleet_manager_id);
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Gestores de frota" subtitle={`${managers.length} gestores`} actionLabel={isAdmin ? "Adicionar" : undefined} onAction={isAdmin ? () => openForm(null) : undefined} />
-      <DataTable columns={columns} data={managers} isLoading={isLoading} onRowClick={isAdmin ? openForm : undefined} />
-
-      {/* Fleet detail panel */}
-      {selectedFleet && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="pb-3 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Users className="w-4 h-4 text-indigo-500" />
-                Motoristas — {selectedFleet.full_name}
-              </CardTitle>
-              <button onClick={() => setSelectedFleet(null)} className="text-xs text-gray-400 hover:text-gray-600">Fechar</button>
-            </CardHeader>
-            <CardContent className="p-0">
-              {fleetDrivers.length === 0 ? (
-                <p className="text-center py-6 text-sm text-gray-400">Nenhum motorista associado</p>
-              ) : (
-                fleetDrivers.map(d => (
-                  <div key={d.id} className="flex items-center justify-between px-4 py-2.5 border-b last:border-0">
-                    <div>
-                      <p className="text-sm font-medium">{d.full_name}</p>
-                      <p className="text-xs text-gray-400">{d.assigned_vehicle_plate || 'Sem veículo'}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status={d.status} />
-                      {isAdmin && (
-                        <button onClick={() => unassignDriverMutation.mutate(d.id)} className="text-xs text-red-400 hover:underline">Desassociar</button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-              {isAdmin && unassignedDrivers.length > 0 && (
-                <div className="px-4 py-3 bg-gray-50 border-t">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Associar motorista:</p>
-                  <div className="flex gap-2">
-                    <Select onValueChange={v => assignDriverMutation.mutate({ driverId: v, managerId: selectedFleet.id, managerName: selectedFleet.full_name })}>
-                      <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
-                      <SelectContent>{unassignedDrivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Car className="w-4 h-4 text-indigo-500" />
-                Resumo da frota
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between text-sm"><span className="text-gray-500">Total motoristas</span><span className="font-medium">{fleetDrivers.length}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-500">Motoristas ativos</span><span className="font-medium text-green-600">{fleetDrivers.filter(d => d.status === 'active').length}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-500">Código indicação</span><span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{selectedFleet.referral_code || '—'}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-500">Email</span><span className="text-xs">{selectedFleet.email}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-500">Estado</span><StatusBadge status={selectedFleet.status} /></div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
+      <PageHeader title="Gestores de frota" subtitle={`${managers.length} gestores`} actionLabel="Adicionar" onAction={() => openForm(null)} />
+      <DataTable columns={columns} data={managers} isLoading={isLoading} onRowClick={openForm} />
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo gestor'}</DialogTitle></DialogHeader>

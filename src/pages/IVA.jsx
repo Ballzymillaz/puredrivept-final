@@ -66,7 +66,7 @@ export default function IVA() {
             <StatCard title="6% IVA Estado" value={fmt(total6IVA)} subtitle="Receita Bruta Frota" icon={TrendingUp} color="blue" />
           </div>
           <div className="mt-2 text-center text-xs text-gray-600 font-medium">
-            Total IVA recolhido: {fmt(total6IVA)}
+            Totalité des IVA collectés: {fmt(total6IVA)}
           </div>
         </div>
         <div>
@@ -74,7 +74,7 @@ export default function IVA() {
             <StatCard title="23% IVA (IVA recuperável)" value={fmt(total23IVA)} subtitle="Receitas Empresa" icon={Euro} color="green" />
           </div>
           <div className="mt-2 text-center text-xs text-gray-600 font-medium">
-            Total IVA recolhido: {fmt(total23IVA)}
+            Totalité des IVA collectés: {fmt(total23IVA)}
           </div>
         </div>
         <div>
@@ -82,17 +82,17 @@ export default function IVA() {
             <StatCard title="IVA Total" value={fmt(totalIVA)} icon={Euro} color="indigo" />
           </div>
           <div className="mt-2 text-center text-xs text-gray-600 font-medium">
-            Total IVA recolhido: {fmt(totalIVA)}
+            Totalité des IVA collectés: {fmt(totalIVA)}
           </div>
         </div>
       </div>
 
       <Card className="mt-6">
         <div className="p-4">
-          <h3 className="text-sm font-semibold mb-3">Detalhes do IVA recolhido</h3>
+          <h3 className="text-sm font-semibold mb-3">Détails des IVA collectés</h3>
           <div className="space-y-2">
             {filteredPayments.length === 0 ? (
-              <p className="text-center py-4 text-gray-400 text-sm">Nenhum IVA recolhido</p>
+              <p className="text-center py-4 text-gray-400 text-sm">Aucun IVA collecté</p>
             ) : (
               filteredPayments.map(p => {
                 const iva6 = p.iva_amount || 0;

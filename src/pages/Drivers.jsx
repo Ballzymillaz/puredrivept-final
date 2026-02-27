@@ -7,10 +7,7 @@ import StatusBadge from '../components/shared/StatusBadge';
 import DriverForm from '../components/drivers/DriverForm';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Search, Users, Zap, ChevronRight } from 'lucide-react';
-import AutoAssignDialog from '../components/vehicles/AutoAssignDialog';
-import { createPageUrl } from '@/utils';
+import { Search, Users } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from '@/components/ui/dialog';
@@ -20,8 +17,6 @@ export default function Drivers() {
   const [editingDriver, setEditingDriver] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [showAutoAssign, setShowAutoAssign] = useState(false);
-  const [autoAssignDriver, setAutoAssignDriver] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: drivers = [], isLoading } = useQuery({
@@ -116,28 +111,14 @@ export default function Drivers() {
         </span>
       ),
     },
-    { header: 'Estado', render: (row) => <StatusBadge status={row.status} /> },
     {
-      header: '',
-      render: (row) => !row.assigned_vehicle_id ? (
-        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs text-yellow-600 hover:bg-yellow-50"
-          onClick={e => { e.stopPropagation(); setAutoAssignDriver(row); setShowAutoAssign(true); }}>
-          <Zap className="w-3 h-3" /> Atribuir
-        </Button>
-      ) : null,
+      header: 'Estado',
+      render: (row) => <StatusBadge status={row.status} />,
     },
   ];
 
   return (
     <div className="space-y-4">
-      <AutoAssignDialog
-        open={showAutoAssign}
-        onClose={() => { setShowAutoAssign(false); setAutoAssignDriver(null); }}
-        drivers={drivers}
-        vehicles={vehicles}
-        preselectedDriverId={autoAssignDriver?.id}
-        onSuccess={() => { queryClient.invalidateQueries({ queryKey: ['drivers'] }); queryClient.invalidateQueries({ queryKey: ['vehicles'] }); setShowAutoAssign(false); setAutoAssignDriver(null); }}
-      />
       <PageHeader
         title="Motoristas"
         subtitle={`${drivers.length} motoristas registados`}
@@ -174,7 +155,7 @@ export default function Drivers() {
         columns={columns}
         data={filtered}
         isLoading={isLoading}
-        onRowClick={(row) => window.location.href = createPageUrl(`DriverDetail?driverId=${row.id}`)}
+        onRowClick={(row) => { setEditingDriver(row); setShowForm(true); }}
         emptyMessage="Nenhum motorista encontrado"
       />
 

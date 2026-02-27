@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, TrendingUp, Wallet, Shield, Zap, Table } from 'lucide-react';
+import { Download, FileText, TrendingUp, Wallet, Shield, Zap } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { pt } from 'date-fns/locale';
@@ -22,23 +22,6 @@ const CONTRACT_LABELS = {
 
 const fmt = (n) => `€${(n || 0).toFixed(2)}`;
 
-const COLUMNS_CONFIG = [
-  { key: 'driver_name', label: 'Motorista', default: true },
-  { key: 'period_label', label: 'Período', default: true },
-  { key: 'total_gross', label: 'Bruto', default: true },
-  { key: 'total_deductions', label: 'Deduções', default: true },
-  { key: 'net_amount', label: 'Líquido', default: true },
-  { key: 'upi_earned', label: 'UPI', default: true },
-  { key: 'commission_amount', label: 'Comissão', default: false },
-  { key: 'slot_fee', label: 'Slot fee', default: false },
-  { key: 'vehicle_rental', label: 'Aluguer veículo', default: false },
-  { key: 'via_verde_amount', label: 'Via Verde', default: false },
-  { key: 'loan_installment', label: 'Empréstimo', default: false },
-  { key: 'iva_amount', label: 'IVA', default: false },
-  { key: 'irs_retention', label: 'IRS', default: false },
-  { key: 'goal_bonus', label: 'Bónus objetivo', default: false },
-];
-
 export default function Relatorios() {
   const [filters, setFilters] = useState({
     driver_id: '',
@@ -46,8 +29,6 @@ export default function Relatorios() {
     date_from: '',
     date_to: '',
   });
-  const [showColumnPicker, setShowColumnPicker] = useState(false);
-  const [selectedCols, setSelectedCols] = useState(COLUMNS_CONFIG.filter(c => c.default).map(c => c.key));
 
   const { data: drivers = [] } = useQuery({
     queryKey: ['drivers'],
@@ -102,35 +83,10 @@ export default function Relatorios() {
       };
     });
 
-    // Average gross per driver per week
-    const uniqueDriverCount = driverIds.length;
-    const avgGrossPerDriverPerWeek = uniqueDriverCount > 0 && total > 0
-      ? totalGross / uniqueDriverCount / (total / (uniqueDriverCount || 1))
-      : 0;
-    // Better: total gross / nb drivers / nb weeks
-    const totalWeeks = total > 0 && uniqueDriverCount > 0 ? Math.round(total / uniqueDriverCount) : 0;
-    const avgGrossPerWeek = uniqueDriverCount > 0 && totalWeeks > 0 ? totalGross / uniqueDriverCount / totalWeeks : 0;
-
-    return { total, totalGross, totalNet, totalDeductions, avgUpi, driversData, avgGrossPerDriverPerWeek: avgGrossPerWeek, uniqueDriverCount, totalWeeks };
+    return { total, totalGross, totalNet, totalDeductions, avgUpi, driversData };
   }, [filteredPayments, drivers]);
 
   const selectedDriver = drivers.find(d => d.id === filters.driver_id);
-
-  const exportCSV = () => {
-    const cols = COLUMNS_CONFIG.filter(c => selectedCols.includes(c.key));
-    const rows = [
-      cols.map(c => c.label),
-      ...filteredPayments.map(p => cols.map(c => {
-        const v = p[c.key];
-        return typeof v === 'number' ? v.toFixed(2) : (v || '');
-      }))
-    ];
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url;
-    a.download = `relatorio_${format(new Date(), 'yyyyMMdd')}.csv`; a.click();
-  };
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -258,29 +214,7 @@ export default function Relatorios() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Relatórios" subtitle="Performance detalhada dos motoristas">
-        <Button variant="outline" size="sm" onClick={() => setShowColumnPicker(!showColumnPicker)} className="gap-1.5">
-          <Table className="w-3.5 h-3.5" /> Colunas
-        </Button>
-        <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1.5">
-          <Download className="w-3.5 h-3.5" /> CSV
-        </Button>
-      </PageHeader>
-
-      {/* Column picker */}
-      {showColumnPicker && (
-        <div className="bg-white border rounded-xl p-4">
-          <p className="text-sm font-semibold mb-3">Selecionar colunas para exportação e tabela</p>
-          <div className="flex flex-wrap gap-2">
-            {COLUMNS_CONFIG.map(col => (
-              <label key={col.key} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer text-xs transition-colors ${selectedCols.includes(col.key) ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                <input type="checkbox" checked={selectedCols.includes(col.key)} onChange={() => setSelectedCols(prev => prev.includes(col.key) ? prev.filter(k => k !== col.key) : [...prev, col.key])} className="w-3 h-3 accent-indigo-600" />
-                {col.label}
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
+      <PageHeader title="Relatórios" subtitle="Performance detalhada dos motoristas" />
 
       {/* Filters */}
       <div className="bg-white rounded-xl border p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -318,7 +252,7 @@ export default function Relatorios() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-5">
             <div className="flex items-center justify-between mb-1">
@@ -361,16 +295,6 @@ export default function Relatorios() {
             <p className="text-xs text-gray-400 mt-1">Por pagamento</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-gray-500">Média Bruto / motorista / semana</p>
-              <TrendingUp className="w-4 h-4 text-indigo-400" />
-            </div>
-            <p className="text-2xl font-bold text-indigo-700">{fmt(stats.avgGrossPerDriverPerWeek)}</p>
-            <p className="text-xs text-gray-400 mt-1">{stats.uniqueDriverCount} motoristas · {stats.totalWeeks} sem. méd.</p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Per driver table */}
@@ -379,7 +303,7 @@ export default function Relatorios() {
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-sm font-semibold">Resumo por Motorista</CardTitle>
             <Button onClick={exportPDF} size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-2">
-              <Download className="w-3.5 h-3.5" /> PDF
+              <Download className="w-3.5 h-3.5" /> Exportar PDF
             </Button>
           </CardHeader>
           <CardContent className="p-0">

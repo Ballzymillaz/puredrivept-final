@@ -3,13 +3,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    
-    // Webhook/automation calls: verify via service role only
-    if (!user && req.headers.get('Authorization') === undefined) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { event, data } = await req.json();
 
     if (!data || !event.entity_id) {
@@ -35,7 +28,15 @@ Deno.serve(async (req) => {
       });
     }
 
-// Update fleet manager's total_drivers count
+    // Update commercial's total_drivers count
+    if (driver.commercial_id) {
+      const drivers = await base44.asServiceRole.entities.Driver.filter({ commercial_id: driver.commercial_id });
+      await base44.asServiceRole.entities.Commercial.update(driver.commercial_id, {
+        total_drivers: drivers.length
+      });
+    }
+
+    // Update fleet manager's total_drivers count
     if (driver.fleet_manager_id) {
       const drivers = await base44.asServiceRole.entities.Driver.filter({ fleet_manager_id: driver.fleet_manager_id });
       await base44.asServiceRole.entities.FleetManager.update(driver.fleet_manager_id, {

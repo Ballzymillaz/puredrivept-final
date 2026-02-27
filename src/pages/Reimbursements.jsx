@@ -15,28 +15,14 @@ import { format } from 'date-fns';
 
 const CAT_LABELS = { fuel: 'Combustível', maintenance: 'Manutenção', cleaning: 'Limpeza', tolls: 'Portagens', other: 'Outro' };
 
-export default function Reimbursements({ currentUser }) {
+export default function Reimbursements() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const qc = useQueryClient();
-  const isDriver = currentUser?.role === 'driver';
-
-  const { data: drivers = [] } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list(),
-  });
-
-  const myDriverRecord = isDriver ? drivers.find(d => d.email === currentUser?.email) : null;
 
   const { data: reimbursements = [], isLoading } = useQuery({
-    queryKey: ['reimbursements', isDriver ? myDriverRecord?.id : 'all'],
-    queryFn: async () => {
-      if (isDriver && myDriverRecord) {
-        return base44.entities.Reimbursement.filter({ driver_id: myDriverRecord.id });
-      }
-      return base44.entities.Reimbursement.list('-created_date');
-    },
-    enabled: !isDriver || !!myDriverRecord,
+    queryKey: ['reimbursements'],
+    queryFn: () => base44.entities.Reimbursement.list('-created_date'),
   });
 
   const createMutation = useMutation({
@@ -53,6 +39,11 @@ export default function Reimbursements({ currentUser }) {
   });
 
   const [form, setForm] = useState(editing || { driver_id: '', driver_name: '', category: 'fuel', amount: '', description: '' });
+  
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
   const [file, setFile] = useState(null);
 
   React.useEffect(() => {
@@ -66,18 +57,11 @@ export default function Reimbursements({ currentUser }) {
       const res = await base44.integrations.Core.UploadFile({ file });
       receipt_url = res.file_url;
     }
-    const driver = isDriver ? myDriverRecord : drivers.find(d => d.id === form.driver_id);
+    const driver = drivers.find(d => d.id === form.driver_id);
     if (editing) {
       await updateMutation.mutateAsync({ id: editing.id, data: { ...form, amount: parseFloat(form.amount), receipt_url } });
     } else {
-      await createMutation.mutateAsync({ 
-        ...form, 
-        driver_id: isDriver ? myDriverRecord?.id : form.driver_id,
-        driver_name: driver?.full_name || '', 
-        amount: parseFloat(form.amount), 
-        receipt_url, 
-        status: 'pending' 
-      });
+      await createMutation.mutateAsync({ ...form, driver_name: driver?.full_name || '', amount: parseFloat(form.amount), receipt_url, status: 'pending' });
     }
     setFile(null);
     setEditing(null);
@@ -108,21 +92,19 @@ export default function Reimbursements({ currentUser }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Reembolsos" subtitle={`${reimbursements.length} pedidos`} actionLabel="Novo pedido" onAction={() => { setEditing(null); setForm({ driver_id: '', driver_name: '', category: 'fuel', amount: '', description: '' }); setShowForm(true); }} />
+      <PageHeader title="Reembolsos" subtitle={`${reimbursements.length} pedidos`} actionLabel="Nova entrada" onAction={() => setShowForm(true)} />
       <DataTable columns={columns} data={reimbursements} isLoading={isLoading} onRowClick={(r) => { setEditing(r); setShowForm(true); }} />
       <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setEditing(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{editing ? 'Editar' : 'Novo'} pedido de reembolso</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {!isDriver && (
-                <div className="space-y-1.5"><Label className="text-xs">Motorista</Label>
-                  <Select value={form.driver_id} onValueChange={(v) => { const d = drivers.find(dr => dr.id === v); setForm(f => ({...f, driver_id: v, driver_name: d?.full_name || ''})); }} required>
-                    <SelectTrigger><SelectValue placeholder="Escolher..." /></SelectTrigger>
-                    <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              )}
+              <div className="space-y-1.5"><Label className="text-xs">Motorista</Label>
+                <Select value={form.driver_id} onValueChange={(v) => { const d = drivers.find(dr => dr.id === v); setForm(f => ({...f, driver_id: v, driver_name: d?.full_name || ''})); }} required>
+                  <SelectTrigger><SelectValue placeholder="Escolher..." /></SelectTrigger>
+                  <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <div className="space-y-1.5"><Label className="text-xs">Categoria</Label>
                 <Select value={form.category} onValueChange={(v) => setForm(f => ({...f, category: v}))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>

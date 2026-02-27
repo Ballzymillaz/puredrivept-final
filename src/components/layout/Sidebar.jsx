@@ -6,58 +6,38 @@ import {
   LayoutDashboard, Users, Car, FileText, CreditCard, TrendingUp,
   Target, Wallet, ShoppingCart, UserPlus, Coins, Receipt,
   ChevronLeft, ChevronRight, Settings, LogOut, Menu, X,
-  Building2, HandCoins, FileBarChart, PieChart, MessageCircle, Bell, Truck
+  Building2, HandCoins, FileBarChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const NAV_ITEMS = [
-  { section: 'Gestão de Frotas', items: [
-    { name: 'Veículos', icon: Car, page: 'FleetVehicles' },
-    { name: 'Motoristas', icon: Users, page: 'FleetDrivers' },
-    { name: 'Frotas', icon: Building2, page: 'Fleets' },
-    { name: 'Atribuição de Veículos', icon: Truck, page: 'VehicleAssignment' },
-    { name: 'Histórico de Motoristas', icon: Users, page: 'DriverAssignmentHistory' },
-    { name: 'Histórico de Veículos', icon: Car, page: 'VehicleAssignmentHistory' },
-  ]},
-  { section: 'Meu Veículo', items: [
-    { name: 'Meu Veículo', icon: Car, page: 'DriverVehicleStatus' },
+  { section: 'Principal', items: [
+    { name: 'Painel', icon: LayoutDashboard, page: 'Dashboard' },
   ]},
   { section: 'Gestão', items: [
+    { name: 'Motoristas', icon: Users, page: 'Drivers' },
+    { name: 'Veículos', icon: Car, page: 'Vehicles' },
+    { name: 'Contratos', icon: FileText, page: 'Contracts' },
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
-    { name: 'Documentos', icon: FileText, page: 'DocumentsHub' },
-    { name: 'Gestão de Documentos', icon: FileText, page: 'DocumentManagement' },
-    { name: 'Aprovação de Docs', icon: FileText, page: 'DocumentApproval' },
-    { name: 'Gestão de Veículos', icon: Car, page: 'VehicleManagement' },
-    { name: 'Onboarding', icon: UserPlus, page: 'Onboarding' },
-    { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
+    { name: 'Comerciais', icon: HandCoins, page: 'Commercials' },
+    { name: 'Documentos', icon: FileText, page: 'Documents' },
+    { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
   ]},
   { section: 'Finanças', items: [
+    { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
     { name: 'Fluxo de caixa', icon: TrendingUp, page: 'CashFlow' },
     { name: 'IVA', icon: Receipt, page: 'IVA' },
-    { name: 'Histórico de Pagamentos', icon: TrendingUp, page: 'PaymentHistory' },
-    { name: 'Adiantamentos', icon: CreditCard, page: 'AdvanceRequest' },
-    { name: 'Aprovação de Adiantamentos', icon: CreditCard, page: 'AdvanceApproval' },
     { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
     { name: 'Reembolsos', icon: Receipt, page: 'Reimbursements' },
     { name: 'Indicações', icon: HandCoins, page: 'Referrals' },
-    { name: 'Compra Veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
+    { name: 'Compra veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
   ]},
   { section: 'Desempenho', items: [
-    { name: 'Análise de Motoristas', icon: FileBarChart, page: 'DriverPerformance' },
     { name: 'Objetivos', icon: Target, page: 'Goals' },
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
-  ]},
-  { section: 'Relatórios', items: [
-    { name: 'Geral', icon: FileBarChart, page: 'Relatorios' },
-    { name: 'Avançados', icon: FileBarChart, page: 'AdvancedReports' },
-  ]},
-  { section: 'Comunicações', items: [
-    { name: 'Notificações', icon: Bell, page: 'Notifications' },
-    { name: 'Comunicações', icon: MessageCircle, page: 'FleetCommunications' },
-  ]},
-  { section: 'Sistema', items: [
-    { name: 'Configurações', icon: Settings, page: 'Configuracoes' },
+    { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
+    { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
   ]},
 ];
 
@@ -65,31 +45,20 @@ export default function Sidebar({ currentPage, userRole }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Support multi-roles (comma-separated)
-  const roles = userRole ? userRole.split(',').map(r => r.trim()) : [];
-  const hasRole = (r) => roles.includes(r);
-
   const filteredNav = NAV_ITEMS.map(section => ({
     ...section,
     items: section.items.filter(item => {
-      if (hasRole('admin')) return true;
-      if (hasRole('user') && !hasRole('admin') && !hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['Onboarding'].includes(item.page);
+      if (userRole === 'admin') return true;
+      if (userRole === 'fleet_manager') {
+        return !['FleetManagers', 'CashFlow'].includes(item.page);
       }
-
-      if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'VehicleAssignment', 'DriverAssignmentHistory', 'VehicleAssignmentHistory', 'DocumentsHub', 'DocumentManagement', 'DocumentApproval', 'AdvanceApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'FleetCommunications', 'Configuracoes'].includes(item.page);
+      if (userRole === 'commercial') {
+        return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings'].includes(item.page);
       }
-
-      if (hasRole('admin')) {
-        return true;
+      if (userRole === 'driver') {
+        return ['Dashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases'].includes(item.page);
       }
-
-      if (hasRole('driver')) {
-        return ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'PaymentHistory', 'AdvanceRequest', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications', 'FleetCommunications', 'DriverVehicleStatus'].includes(item.page);
-      }
-      // No valid role: no access
-      return false;
+      return true;
     })
   })).filter(section => section.items.length > 0);
 

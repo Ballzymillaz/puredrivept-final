@@ -6,26 +6,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
-import { createPageUrl } from '@/utils';
-import { Link } from 'react-router-dom';
 
 export default function TopBar({ user, pageTitle }) {
   const [lang, setLang] = useState(localStorage.getItem('lang') || 'pt');
-  const myEmail = user?.email;
-
-  const { data: notifications = [] } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => base44.entities.Notification.list('-created_date', 50),
-    enabled: !!myEmail,
-    refetchInterval: 30000,
-  });
-
-  const unreadCount = notifications.filter(n => {
-    const roles = user?.role ? user.role.split(',').map(r => r.trim()) : [];
-    const isVisible = (n.recipient_email === myEmail) || (n.recipient_role === 'all') || roles.includes(n.recipient_role) || user?.role === 'admin';
-    return isVisible && !n.read_by?.includes(myEmail);
-  }).length;
   
   const initials = user?.full_name
     ? user.full_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
@@ -76,16 +59,10 @@ export default function TopBar({ user, pageTitle }) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Link to={createPageUrl('Notifications')}>
-          <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-gray-600">
-            <Bell className="w-[18px] h-[18px]" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </Button>
-        </Link>
+        <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-gray-600">
+          <Bell className="w-[18px] h-[18px]" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

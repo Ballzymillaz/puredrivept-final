@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
-import NotificationCenter from './components/shared/NotificationCenter';
-import FleetManagerNotifications from './components/layout/FleetManagerNotifications';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 
 const PAGE_TITLES = {
+  Dashboard: 'Painel de controlo',
   Drivers: 'Gestão de motoristas',
   Vehicles: 'Gestão de veículos',
   FleetManagers: 'Gestores de frota',
+  Commercials: 'Comerciais',
+  Documents: 'Documentos',
+  Applications: 'Candidaturas',
+  Payments: 'Pagamentos semanais',
   CashFlow: 'Fluxo de caixa',
   IVA: 'IVA',
   Loans: 'Empréstimos & Adiantamentos',
@@ -19,34 +22,13 @@ const PAGE_TITLES = {
   Goals: 'Objetivos',
   Rankings: 'Classificação',
   UPI: 'Moeda UPI',
-  Notifications: 'Notificações',
-  UserManagement: 'Gestão de Utilizadores',
   PublicSite: 'Site público',
-  Fleets: 'Gestão de Frotas',
-  FleetVehicles: 'Veículos de Frota',
-  FleetDrivers: 'Motoristas de Frota',
-  VehicleManagement: 'Gestão de Veículos',
-  DriverPerformance: 'Análise de Performance de Motoristas',
-  Configuracoes: 'Configurações',
-  Onboarding: 'Onboarding',
-  DriverDashboard: 'Dashboard do Motorista',
-  DocumentsHub: 'Gestão de Documentos',
-  DocumentApproval: 'Aprovação de Documentos',
-  PaymentHistory: 'Histórico de Pagamentos',
-  AdvanceRequest: 'Solicitar Adiantamento',
-  AdvanceApproval: 'Aprovar Adiantamentos',
-  Relatorios: 'Relatórios Gerais',
-  AdvancedReports: 'Relatórios Avançados',
-  FleetCommunications: 'Comunicações da Frota',
-  VehicleAssignment: 'Atribuição de Veículos',
-  DocumentManagement: 'Gestão de Documentos',
-  DriverAssignmentHistory: 'Histórico de Motoristas',
-  VehicleAssignmentHistory: 'Histórico de Veículos',
-  DriverVehicleStatus: 'Meu Veículo',
+  Apply: 'Candidatura',
+  Contracts: 'Contratos',
 };
 
 // Public pages that don't need auth or sidebar
-const PUBLIC_PAGES = ['PublicSite'];
+const PUBLIC_PAGES = ['PublicSite', 'Apply'];
 
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
@@ -71,33 +53,8 @@ export default function Layout({ children, currentPageName }) {
         return;
       }
       const me = await base44.auth.me();
-      // Support multi-roles: roles can be comma-separated or a single string
-      const userRoles = me?.role ? me.role.split(',').map(r => r.trim()) : [];
-      const hasRole = (r) => userRoles.includes(r);
-      setUser({ ...me, roles: userRoles, hasRole });
+      setUser(me);
       setLoading(false);
-
-      // Redirect pure users to Onboarding
-      if (hasRole('user') && !hasRole('admin') && !hasRole('fleet_manager') && !hasRole('driver')) {
-        if (currentPageName !== 'Onboarding') {
-          window.location.href = createPageUrl('Onboarding');
-          return;
-        }
-      }
-      // Redirect pure drivers (no admin/fleet role) to their allowed pages
-      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'PaymentHistory', 'AdvanceRequest', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'];
-      if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
-        if (!DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
-          window.location.href = createPageUrl('DriverDashboard');
-          return;
-        }
-      }
-      // Redirect pure fleet_manager away from admin-only pages
-      const FLEET_ALLOWED_PAGES = ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'DocumentApproval', 'AdvanceApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'];
-      if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
-        window.location.href = createPageUrl('FleetVehicles');
-        return;
-      }
     };
     loadUser();
   }, [currentPageName]);
@@ -123,12 +80,10 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-gray-50/80">
-      <NotificationCenter currentUser={user} />
-      <Sidebar currentPage={currentPageName} userRole={user?.role || 'admin'} currentUser={user} />
+      <Sidebar currentPage={currentPageName} userRole={user?.role || 'admin'} />
       <div className="lg:ml-60 min-h-screen flex flex-col">
         <TopBar user={user} pageTitle={PAGE_TITLES[currentPageName] || currentPageName} />
-        <main className="flex-1 p-4 md:p-6 space-y-6">
-          <FleetManagerNotifications currentUser={user} />
+        <main className="flex-1 p-4 md:p-6">
           {React.cloneElement(children, { currentUser: user })}
         </main>
       </div>
