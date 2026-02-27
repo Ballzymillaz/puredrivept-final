@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronLeft, Save } from 'lucide-react';
+import { ChevronLeft, Save, Upload, FileText, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function DriverDetail() {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export default function DriverDetail() {
     first_registration_date: '',
   });
   const [editingVehicle, setEditingVehicle] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Fetch driver
   const { data: driver, isLoading: driverLoading } = useQuery({
@@ -44,14 +46,19 @@ export default function DriverDetail() {
     ? vehicles.find(v => v.id === driver.assigned_vehicle_id)
     : null;
 
+  // Fetch documents
+  const { data: documents = [] } = useQuery({
+    queryKey: ['documents', driver?.email],
+    queryFn: () => base44.entities.Document.filter({ driver_email: driver?.email }) || [],
+    enabled: !!driver?.email,
+  });
+
   // Update vehicle mutation
   const updateVehicleMutation = useMutation({
     mutationFn: async (data) => {
       if (assignedVehicle) {
-        // Update existing vehicle
         await base44.entities.Vehicle.update(assignedVehicle.id, data);
       } else {
-        // Create new vehicle and assign to driver
         const newVehicle = await base44.entities.Vehicle.create({
           ...data,
           fleet_manager_id: driver?.fleet_manager_id,
@@ -78,6 +85,61 @@ export default function DriverDetail() {
       });
     },
   });
+
+  // Document upload mutation
+  const uploadDocumentMutation = useMutation({
+    mutationFn: async ({ file, docType }) => {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.entities.Document.create({
+        doc_type: docType,
+        driver_email: driver.email,
+        driver_id: driver.id,
+        file_url,
+        status: 'pending',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents', driver?.email] });
+    },
+  });
+
+  // Document delete mutation
+  const deleteDocumentMutation = useMutation({
+    mutationFn: (docId) => base44.entities.Document.delete(docId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents', driver?.email] });
+    },
+  });
+
+  const handleFileUpload = async (e, docType) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadDocumentMutation.mutate({ file, docType });
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'approved':
+        return <CheckCircle className="w-4 h-4 text-emerald-600" />;
+      case 'rejected':
+        return <AlertCircle className="w-4 h-4 text-red-600" />;
+      default:
+        return <Clock className="w-4 h-4 text-yellow-600" />;
+    }
+  };
+
+  const DOC_TYPES = [
+    { value: 'driving_license', label: 'Carta de Condução' },
+    { value: 'id_card', label: 'CC/Passaporte' },
+    { value: 'tvde_certificate', label: 'Certificado TVDE' },
+    { value: 'iban_proof', label: 'Comprovativo IBAN' },
+    { value: 'insurance', label: 'Seguro' },
+    { value: 'inspection', label: 'Inspeção' },
+  ];
 
   // Initialize form with existing vehicle data
   React.useEffect(() => {
@@ -266,6 +328,79 @@ export default function DriverDetail() {
               </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Documents */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Documentos</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            {DOC_TYPES.map(docType => (
+              <label key={docType.value} className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={(e) => handleFileUpload(e, docType.value)}
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                />
+                <Upload className="w-4 h-4 text-indigo-600" />
+                <span className="text-sm font-medium text-gray-700">{docType.label}</span>
+              </label>
+            ))}
+          </div>
+
+          <div className="border-t pt-4">
+            {documents.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">Nenhum documento enviado</p>
+            ) : (
+              <div className="space-y-3">
+                {documents.map(doc => {
+                  const docType = DOC_TYPES.find(d => d.value === doc.doc_type);
+                  return (
+                    <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{docType?.label || doc.doc_type}</p>
+                          <p className="text-xs text-gray-500">Enviado em {doc.created_date ? new Date(doc.created_date).toLocaleDateString('pt-PT') : '—'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={`text-xs ${
+                          doc.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                          doc.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {doc.status === 'approved' ? 'Aprovado' :
+                           doc.status === 'rejected' ? 'Rejeitado' :
+                           'Pendente'}
+                        </Badge>
+                        <a
+                          href={doc.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+                        >
+                          Ver
+                        </a>
+                        <button
+                          onClick={() => deleteDocumentMutation.mutate(doc.id)}
+                          disabled={deleteDocumentMutation.isPending}
+                          className="p-1 hover:bg-red-50 rounded text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
