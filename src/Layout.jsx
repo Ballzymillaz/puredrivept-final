@@ -37,6 +37,7 @@ const PAGE_TITLES = {
   AdvanceApproval: 'Aprovar Adiantamentos',
   Relatorios: 'Relatórios Gerais',
   AdvancedReports: 'Relatórios Avançados',
+  FleetCommunications: 'Comunicações da Frota',
 };
 
 // Public pages that don't need auth or sidebar
