@@ -35,6 +35,8 @@ const PAGE_TITLES = {
   RelatorioFrotas: 'Relatório de Desempenho de Frotas',
   Configuracoes: 'Configurações',
   ReportBuilder: 'Construtor de Relatórios',
+  ReportScheduler: 'Scheduler de Relatórios',
+  DashboardModular: 'Dashboard Modular',
 };
 
 // Public pages that don't need auth or sidebar
