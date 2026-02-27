@@ -47,14 +47,21 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AdvanceApproval from './pages/AdvanceApproval';
+import AdvanceRequest from './pages/AdvanceRequest';
 import AdvancedReports from './pages/AdvancedReports';
 import CashFlow from './pages/CashFlow';
 import Configuracoes from './pages/Configuracoes';
+import DocumentApproval from './pages/DocumentApproval';
 import DocumentManagement from './pages/DocumentManagement';
 import Documents from './pages/Documents';
+import DocumentsHub from './pages/DocumentsHub';
+import DriverAssignmentHistory from './pages/DriverAssignmentHistory';
+import DriverDashboard from './pages/DriverDashboard';
 import DriverDetail from './pages/DriverDetail';
 import DriverPerformance from './pages/DriverPerformance';
 import Drivers from './pages/Drivers';
+import FleetCommunications from './pages/FleetCommunications';
 import FleetDrivers from './pages/FleetDrivers';
 import FleetManagerDashboard from './pages/FleetManagerDashboard';
 import FleetManagers from './pages/FleetManagers';
@@ -65,6 +72,7 @@ import IVA from './pages/IVA';
 import Loans from './pages/Loans';
 import Notifications from './pages/Notifications';
 import Onboarding from './pages/Onboarding';
+import PaymentHistory from './pages/PaymentHistory';
 import PublicSite from './pages/PublicSite';
 import Rankings from './pages/Rankings';
 import Referrals from './pages/Referrals';
@@ -74,31 +82,31 @@ import RelatoriosFrota from './pages/RelatoriosFrota';
 import RelatoriosFrotas from './pages/RelatoriosFrotas';
 import UPI from './pages/UPI';
 import UserManagement from './pages/UserManagement';
+import VehicleAssignment from './pages/VehicleAssignment';
+import VehicleAssignmentHistory from './pages/VehicleAssignmentHistory';
 import VehicleManagement from './pages/VehicleManagement';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import DriverDashboard from './pages/DriverDashboard';
-import DocumentsHub from './pages/DocumentsHub';
-import DocumentApproval from './pages/DocumentApproval';
-import PaymentHistory from './pages/PaymentHistory';
-import AdvanceRequest from './pages/AdvanceRequest';
-import AdvanceApproval from './pages/AdvanceApproval';
-import FleetCommunications from './pages/FleetCommunications';
-import VehicleAssignment from './pages/VehicleAssignment';
-import DriverAssignmentHistory from './pages/DriverAssignmentHistory';
-import VehicleAssignmentHistory from './pages/VehicleAssignmentHistory';
+import DriverVehicleStatus from './pages/DriverVehicleStatus';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AdvanceApproval": AdvanceApproval,
+    "AdvanceRequest": AdvanceRequest,
     "AdvancedReports": AdvancedReports,
     "CashFlow": CashFlow,
     "Configuracoes": Configuracoes,
+    "DocumentApproval": DocumentApproval,
     "DocumentManagement": DocumentManagement,
     "Documents": Documents,
+    "DocumentsHub": DocumentsHub,
+    "DriverAssignmentHistory": DriverAssignmentHistory,
+    "DriverDashboard": DriverDashboard,
     "DriverDetail": DriverDetail,
     "DriverPerformance": DriverPerformance,
     "Drivers": Drivers,
+    "FleetCommunications": FleetCommunications,
     "FleetDrivers": FleetDrivers,
     "FleetManagerDashboard": FleetManagerDashboard,
     "FleetManagers": FleetManagers,
@@ -109,6 +117,7 @@ export const PAGES = {
     "Loans": Loans,
     "Notifications": Notifications,
     "Onboarding": Onboarding,
+    "PaymentHistory": PaymentHistory,
     "PublicSite": PublicSite,
     "Rankings": Rankings,
     "Referrals": Referrals,
@@ -118,19 +127,12 @@ export const PAGES = {
     "RelatoriosFrotas": RelatoriosFrotas,
     "UPI": UPI,
     "UserManagement": UserManagement,
+    "VehicleAssignment": VehicleAssignment,
+    "VehicleAssignmentHistory": VehicleAssignmentHistory,
     "VehicleManagement": VehicleManagement,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "DriverDashboard": DriverDashboard,
-    "DocumentsHub": DocumentsHub,
-    "DocumentApproval": DocumentApproval,
-    "PaymentHistory": PaymentHistory,
-    "AdvanceRequest": AdvanceRequest,
-    "AdvanceApproval": AdvanceApproval,
-    "FleetCommunications": FleetCommunications,
-    "VehicleAssignment": VehicleAssignment,
-    "DriverAssignmentHistory": DriverAssignmentHistory,
-    "VehicleAssignmentHistory": VehicleAssignmentHistory,
+    "DriverVehicleStatus": DriverVehicleStatus,
 }
 
 export const pagesConfig = {
