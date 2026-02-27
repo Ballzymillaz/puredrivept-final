@@ -80,6 +80,8 @@ import Vehicles from './pages/Vehicles';
 import Onboarding from './pages/Onboarding';
 import Configuracoes from './pages/Configuracoes';
 import ReportBuilder from './pages/ReportBuilder';
+import ReportScheduler from './pages/ReportScheduler';
+import DashboardModular from './pages/DashboardModular';
 import __Layout from './Layout.jsx';
 
 
@@ -117,6 +119,8 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "Configuracoes": Configuracoes,
     "ReportBuilder": ReportBuilder,
+    "ReportScheduler": ReportScheduler,
+    "DashboardModular": DashboardModular,
 }
 
 export const pagesConfig = {
