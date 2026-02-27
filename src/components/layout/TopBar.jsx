@@ -75,7 +75,7 @@ export default function TopBar({ user, pageTitle }) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <a href={createPageUrl('Notifications')}>
+        <Link to={createPageUrl('Notifications')}>
           <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-gray-600">
             <Bell className="w-[18px] h-[18px]" />
             {unreadCount > 0 && (
@@ -84,7 +84,7 @@ export default function TopBar({ user, pageTitle }) {
               </span>
             )}
           </Button>
-        </a>
+        </Link>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
