@@ -39,11 +39,12 @@ export default function CashFlow() {
     queryFn: () => base44.entities.Driver.list(),
   });
 
-  const expenses = driverFilter === 'all' 
+  const expenses = (driverFilter === 'all' 
     ? allExpenses 
     : driverFilter === 'none'
     ? allExpenses.filter(e => !e.driver_id)
-    : allExpenses.filter(e => e.driver_id === driverFilter);
+    : allExpenses.filter(e => e.driver_id === driverFilter)
+  ).filter(e => !e.description.startsWith('Recebido'));
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.Expense.create(d),
