@@ -24,6 +24,7 @@ export default function DriverDetail() {
     first_registration_date: '',
   });
   const [editingVehicle, setEditingVehicle] = useState(false);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const fileInputRef = useRef(null);
 
   // Fetch driver
@@ -336,25 +337,45 @@ export default function DriverDetail() {
 
       {/* Documents */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-center justify-between flex-row">
           <CardTitle className="text-lg">Documentos</CardTitle>
+          <Button
+            onClick={() => setShowDocumentUpload(!showDocumentUpload)}
+            size="sm"
+            className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Carregar Documento
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            {DOC_TYPES.map(docType => (
-              <label key={docType.value} className="flex items-center gap-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                <input
-                  type="file"
-                  onChange={(e) => handleFileUpload(e, docType.value)}
-                  disabled={uploadDocumentMutation.isPending}
-                  className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                />
-                <Upload className="w-4 h-4 text-indigo-600" />
-                <span className="text-sm font-medium text-gray-700">{docType.label}</span>
-              </label>
-            ))}
-          </div>
+          {showDocumentUpload && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="grid grid-cols-2 gap-3">
+                {DOC_TYPES.map(docType => (
+                  <label key={docType.value} className="flex items-center gap-2 p-3 border rounded-lg hover:bg-blue-100 bg-white cursor-pointer transition-colors">
+                    <input
+                      type="file"
+                      onChange={(e) => handleFileUpload(e, docType.value)}
+                      disabled={uploadDocumentMutation.isPending}
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                    />
+                    <Upload className="w-4 h-4 text-indigo-600" />
+                    <span className="text-sm font-medium text-gray-700">{docType.label}</span>
+                  </label>
+                ))}
+              </div>
+              <Button
+                onClick={() => setShowDocumentUpload(false)}
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+              >
+                Fechar
+              </Button>
+            </div>
+          )}
 
           <div className="border-t pt-4">
             {documents.length === 0 ? (
