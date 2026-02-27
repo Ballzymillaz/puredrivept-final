@@ -75,6 +75,8 @@ import VehicleDetail from './pages/VehicleDetail';
 import Notifications from './pages/Notifications';
 import RelatorioVeiculos from './pages/RelatorioVeiculos';
 import UserManagement from './pages/UserManagement';
+import Fleets from './pages/Fleets';
+import RelatorioFrotas from './pages/RelatorioFrotas';
 import __Layout from './Layout.jsx';
 
 
@@ -107,6 +109,8 @@ export const PAGES = {
     "Notifications": Notifications,
     "RelatorioVeiculos": RelatorioVeiculos,
     "UserManagement": UserManagement,
+    "Fleets": Fleets,
+    "RelatorioFrotas": RelatorioFrotas,
 }
 
 export const pagesConfig = {
