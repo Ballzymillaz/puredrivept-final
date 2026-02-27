@@ -52,9 +52,11 @@ import CashFlow from './pages/CashFlow';
 import Configuracoes from './pages/Configuracoes';
 import DocumentManagement from './pages/DocumentManagement';
 import Documents from './pages/Documents';
+import DriverDetail from './pages/DriverDetail';
 import DriverPerformance from './pages/DriverPerformance';
 import Drivers from './pages/Drivers';
 import FleetDrivers from './pages/FleetDrivers';
+import FleetManagerDashboard from './pages/FleetManagerDashboard';
 import FleetManagers from './pages/FleetManagers';
 import FleetVehicles from './pages/FleetVehicles';
 import Fleets from './pages/Fleets';
@@ -75,8 +77,6 @@ import UserManagement from './pages/UserManagement';
 import VehicleManagement from './pages/VehicleManagement';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import DriverDetail from './pages/DriverDetail';
-import FleetManagerDashboard from './pages/FleetManagerDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -86,9 +86,11 @@ export const PAGES = {
     "Configuracoes": Configuracoes,
     "DocumentManagement": DocumentManagement,
     "Documents": Documents,
+    "DriverDetail": DriverDetail,
     "DriverPerformance": DriverPerformance,
     "Drivers": Drivers,
     "FleetDrivers": FleetDrivers,
+    "FleetManagerDashboard": FleetManagerDashboard,
     "FleetManagers": FleetManagers,
     "FleetVehicles": FleetVehicles,
     "Fleets": Fleets,
@@ -109,8 +111,6 @@ export const PAGES = {
     "VehicleManagement": VehicleManagement,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "DriverDetail": DriverDetail,
-    "FleetManagerDashboard": FleetManagerDashboard,
 }
 
 export const pagesConfig = {

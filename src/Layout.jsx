@@ -66,6 +66,13 @@ export default function Layout({ children, currentPageName }) {
       setUser({ ...me, roles: userRoles, hasRole });
       setLoading(false);
 
+      // Redirect pure users to Onboarding
+      if (hasRole('user') && !hasRole('admin') && !hasRole('fleet_manager') && !hasRole('driver')) {
+        if (currentPageName !== 'Onboarding') {
+          window.location.href = createPageUrl('Onboarding');
+          return;
+        }
+      }
       // Redirect pure drivers (no admin/fleet role) to their allowed pages
       const DRIVER_ALLOWED_PAGES = ['Onboarding', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications'];
       if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {

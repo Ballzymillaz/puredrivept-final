@@ -62,6 +62,10 @@ export default function Sidebar({ currentPage, userRole }) {
     ...section,
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
+      if (hasRole('user') && !hasRole('admin') && !hasRole('fleet_manager') && !hasRole('driver')) {
+        return ['Onboarding'].includes(item.page);
+      }
+
       if (hasRole('fleet_manager') && !hasRole('driver')) {
         return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
