@@ -32,6 +32,7 @@ const CATEGORY_LABELS = {
 export default function Notifications({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [form, setForm] = useState({ title: '', message: '', type: 'info', category: 'general', recipient_role: 'all', send_email: false });
   const qc = useQueryClient();
 
