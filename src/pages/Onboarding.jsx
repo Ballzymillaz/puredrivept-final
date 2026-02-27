@@ -115,22 +115,30 @@ export default function Onboarding({ currentUser }) {
         vehicle_assignment_status: 'pending',
       });
       
-      // Send welcome email to driver
-      await base44.integrations.Core.SendEmail({
-        to: newForm.driver_email,
-        from_name: 'PureDrivePT',
-        subject: '[PureDrivePT] Bem-vindo ao processo de Onboarding',
-        body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9f9f9"><div style="background:white;border-radius:12px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.08)"><div style="background:#4f46e5;border-radius:8px;padding:16px;text-align:center;margin-bottom:24px"><h1 style="color:white;margin:0;font-size:20px">PureDrive<sup style="font-size:11px">PT</sup></h1></div><p style="color:#374151;font-size:16px">Olá <strong>${newForm.driver_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.6">Bem-vindo ao processo de onboarding da PureDrivePT! Iniciámos o seu processo de integração com sucesso.</p><div style="background:#f3f4f6;border-radius:8px;padding:16px;margin:24px 0"><p style="margin:0;color:#374151;font-size:14px"><strong>Próximos passos:</strong></p><ol style="color:#6b7280;margin:8px 0 0 20px"><li>Submeter os documentos obrigatórios</li><li>Aguardar verificação de antecedentes</li><li>Receber atribuição de veículo</li></ol></div><p style="color:#6b7280;font-size:14px">Aceda à plataforma PureDrivePT para começar o seu onboarding.</p><p style="color:#9ca3af;font-size:12px;margin-top:24px">Esta é uma mensagem automática — não responda a este email.</p></div></body></html>`,
-      });
+      // Send welcome email (optional - no blocking if fails)
+      try {
+        await base44.integrations.Core.SendEmail({
+          to: newForm.driver_email,
+          from_name: 'PureDrivePT',
+          subject: '[PureDrivePT] Bem-vindo ao processo de Onboarding',
+          body: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9f9f9"><div style="background:white;border-radius:12px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.08)"><div style="background:#4f46e5;border-radius:8px;padding:16px;text-align:center;margin-bottom:24px"><h1 style="color:white;margin:0;font-size:20px">PureDrive<sup style="font-size:11px">PT</sup></h1></div><p style="color:#374151;font-size:16px">Olá <strong>${newForm.driver_name}</strong>,</p><p style="color:#374151;font-size:15px;line-height:1.6">Bem-vindo ao processo de onboarding da PureDrivePT! Iniciámos o seu processo de integração com sucesso.</p><div style="background:#f3f4f6;border-radius:8px;padding:16px;margin:24px 0"><p style="margin:0;color:#374151;font-size:14px"><strong>Próximos passos:</strong></p><ol style="color:#6b7280;margin:8px 0 0 20px"><li>Submeter os documentos obrigatórios</li><li>Aguardar verificação de antecedentes</li><li>Receber atribuição de veículo</li></ol></div><p style="color:#6b7280;font-size:14px">Aceda à plataforma PureDrivePT para começar o seu onboarding.</p><p style="color:#9ca3af;font-size:12px;margin-top:24px">Esta é uma mensagem automática — não responda a este email.</p></div></body></html>`,
+        });
+      } catch (emailError) {
+        console.warn('Email não enviado:', emailError);
+      }
       
-      await base44.entities.Notification.create({
-        title: `🆕 Novo onboarding iniciado — ${newForm.driver_name}`,
-        message: `Foi iniciado o processo de onboarding para o motorista ${newForm.driver_name}.`,
-        type: 'info',
-        category: 'driver_performance',
-        recipient_role: 'admin',
-        related_entity: record.id,
-      });
+      try {
+        await base44.entities.Notification.create({
+          title: `🆕 Novo onboarding iniciado — ${newForm.driver_name}`,
+          message: `Foi iniciado o processo de onboarding para o motorista ${newForm.driver_name}.`,
+          type: 'info',
+          category: 'driver_performance',
+          recipient_role: 'admin',
+          related_entity: record.id,
+        });
+      } catch (notifError) {
+        console.warn('Notificação não criada:', notifError);
+      }
       
       setCreating(false);
       setShowNew(false);

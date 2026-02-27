@@ -56,8 +56,10 @@ import Configuracoes from './pages/Configuracoes';
 import Contracts from './pages/Contracts';
 import Dashboard from './pages/Dashboard';
 import DashboardModular from './pages/DashboardModular';
+import DocumentManagement from './pages/DocumentManagement';
 import Documents from './pages/Documents';
 import DriverDashboard from './pages/DriverDashboard';
+import DriverPerformance from './pages/DriverPerformance';
 import Drivers from './pages/Drivers';
 import FleetContracts from './pages/FleetContracts';
 import FleetDrivers from './pages/FleetDrivers';
@@ -79,6 +81,7 @@ import RelatorioFrotas from './pages/RelatorioFrotas';
 import RelatorioVeiculos from './pages/RelatorioVeiculos';
 import Relatorios from './pages/Relatorios';
 import RelatoriosFrota from './pages/RelatoriosFrota';
+import RelatoriosFrotaCustomizable from './pages/RelatoriosFrotaCustomizable';
 import RelatoriosFrotas from './pages/RelatoriosFrotas';
 import ReportBuilder from './pages/ReportBuilder';
 import ReportContractStatus from './pages/ReportContractStatus';
@@ -88,12 +91,9 @@ import ReportVehiclePerformance from './pages/ReportVehiclePerformance';
 import UPI from './pages/UPI';
 import UserManagement from './pages/UserManagement';
 import VehicleDetail from './pages/VehicleDetail';
+import VehicleManagement from './pages/VehicleManagement';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import DocumentManagement from './pages/DocumentManagement';
-import VehicleManagement from './pages/VehicleManagement';
-import DriverPerformance from './pages/DriverPerformance';
-import RelatoriosFrotaCustomizable from './pages/RelatoriosFrotaCustomizable';
 import __Layout from './Layout.jsx';
 
 
@@ -107,8 +107,10 @@ export const PAGES = {
     "Contracts": Contracts,
     "Dashboard": Dashboard,
     "DashboardModular": DashboardModular,
+    "DocumentManagement": DocumentManagement,
     "Documents": Documents,
     "DriverDashboard": DriverDashboard,
+    "DriverPerformance": DriverPerformance,
     "Drivers": Drivers,
     "FleetContracts": FleetContracts,
     "FleetDrivers": FleetDrivers,
@@ -130,6 +132,7 @@ export const PAGES = {
     "RelatorioVeiculos": RelatorioVeiculos,
     "Relatorios": Relatorios,
     "RelatoriosFrota": RelatoriosFrota,
+    "RelatoriosFrotaCustomizable": RelatoriosFrotaCustomizable,
     "RelatoriosFrotas": RelatoriosFrotas,
     "ReportBuilder": ReportBuilder,
     "ReportContractStatus": ReportContractStatus,
@@ -139,12 +142,9 @@ export const PAGES = {
     "UPI": UPI,
     "UserManagement": UserManagement,
     "VehicleDetail": VehicleDetail,
+    "VehicleManagement": VehicleManagement,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "DocumentManagement": DocumentManagement,
-    "VehicleManagement": VehicleManagement,
-    "DriverPerformance": DriverPerformance,
-    "RelatoriosFrotaCustomizable": RelatoriosFrotaCustomizable,
 }
 
 export const pagesConfig = {
