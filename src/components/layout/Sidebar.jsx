@@ -22,6 +22,7 @@ const NAV_ITEMS = [
     { name: 'Comerciais', icon: HandCoins, page: 'Commercials' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
     { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
+    { name: 'Funções e Acessos', icon: Settings, page: 'RoleManagement' },
   ]},
   { section: 'Finanças', items: [
     { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },

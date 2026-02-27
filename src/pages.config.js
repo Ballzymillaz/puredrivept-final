@@ -65,11 +65,12 @@ import Documents from './pages/Documents';
 import Dashboard from './pages/Dashboard';
 import DriverDashboard from './pages/DriverDashboard';
 import Contracts from './pages/Contracts';
+import DriverFinancialDashboard from './pages/DriverFinancialDashboard';
 import Payments from './pages/Payments';
 import PublicSite from './pages/PublicSite';
 import Drivers from './pages/Drivers';
 import Vehicles from './pages/Vehicles';
-import DriverFinancialDashboard from './pages/DriverFinancialDashboard';
+import RoleManagement from './pages/RoleManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -92,11 +93,12 @@ export const PAGES = {
     "Dashboard": Dashboard,
     "DriverDashboard": DriverDashboard,
     "Contracts": Contracts,
+    "DriverFinancialDashboard": DriverFinancialDashboard,
     "Payments": Payments,
     "PublicSite": PublicSite,
     "Drivers": Drivers,
     "Vehicles": Vehicles,
-    "DriverFinancialDashboard": DriverFinancialDashboard,
+    "RoleManagement": RoleManagement,
 }
 
 export const pagesConfig = {
