@@ -396,14 +396,10 @@ function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
         }}>
           <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
           <SelectContent>
-            {drivers.length === 0 ? (
-              <SelectItem disabled value="">Sem motoristas disponíveis</SelectItem>
-            ) : (
-              drivers.map(d => {
-                console.log(`Rendering driver option: ${d.full_name} (city_id: ${d.city_id})`);
-                return <SelectItem key={d.id} value={String(d.id)}>{d.full_name}</SelectItem>;
-              })
-            )}
+            {drivers.map(d => {
+              console.log(`Rendering driver option: ${d.full_name} (city_id: ${d.city_id})`);
+              return <SelectItem key={d.id} value={String(d.id)}>{d.full_name}</SelectItem>;
+            })}
           </SelectContent>
         </Select>
       </div>
