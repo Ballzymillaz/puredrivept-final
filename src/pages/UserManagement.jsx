@@ -15,11 +15,10 @@ import { format } from 'date-fns';
 const ALL_ROLES = [
   { value: 'admin', label: 'Administrador', color: 'bg-red-100 text-red-700' },
   { value: 'fleet_manager', label: 'Gestor de frota', color: 'bg-blue-100 text-blue-700' },
+  { value: 'commercial', label: 'Comercial', color: 'bg-green-100 text-green-700' },
   { value: 'driver', label: 'Motorista', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'user', label: 'Utilizador', color: 'bg-gray-100 text-gray-700' },
 ];
-
-// Roles that should never appear as assignable options
-const EXCLUDED_ROLES = ['user'];
 
 export default function UserManagement({ currentUser }) {
   const [searchQuery, setSearchQuery] = useState('');
