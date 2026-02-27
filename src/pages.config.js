@@ -55,6 +55,7 @@ import Referrals from './pages/Referrals';
 import CashFlow from './pages/CashFlow';
 import Goals from './pages/Goals';
 import Apply from './pages/Apply';
+import RoleManagement from './pages/RoleManagement';
 import Commercials from './pages/Commercials';
 import FleetManagers from './pages/FleetManagers';
 import UPI from './pages/UPI';
@@ -70,7 +71,6 @@ import Payments from './pages/Payments';
 import PublicSite from './pages/PublicSite';
 import Drivers from './pages/Drivers';
 import Vehicles from './pages/Vehicles';
-import RoleManagement from './pages/RoleManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -83,6 +83,7 @@ export const PAGES = {
     "CashFlow": CashFlow,
     "Goals": Goals,
     "Apply": Apply,
+    "RoleManagement": RoleManagement,
     "Commercials": Commercials,
     "FleetManagers": FleetManagers,
     "UPI": UPI,
@@ -98,7 +99,6 @@ export const PAGES = {
     "PublicSite": PublicSite,
     "Drivers": Drivers,
     "Vehicles": Vehicles,
-    "RoleManagement": RoleManagement,
 }
 
 export const pagesConfig = {
