@@ -93,10 +93,12 @@ export default function Notifications({ currentUser }) {
   }, [notifications, isAdmin, myEmail, currentUser]);
 
   const filtered = useMemo(() => {
-    if (filter === 'unread') return myNotifications.filter(n => !n.read_by?.includes(myEmail));
-    if (filter === 'all') return myNotifications;
-    return myNotifications.filter(n => n.type === filter);
-  }, [myNotifications, filter, myEmail]);
+    let list = myNotifications;
+    if (filter === 'unread') list = list.filter(n => !n.read_by?.includes(myEmail));
+    else if (filter !== 'all') list = list.filter(n => n.type === filter);
+    if (categoryFilter !== 'all') list = list.filter(n => n.category === categoryFilter);
+    return list;
+  }, [myNotifications, filter, categoryFilter, myEmail]);
 
   const unreadCount = myNotifications.filter(n => !n.read_by?.includes(myEmail)).length;
 
