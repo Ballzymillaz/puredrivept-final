@@ -1,202 +1,266 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import StatCard from '../components/dashboard/StatCard';
+import StatusBadge from '../components/shared/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, TrendingDown, Coins, Zap, Users, Car, Target } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Users, Car, CreditCard, TrendingUp, Coins, AlertTriangle, UserPlus, FileText } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const fmt = (v) => `€${(v || 0).toLocaleString('pt-PT', { minimumFractionDigits: 2 })}`;
-const medalEmojis = ['🥇', '🥈', '🥉'];
+const PIE_COLORS = ['#6366f1', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b'];
 
 export default function Dashboard({ currentUser }) {
-  const { data: metrics, isLoading } = useQuery({
-    queryKey: ['dashboard-metrics'],
-    queryFn: () => base44.functions.invoke('getDashboardMetrics', {}),
-    select: (res) => res.data,
+  const [detailsDialog, setDetailsDialog] = useState(null);
+  
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: () => base44.entities.Vehicle.list(),
+  });
+  const { data: payments = [] } = useQuery({
+    queryKey: ['payments-recent'],
+    queryFn: () => base44.entities.WeeklyPayment.list('-week_start', 50),
+  });
+  const { data: documents = [] } = useQuery({
+    queryKey: ['docs-expiring'],
+    queryFn: () => base44.entities.Document.list('-expiry_date', 100),
+  });
+  const { data: applications = [] } = useQuery({
+    queryKey: ['apps-new'],
+    queryFn: () => base44.entities.Application.filter({ status: 'new' }),
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-400">Carregando dashboard...</div>
-      </div>
-    );
-  }
+  const activeDriversList = drivers.filter(d => d.status === 'active');
+  const activeDrivers = activeDriversList.length;
+  const assignedVehiclesList = vehicles.filter(v => v.status === 'assigned');
+  const assignedVehicles = assignedVehiclesList.length;
 
-  if (!metrics) {
-    return (
-      <div className="text-center py-8 text-gray-400">
-        Não há dados disponíveis
-      </div>
-    );
-  }
+  const totalRevenue = payments.reduce((s, p) => s + (p.total_gross || 0), 0);
+  const totalNet = payments.reduce((s, p) => s + (p.net_amount || 0), 0);
 
-  const { performance, ranking, upi, growth } = metrics;
+  const today = new Date();
+  const expiringDocs = documents.filter(d => {
+    if (!d.expiry_date || d.status === 'expired') return false;
+    const diff = differenceInDays(new Date(d.expiry_date), today);
+    return diff >= 0 && diff <= 15;
+  });
+
+  // Revenue by contract type
+  const contractData = ['slot_standard', 'slot_premium', 'slot_black', 'location'].map(type => {
+    const driversOfType = drivers.filter(d => d.contract_type === type);
+    return {
+      name: type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      count: driversOfType.length,
+    };
+  }).filter(d => d.count > 0);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Performance Board PureDrive 🚀</h1>
-        <p className="text-sm text-gray-600 mt-1">Performance baseada em consistência (últimas 4 semanas)</p>
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('drivers')}>
+          <StatCard title="Motoristas ativos" value={activeDrivers} subtitle={`${drivers.length} total`} icon={Users} color="indigo" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('vehicles')}>
+          <StatCard title="Veículos atribuídos" value={assignedVehicles} subtitle={`${vehicles.length} total`} icon={Car} color="blue" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('revenue')}>
+          <StatCard title="Receita bruta" value={`€${totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`} subtitle="Períodos recentes" icon={TrendingUp} color="green" />
+        </div>
+        <div className="cursor-pointer" onClick={() => setDetailsDialog('applications')}>
+          <StatCard title="Candidaturas" value={applications.length} subtitle="Em espera" icon={UserPlus} color="amber" />
+        </div>
       </div>
 
-      {/* BLOCO 1: Performance 4 Semanas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <PerformanceCard
-          title="Receita média semanal"
-          value={fmt(performance.avgFleetRevenueWeekly)}
-          variation={performance.revenueVariation}
-          icon={TrendingUp}
-        />
-        <PerformanceCard
-          title="Receita média por motorista"
-          value={fmt(performance.avgRevenuePerDriver)}
-          icon={Users}
-        />
-        <PerformanceCard
-          title="Taxa de ocupação"
-          value={`${performance.occupancyRate}%`}
-          icon={Target}
-        />
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-emerald-50 to-emerald-100/50">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-sm text-emerald-700 font-medium mb-2">Estabilidade da frota</p>
-              <p className="text-2xl font-bold text-emerald-900">✓ Consistente</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* BLOCO 2: Ranking de Consistência */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-bold text-gray-900">
-            Ranking de Consistência – Top 5 (Últimas 4 Semanas)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {ranking && ranking.length > 0 ? (
-              ranking.map((driver, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{medalEmojis[idx] || `#${idx + 1}`}</span>
-                    <div>
-                      <p className="font-medium text-gray-900">{driver.name}</p>
-                      <p className="text-xs text-gray-500">Média semanal</p>
-                    </div>
-                  </div>
-                  <p className="font-bold text-indigo-600">{fmt(driver.avgRevenue)}</p>
-                </div>
-              ))
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Contract distribution */}
+        <Card className="border-0 shadow-sm lg:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold text-gray-700">Repartição dos contratos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {contractData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={contractData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="count" paddingAngle={3}>
+                    {contractData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v) => `${v} chauffeurs`} />
+                </PieChart>
+              </ResponsiveContainer>
             ) : (
-              <p className="text-center text-gray-400 py-4">Nenhum dado disponível</p>
+              <div className="h-[200px] flex items-center justify-center text-sm text-gray-400">Aucune donnée</div>
             )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* BLOCO 3 & 4: UPI + Crescimento */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* UPI System */}
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-violet-50 to-violet-100/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-violet-600" />
-              Sistema UPI
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Total UPI acumulado</p>
-              <p className="text-3xl font-bold text-violet-700">{upi.totalEarned.toFixed(0)}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-gray-600">Preço atual</p>
-                <p className="text-lg font-semibold text-gray-900">{fmt(upi.price)}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-600">Crescimento</p>
-                <p className="text-lg font-semibold text-emerald-600">+{upi.growthPercent}%</p>
-              </div>
-            </div>
-            <div className="pt-2 border-t">
-              <p className="text-sm text-gray-600">{upi.activeDrivers} motoristas com UPI ativo</p>
+            <div className="flex flex-wrap gap-3 mt-2 justify-center">
+              {contractData.map((d, i) => (
+                <div key={d.name} className="flex items-center gap-1.5 text-xs text-gray-600">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  {d.name}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Crescimento Estrutural */}
-        <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-blue-100/50">
+        {/* Expiring documents */}
+        <Card className="border-0 shadow-sm lg:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Car className="w-5 h-5 text-blue-600" />
-              Crescimento Estrutural
+            <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              Documentos a vencer em breve ({expiringDocs.length})
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-gray-600">Veículos ativos</p>
-                <p className="text-2xl font-bold text-blue-700">{growth.activeVehicles}</p>
+          <CardContent>
+            {expiringDocs.length === 0 ? (
+              <div className="py-8 text-center text-sm text-gray-400">Aucun document proche de l'échéance</div>
+            ) : (
+              <div className="space-y-2 max-h-[240px] overflow-y-auto">
+                {expiringDocs.slice(0, 10).map(doc => {
+                  const days = differenceInDays(new Date(doc.expiry_date), today);
+                  const urgency = days <= 3 ? 'text-red-600 bg-red-50' : days <= 7 ? 'text-orange-600 bg-orange-50' : 'text-amber-600 bg-amber-50';
+                  return (
+                    <div key={doc.id} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">{doc.owner_name}</p>
+                          <p className="text-xs text-gray-500">{doc.document_type?.replace(/_/g, ' ')}</p>
+                        </div>
+                      </div>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${urgency}`}>
+                        {days === 0 ? "Aujourd'hui" : `${days}j`}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              <div>
-                <p className="text-xs text-gray-600">Novos este mês</p>
-                <p className="text-2xl font-bold text-emerald-600">+{growth.newVehiclesThisMonth}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-              <div>
-                <p className="text-xs text-gray-600">Motoristas novos</p>
-                <p className="text-lg font-semibold text-blue-600">+{growth.newDriversThisMonth}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-600">Semanas processadas</p>
-                <p className="text-lg font-semibold text-gray-900">{growth.totalWeeksProcessed}</p>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Footer message */}
-      <div className="text-center text-sm text-gray-500 py-4">
-        Dashboard atualizado em tempo real • Dados baseados em 4 semanas contínuas
-      </div>
+      <Dialog open={!!detailsDialog} onOpenChange={(open) => !open && setDetailsDialog(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {detailsDialog === 'drivers' && 'Motoristas ativos'}
+              {detailsDialog === 'vehicles' && 'Veículos atribuídos'}
+              {detailsDialog === 'revenue' && 'Receita bruta'}
+              {detailsDialog === 'applications' && 'Candidaturas'}
+            </DialogTitle>
+          </DialogHeader>
+          <DashboardDetailsContent 
+            type={detailsDialog} 
+            drivers={activeDriversList}
+            vehicles={assignedVehiclesList}
+            payments={payments}
+            applications={applications}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function PerformanceCard({ title, value, variation, icon: Icon }) {
-  const isPositive = variation !== undefined && variation >= 0;
-
-  return (
-    <Card className="border-0 shadow-sm">
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <p className="text-xs text-gray-600 font-medium mb-1">{title}</p>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-            {variation !== undefined && (
-              <div className="mt-2 flex items-center gap-1">
-                {isPositive ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-red-600" />
-                )}
-                <span className={`text-xs font-semibold ${isPositive ? 'text-emerald-600' : 'text-red-600'}`}>
-                  {isPositive ? '+' : ''}{variation.toFixed(1)}%
-                </span>
+function DashboardDetailsContent({ type, drivers, vehicles, payments, applications }) {
+  if (type === 'drivers') {
+    return (
+      <div className="space-y-2">
+        {drivers.length === 0 ? (
+          <p className="text-center py-4 text-gray-400">Nenhum motorista ativo</p>
+        ) : (
+          drivers.map(d => (
+            <div key={d.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
+              <div>
+                <p className="font-medium">{d.full_name}</p>
+                <p className="text-sm text-gray-500">{d.email}</p>
               </div>
-            )}
-          </div>
-          <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-100 to-indigo-50 flex items-center justify-center">
-            <Icon className="w-6 h-6 text-indigo-600" />
-          </div>
+              <div className="text-right">
+                <p className="text-sm">{d.phone}</p>
+                <p className="text-xs text-gray-500">{d.contract_type?.replace('_', ' ')}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  if (type === 'vehicles') {
+    return (
+      <div className="space-y-2">
+        {vehicles.length === 0 ? (
+          <p className="text-center py-4 text-gray-400">Nenhum veículo atribuído</p>
+        ) : (
+          vehicles.map(v => (
+            <div key={v.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
+              <div>
+                <p className="font-medium">{v.brand} {v.model}</p>
+                <p className="text-sm text-gray-500">{v.license_plate}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm">{v.assigned_driver_name || 'N/A'}</p>
+                <p className="text-xs text-gray-500">{v.year || ''}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  if (type === 'revenue') {
+    const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
+    const total = payments.reduce((s, p) => s + (p.total_gross || 0), 0);
+    return (
+      <div className="space-y-3">
+        <div className="p-3 bg-green-50 rounded-lg">
+          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
         </div>
-      </CardContent>
-    </Card>
-  );
+        <div className="space-y-2">
+          {payments.map(p => (
+            <div key={p.id} className="flex justify-between p-2 border-b hover:bg-gray-50">
+              <div>
+                <p className="font-medium text-sm">{p.driver_name}</p>
+                <p className="text-xs text-gray-500">{p.period_label}</p>
+              </div>
+              <p className="font-medium">{fmt(p.total_gross)}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'applications') {
+    return (
+      <div className="space-y-2">
+        {applications.length === 0 ? (
+          <p className="text-center py-4 text-gray-400">Nenhuma candidatura pendente</p>
+        ) : (
+          applications.map(a => (
+            <div key={a.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
+              <div>
+                <p className="font-medium">{a.full_name}</p>
+                <p className="text-sm text-gray-500">{a.email}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm">{a.phone}</p>
+                <p className="text-xs text-gray-500 capitalize">{a.applicant_type?.replace('_', ' ')}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  return null;
 }

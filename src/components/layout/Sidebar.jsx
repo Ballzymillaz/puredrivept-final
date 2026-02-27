@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Car, FileText, CreditCard, TrendingUp,
   Target, Wallet, ShoppingCart, UserPlus, Coins, Receipt,
   ChevronLeft, ChevronRight, Settings, LogOut, Menu, X,
-  Building2, HandCoins, FileBarChart, PieChart, MessageCircle
+  Building2, HandCoins, FileBarChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -31,15 +31,11 @@ const NAV_ITEMS = [
     { name: 'Reembolsos', icon: Receipt, page: 'Reimbursements' },
     { name: 'Indicações', icon: HandCoins, page: 'Referrals' },
     { name: 'Compra veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
-    { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
   ]},
   { section: 'Desempenho', items: [
     { name: 'Objetivos', icon: Target, page: 'Goals' },
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
-    { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
-    { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
-    { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
   ]},
 ];
 
@@ -52,13 +48,13 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (userRole === 'admin') return true;
       if (userRole === 'fleet_manager') {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging'].includes(item.page);
+        return !['FleetManagers', 'CashFlow'].includes(item.page);
       }
       if (userRole === 'commercial') {
         return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings'].includes(item.page);
       }
       if (userRole === 'driver') {
-        return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'].includes(item.page);
+        return ['Dashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases'].includes(item.page);
       }
       return true;
     })

@@ -23,13 +23,19 @@ export default function Apply() {
   const createMutation = useMutation({
     mutationFn: async (d) => {
       const result = await base44.entities.Application.create(d);
-      try {
-        await base44.integrations.Core.SendEmail({
-          to: d.email,
-          subject: 'Candidatura recebida - PureDrive PT',
-          body: `Olá ${d.full_name},\n\nA sua candidatura foi recebida com sucesso. A nossa equipa irá analisá-la e entrará em contacto consigo em breve.\n\nReceberá um email assim que a sua candidatura for validada e poderá aceder à plataforma.\n\nAtenciosamente,\nEquipa PureDrive PT`,
-        });
-      } catch (_) {}
+      // Send confirmation email to applicant
+      await base44.integrations.Core.SendEmail({
+        to: d.email,
+        subject: 'Candidatura recebida - PureDrive PT',
+        body: `
+          <h2>Obrigado pela sua candidatura!</h2>
+          <p>Olá ${d.full_name},</p>
+          <p>A sua candidatura foi recebida com sucesso. A nossa equipa irá analisá-la e entrará em contacto consigo em breve.</p>
+          <p>Receberá um email assim que a sua candidatura for validada.</p>
+          <br>
+          <p>Atenciosamente,<br>Equipa PureDrive PT</p>
+        `
+      });
       return result;
     },
     onSuccess: () => setSubmitted(true),
@@ -47,18 +53,7 @@ export default function Apply() {
           <CardContent className="p-8 text-center space-y-4">
             <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
             <h2 className="text-2xl font-bold text-gray-900">Candidatura enviada!</h2>
-            <p className="text-gray-600">Obrigado, <strong>{form.full_name}</strong>! A sua candidatura foi recebida.</p>
-            <div className="bg-indigo-50 rounded-xl p-4 text-left space-y-2 text-sm text-indigo-800">
-              <p>📋 A nossa equipa irá validar a sua candidatura em breve.</p>
-              <p>📧 Receberá um email de confirmação quando for aprovada.</p>
-              <p>🔐 Após aprovação, receberá um convite para aceder à plataforma.</p>
-            </div>
-            <Button
-              onClick={() => base44.auth.redirectToLogin()}
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
-            >
-              Aceder à minha conta
-            </Button>
+            <p className="text-gray-600">Obrigado pela sua candidatura. A nossa equipa entrará em contacto consigo em breve.</p>
           </CardContent>
         </Card>
       </div>
@@ -100,13 +95,9 @@ export default function Apply() {
                 Código de indicação: <strong>{referralCode}</strong>
               </div>
             )}
-            {createMutation.isError && (
-              <p className="text-sm text-red-600 text-center">Erro ao enviar. Tente novamente.</p>
-            )}
             <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700 h-11">
               {createMutation.isPending ? 'A enviar...' : 'Enviar candidatura'}
             </Button>
-            <p className="text-xs text-gray-400 text-center">Após o envio, a sua candidatura será analisada pela nossa equipa. Receberá um email de confirmação assim que for validada.</p>
           </form>
         </CardContent>
       </Card>

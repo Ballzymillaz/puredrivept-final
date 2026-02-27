@@ -173,7 +173,7 @@ export default function CashFlow() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[220px] flex items-center justify-center text-sm text-gray-400">Nenhuma despesa registada</div>
+              <div className="h-[220px] flex items-center justify-center text-sm text-gray-400">Aucune dépense enregistrée</div>
             )}
           </CardContent>
         </Card>

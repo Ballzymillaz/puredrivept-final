@@ -10,34 +10,24 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function VehiclePurchases({ currentUser }) {
+export default function VehiclePurchases() {
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const qc = useQueryClient();
-  const isDriver = currentUser?.role === 'driver';
-
-  const { data: allDrivers = [] } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list(),
-  });
-  const myDriverRecord = isDriver ? allDrivers.find(d => d.email === currentUser?.email) : null;
 
   const { data: purchases = [], isLoading } = useQuery({
-    queryKey: ['vehicle-purchases', isDriver ? myDriverRecord?.id : 'all'],
-    queryFn: async () => {
-      if (isDriver && myDriverRecord) {
-        return base44.entities.VehiclePurchase.filter({ driver_id: myDriverRecord.id });
-      }
-      return base44.entities.VehiclePurchase.list('-created_date');
-    },
-    enabled: !isDriver || !!myDriverRecord,
+    queryKey: ['vehicle-purchases'],
+    queryFn: () => base44.entities.VehiclePurchase.list('-created_date'),
   });
   const { data: vehicles = [] } = useQuery({
     queryKey: ['vehicles'],
     queryFn: () => base44.entities.Vehicle.list(),
   });
-  const drivers = allDrivers;
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.VehiclePurchase.create(d),
@@ -121,8 +111,8 @@ export default function VehiclePurchases({ currentUser }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Compra de veículos" subtitle="Opção de compra para motoristas" actionLabel={isDriver ? "Fazer pedido" : "Novo pedido"} onAction={() => setShowForm(true)} />
-      <DataTable columns={columns} data={purchases} isLoading={isLoading} onRowClick={isDriver ? undefined : setSelected} />
+      <PageHeader title="Compra de veículos" subtitle="Opção de compra para motoristas" actionLabel="Novo pedido" onAction={() => setShowForm(true)} />
+      <DataTable columns={columns} data={purchases} isLoading={isLoading} onRowClick={setSelected} />
 
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditForm(null); } }}>
         <DialogContent className="max-w-sm">

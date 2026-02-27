@@ -16,8 +16,6 @@ export default function Contracts() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState('');
-  const [vehicleFilter, setVehicleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
   const qc = useQueryClient();
 
   const { data: contracts = [], isLoading } = useQuery({
@@ -57,12 +55,10 @@ export default function Contracts() {
     else createMutation.mutate(data);
   };
 
-  const filtered = contracts.filter(c => {
-    if (search && !c.driver_name?.toLowerCase().includes(search.toLowerCase()) && !c.vehicle_info?.toLowerCase().includes(search.toLowerCase())) return false;
-    if (vehicleFilter !== 'all' && c.vehicle_id !== vehicleFilter) return false;
-    if (statusFilter !== 'all' && c.status !== statusFilter) return false;
-    return true;
-  });
+  const filtered = contracts.filter(c =>
+    !search || c.driver_name?.toLowerCase().includes(search.toLowerCase()) ||
+    c.vehicle_info?.toLowerCase().includes(search.toLowerCase())
+  );
 
   const CONTRACT_LABELS = {
     slot_standard: 'Slot Standard (35€)',
@@ -125,27 +121,9 @@ export default function Contracts() {
         onAction={() => { setEditing(null); setShowForm(true); }}
       />
 
-      <div className="flex flex-wrap gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Pesquisar motorista..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 w-52" />
-        </div>
-        <Select value={vehicleFilter} onValueChange={setVehicleFilter}>
-          <SelectTrigger className="w-48"><SelectValue placeholder="Todos os veículos" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os veículos</SelectItem>
-            {vehicles.map(v => <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Estado" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="active">Ativo</SelectItem>
-            <SelectItem value="expired">Expirado</SelectItem>
-            <SelectItem value="cancelled">Cancelado</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Input placeholder="Pesquisar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
 
       <DataTable
