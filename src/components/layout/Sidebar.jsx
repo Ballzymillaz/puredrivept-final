@@ -74,6 +74,10 @@ export default function Sidebar({ currentPage, userRole }) {
         return ['Onboarding', 'FleetVehicles', 'FleetDrivers', 'Fleets', 'DocumentsHub', 'DocumentApproval', 'AdvanceApproval', 'VehicleManagement', 'Referrals', 'DriverPerformance', 'Goals', 'Rankings', 'Relatorios', 'AdvancedReports', 'FleetManagers', 'Notifications', 'FleetCommunications', 'Configuracoes'].includes(item.page);
       }
 
+      if (hasRole('admin')) {
+        return true;
+      }
+
       if (hasRole('driver')) {
         return ['DriverDashboard', 'Onboarding', 'DocumentsHub', 'PaymentHistory', 'AdvanceRequest', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Notifications', 'FleetCommunications'].includes(item.page);
       }
