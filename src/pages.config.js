@@ -60,17 +60,20 @@ import FleetManagers from './pages/FleetManagers';
 import Goals from './pages/Goals';
 import IVA from './pages/IVA';
 import Loans from './pages/Loans';
+import Messaging from './pages/Messaging';
 import Payments from './pages/Payments';
 import PublicSite from './pages/PublicSite';
 import Rankings from './pages/Rankings';
 import Referrals from './pages/Referrals';
 import Reimbursements from './pages/Reimbursements';
 import Relatorios from './pages/Relatorios';
+import RelatoriosFrota from './pages/RelatoriosFrota';
 import UPI from './pages/UPI';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import RelatoriosFrota from './pages/RelatoriosFrota';
-import Messaging from './pages/Messaging';
+import VehicleDetail from './pages/VehicleDetail';
+import Notifications from './pages/Notifications';
+import RelatorioVeiculos from './pages/RelatorioVeiculos';
 import __Layout from './Layout.jsx';
 
 
@@ -88,17 +91,20 @@ export const PAGES = {
     "Goals": Goals,
     "IVA": IVA,
     "Loans": Loans,
+    "Messaging": Messaging,
     "Payments": Payments,
     "PublicSite": PublicSite,
     "Rankings": Rankings,
     "Referrals": Referrals,
     "Reimbursements": Reimbursements,
     "Relatorios": Relatorios,
+    "RelatoriosFrota": RelatoriosFrota,
     "UPI": UPI,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "RelatoriosFrota": RelatoriosFrota,
-    "Messaging": Messaging,
+    "VehicleDetail": VehicleDetail,
+    "Notifications": Notifications,
+    "RelatorioVeiculos": RelatorioVeiculos,
 }
 
 export const pagesConfig = {
