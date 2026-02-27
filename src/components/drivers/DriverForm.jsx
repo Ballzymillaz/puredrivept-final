@@ -20,7 +20,7 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
     fleet_manager_id: driver?.fleet_manager_id || '',
     iva_regime: driver?.iva_regime || 'exempt',
     irs_retention_rate: driver?.irs_retention_rate || '',
-    vehicle_deposit: driver?.vehicle_deposit || 500,
+    vehicle_deposit: driver ? (driver.vehicle_deposit ?? 0) : 0,
     vehicle_deposit_paid: driver?.vehicle_deposit_paid || false,
     iban: driver?.iban || '',
     uber_uuid: driver?.uber_uuid || '',

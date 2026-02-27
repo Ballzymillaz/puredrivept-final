@@ -12,17 +12,25 @@ import { Button } from '@/components/ui/button';
 import { Wallet, Clock, CheckCircle2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export default function Loans() {
+export default function Loans({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [driverFilter, setDriverFilter] = useState('all');
   const [detailsDialog, setDetailsDialog] = useState(null);
   const qc = useQueryClient();
+  const isDriver = currentUser?.role === 'driver';
 
   const { data: loans = [], isLoading } = useQuery({
-    queryKey: ['loans'],
-    queryFn: () => base44.entities.Loan.list('-created_date'),
+    queryKey: ['loans', currentUser?.email],
+    queryFn: async () => {
+      const all = await base44.entities.Loan.list('-created_date');
+      if (isDriver) {
+        // Find loans where driver email matches
+        return all.filter(l => l.driver_id && drivers.some(d => d.id === l.driver_id && d.email === currentUser?.email));
+      }
+      return all;
+    },
   });
 
   const createMutation = useMutation({
@@ -99,6 +107,17 @@ export default function Loans() {
     queryFn: () => base44.entities.Driver.list(),
   });
 
+  const myDriverRecord = isDriver ? drivers.find(d => d.email === currentUser?.email) : null;
+
+  const { data: myLoans = [], isLoading: myLoansLoading } = useQuery({
+    queryKey: ['loans-driver', myDriverRecord?.id],
+    queryFn: () => base44.entities.Loan.filter({ driver_id: myDriverRecord.id }),
+    enabled: isDriver && !!myDriverRecord,
+  });
+
+  const displayLoans = isDriver ? myLoans : loans;
+  const displayLoading = isDriver ? myLoansLoading : isLoading;
+
   const interestRate = 1; // 1% per week
   const calcTotal = (amount, weeks) => {
     const a = parseFloat(amount) || 0;
@@ -125,11 +144,13 @@ export default function Loans() {
     });
   };
 
-  const filteredLoans = driverFilter === 'all' 
-    ? loans 
-    : driverFilter === 'none'
-    ? loans.filter(l => !l.driver_id)
-    : loans.filter(l => l.driver_id === driverFilter);
+  const filteredLoans = isDriver ? displayLoans : (
+    driverFilter === 'all' 
+      ? loans 
+      : driverFilter === 'none'
+      ? loans.filter(l => !l.driver_id)
+      : loans.filter(l => l.driver_id === driverFilter)
+  );
 
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
   const activeLoans = filteredLoans.filter(l => l.status === 'active');
@@ -149,18 +170,20 @@ export default function Loans() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Empréstimos & Adiantamentos" subtitle={`${loans.length} empréstimos`} actionLabel="Novo empréstimo" onAction={() => setShowForm(true)} />
+      <PageHeader title="Empréstimos & Adiantamentos" subtitle={`${filteredLoans.length} empréstimos`} actionLabel={isDriver ? undefined : "Novo empréstimo"} onAction={isDriver ? undefined : () => setShowForm(true)} />
       
-      <div className="flex gap-3">
-        <Select value={driverFilter} onValueChange={setDriverFilter}>
-          <SelectTrigger className="w-56"><SelectValue placeholder="Filtrar por motorista..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os motoristas</SelectItem>
-            <SelectItem value="none">Sem motorista</SelectItem>
-            {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      {!isDriver && (
+        <div className="flex gap-3">
+          <Select value={driverFilter} onValueChange={setDriverFilter}>
+            <SelectTrigger className="w-56"><SelectValue placeholder="Filtrar por motorista..." /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os motoristas</SelectItem>
+              <SelectItem value="none">Sem motorista</SelectItem>
+              {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="cursor-pointer" onClick={() => setDetailsDialog('active')}>
@@ -173,7 +196,7 @@ export default function Loans() {
           <StatCard title="Empréstimos quitados" value={completedLoans.length} icon={CheckCircle2} color="green" />
         </div>
       </div>
-      <DataTable columns={columns} data={filteredLoans} isLoading={isLoading} onRowClick={setSelected} />
+      <DataTable columns={columns} data={filteredLoans} isLoading={displayLoading} onRowClick={isDriver ? undefined : setSelected} />
 
       {/* Approve/Complete dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditForm(null); } }}>

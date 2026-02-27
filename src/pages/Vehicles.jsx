@@ -47,19 +47,49 @@ export default function Vehicles() {
 
   const FUEL_LABELS = { gasoline: 'Gasolina', diesel: 'Diesel', hybrid: 'Híbrido', electric: 'Elétrico' };
 
+  const getTvdeExpiry = (firstRegDate) => {
+    if (!firstRegDate) return null;
+    const d = new Date(firstRegDate);
+    d.setFullYear(d.getFullYear() + 7);
+    return d;
+  };
+
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('pt-PT') : '—';
+
   const columns = [
     {
       header: 'Veículo',
       render: (r) => (
         <div>
           <p className="font-medium text-gray-900 text-sm">{r.brand} {r.model}</p>
-          <p className="text-xs text-gray-500">{r.year} · {FUEL_LABELS[r.fuel_type] || r.fuel_type}</p>
+          <p className="text-xs text-gray-500">{r.first_registration_date ? formatDate(r.first_registration_date) : '—'} · {FUEL_LABELS[r.fuel_type] || r.fuel_type}</p>
         </div>
       ),
     },
     { header: 'Matrícula', render: (r) => <span className="font-mono text-sm font-medium">{r.license_plate}</span> },
     { header: 'Motorista', render: (r) => <span className="text-sm">{r.assigned_driver_name || '—'}</span> },
     { header: 'Aluguer/sem', render: (r) => r.weekly_rental_price ? `€${r.weekly_rental_price}` : '—' },
+    {
+      header: 'Fim TVDE',
+      render: (r) => {
+        const expiry = getTvdeExpiry(r.first_registration_date);
+        if (!expiry) return <span className="text-gray-400 text-xs">—</span>;
+            const now = new Date();
+        const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+        const yearsLeft = (expiry - now) / msPerYear;
+        let colorClass = 'text-gray-700';
+        let warning = '';
+        if (yearsLeft < 0) { colorClass = 'text-red-600'; warning = ' ⚠️'; }
+        else if (yearsLeft < 1) { colorClass = 'text-red-600'; warning = ' ⚠️'; }
+        else if (yearsLeft < 2) { colorClass = 'text-orange-500'; }
+        else if (yearsLeft < 3) { colorClass = 'text-yellow-600'; }
+        return (
+          <span className={`text-xs font-medium ${colorClass}`}>
+            {expiry.toLocaleDateString('pt-PT')}{warning}
+          </span>
+        );
+      },
+    },
     { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 

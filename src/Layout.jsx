@@ -22,6 +22,8 @@ const PAGE_TITLES = {
   Goals: 'Objetivos',
   Rankings: 'Classificação',
   UPI: 'Moeda UPI',
+  Messaging: 'Mensagens',
+  RelatoriosFrota: 'Relatório de Frota',
   PublicSite: 'Site público',
   Apply: 'Candidatura',
   Contracts: 'Contratos',
@@ -53,8 +55,24 @@ export default function Layout({ children, currentPageName }) {
         return;
       }
       const me = await base44.auth.me();
-      setUser(me);
+      // Support multi-roles: roles can be comma-separated or a single string
+      const userRoles = me?.role ? me.role.split(',').map(r => r.trim()) : [];
+      const hasRole = (r) => userRoles.includes(r);
+      setUser({ ...me, roles: userRoles, hasRole });
       setLoading(false);
+
+      // Redirect pure drivers (no admin/fleet role) to their allowed pages
+      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging'];
+      if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager') && !DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
+        window.location.href = createPageUrl('DriverDashboard');
+        return;
+      }
+      // Redirect pure fleet_manager away from admin-only pages
+      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'Contracts', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Goals', 'Rankings', 'Messaging', 'FleetManagers'];
+      if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
+        window.location.href = createPageUrl('RelatoriosFrota');
+        return;
+      }
     };
     loadUser();
   }, [currentPageName]);
@@ -80,7 +98,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-gray-50/80">
-      <Sidebar currentPage={currentPageName} userRole={user?.role || 'admin'} />
+      <Sidebar currentPage={currentPageName} userRole={user?.role || 'admin'} currentUser={user} />
       <div className="lg:ml-60 min-h-screen flex flex-col">
         <TopBar user={user} pageTitle={PAGE_TITLES[currentPageName] || currentPageName} />
         <main className="flex-1 p-4 md:p-6">

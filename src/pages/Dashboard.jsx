@@ -92,7 +92,7 @@ export default function Dashboard({ currentUser }) {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v) => `${v} chauffeurs`} />
+                  <Tooltip formatter={(v) => `${v} motoristas`} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -119,7 +119,7 @@ export default function Dashboard({ currentUser }) {
           </CardHeader>
           <CardContent>
             {expiringDocs.length === 0 ? (
-              <div className="py-8 text-center text-sm text-gray-400">Aucun document proche de l'échéance</div>
+              <div className="py-8 text-center text-sm text-gray-400">Nenhum documento próximo do vencimento</div>
             ) : (
               <div className="space-y-2 max-h-[240px] overflow-y-auto">
                 {expiringDocs.slice(0, 10).map(doc => {
@@ -135,7 +135,7 @@ export default function Dashboard({ currentUser }) {
                         </div>
                       </div>
                       <span className={`text-xs font-medium px-2 py-1 rounded-full ${urgency}`}>
-                        {days === 0 ? "Aujourd'hui" : `${days}j`}
+                        {days === 0 ? 'Hoje' : `${days}d`}
                       </span>
                     </div>
                   );
