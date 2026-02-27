@@ -150,7 +150,7 @@ export const PAGES = {
 }
 
 export const pagesConfig = {
-    mainPage: "Onboarding",
+    mainPage: "PublicSite",
     Pages: PAGES,
     Layout: __Layout,
 };
