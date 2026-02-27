@@ -99,8 +99,10 @@ export default function Applications() {
               {selected.message && <div className="bg-gray-50 p-3 rounded-lg text-sm">{selected.message}</div>}
               {selected.status === 'new' || selected.status === 'reviewing' ? (
                 <div className="flex gap-3 pt-2">
-                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'approved' } })}>Approuver</Button>
-                  <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' } })}>Rejeter</Button>
+                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={updateMutation.isPending} onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'approved' }, application: selected })}>
+                    {updateMutation.isPending ? 'A processar...' : 'Approuver'}
+                  </Button>
+                  <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" disabled={updateMutation.isPending} onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' }, application: selected })}>Rejeter</Button>
                 </div>
               ) : (
                 <StatusBadge status={selected.status} />
