@@ -42,9 +42,13 @@ const NAV_ITEMS = [
     { name: 'Relatório Frotas', icon: PieChart, page: 'RelatorioFrotas' },
     { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
     { name: 'Relatório Veículos', icon: Car, page: 'RelatorioVeiculos' },
+    { name: 'Construtor Relatórios', icon: FileBarChart, page: 'ReportBuilder' },
     { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
     { name: 'Notificações', icon: Bell, page: 'Notifications' },
     { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
+  ]},
+  { section: 'Sistema', items: [
+    { name: 'Configurações', icon: Settings, page: 'Configuracoes' },
   ]},
 ];
 
@@ -61,15 +65,16 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
       if (hasRole('commercial') && !hasRole('admin')) {
-        return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings', 'Messaging'].includes(item.page);
+        return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings', 'Messaging', 'Notifications'].includes(item.page);
       }
       if (hasRole('driver')) {
         return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'].includes(item.page);
       }
-      return true;
+      // No valid role: no access
+      return false;
     })
   })).filter(section => section.items.length > 0);
 
