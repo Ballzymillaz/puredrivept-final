@@ -54,6 +54,7 @@ import Commercials from './pages/Commercials';
 import Contracts from './pages/Contracts';
 import Dashboard from './pages/Dashboard';
 import Documents from './pages/Documents';
+import DriverDashboard from './pages/DriverDashboard';
 import Drivers from './pages/Drivers';
 import FleetManagers from './pages/FleetManagers';
 import Goals from './pages/Goals';
@@ -64,11 +65,10 @@ import PublicSite from './pages/PublicSite';
 import Rankings from './pages/Rankings';
 import Referrals from './pages/Referrals';
 import Reimbursements from './pages/Reimbursements';
+import Relatorios from './pages/Relatorios';
 import UPI from './pages/UPI';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import Relatorios from './pages/Relatorios';
-import DriverDashboard from './pages/DriverDashboard';
 import __Layout from './Layout.jsx';
 
 
@@ -80,6 +80,7 @@ export const PAGES = {
     "Contracts": Contracts,
     "Dashboard": Dashboard,
     "Documents": Documents,
+    "DriverDashboard": DriverDashboard,
     "Drivers": Drivers,
     "FleetManagers": FleetManagers,
     "Goals": Goals,
@@ -90,11 +91,10 @@ export const PAGES = {
     "Rankings": Rankings,
     "Referrals": Referrals,
     "Reimbursements": Reimbursements,
+    "Relatorios": Relatorios,
     "UPI": UPI,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "Relatorios": Relatorios,
-    "DriverDashboard": DriverDashboard,
 }
 
 export const pagesConfig = {
