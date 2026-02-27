@@ -113,11 +113,18 @@ export default function Notifications({ currentUser }) {
         onAction={isAdmin ? () => setShowForm(true) : undefined}
         actionIcon={Plus}
       >
-        {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={() => markAllReadMutation.mutate()} className="gap-1.5">
-            <CheckCheck className="w-4 h-4" /> Marcar tudo como lido
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" onClick={() => markAllReadMutation.mutate()} className="gap-1.5">
+              <CheckCheck className="w-4 h-4" /> Marcar tudo como lido
+            </Button>
+          )}
+          {isAdmin && myNotifications.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => { if (confirm('Limpar todas as notificações?')) clearAllMutation.mutate(); }} className="gap-1.5 text-red-500 hover:text-red-600 border-red-200">
+              <Trash2 className="w-4 h-4" /> Limpar tudo
+            </Button>
+          )}
+        </div>
       </PageHeader>
 
       {/* Filters */}
