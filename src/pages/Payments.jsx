@@ -145,10 +145,10 @@ export default function Payments({ currentUser }) {
       >
         <div className="flex gap-3 text-xs">
           <span className="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 rounded-full text-indigo-700">
-            <DollarSign className="w-3 h-3" />€{totalGross.toFixed(0)} bruto
+            €{totalGross.toFixed(0)} bruto
           </span>
           <span className="flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-full text-green-700">
-            <DollarSign className="w-3 h-3" />€{totalNet.toFixed(0)} líquido
+            €{totalNet.toFixed(0)} líquido
           </span>
           <span className="flex items-center gap-1.5 px-2 py-1 bg-emerald-50 rounded-full text-emerald-700">
             {paidPayments} pagos
