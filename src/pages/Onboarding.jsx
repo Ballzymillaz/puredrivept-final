@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import PageHeader from '../components/shared/PageHeader';
 import OnboardingSteps from '../components/onboarding/OnboardingSteps';
+import OnboardingProgressTracker from '../components/onboarding/OnboardingProgressTracker';
 import DocumentsStep from '../components/onboarding/DocumentsStep';
 import BackgroundCheckStep from '../components/onboarding/BackgroundCheckStep';
 import VehicleAssignmentStep from '../components/onboarding/VehicleAssignmentStep';
@@ -261,7 +262,7 @@ export default function Onboarding({ currentUser }) {
                   Onboarding — {selected.driver_name}
                 </DialogTitle>
               </DialogHeader>
-              <ProgressBar currentStep={selected.current_step} />
+              <OnboardingProgressTracker onboarding={selected} createdDate={selected.created_date} />
               <OnboardingSteps currentStep={selected.current_step} status={selected.status} />
 
               {selected.current_step === 'documents' && (
