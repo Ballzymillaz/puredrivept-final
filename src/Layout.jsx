@@ -55,6 +55,11 @@ export default function Layout({ children, currentPageName }) {
       const me = await base44.auth.me();
       setUser(me);
       setLoading(false);
+
+      // Redirect drivers to their own dashboard if they land on admin pages
+      if (me?.role === 'driver' && !['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases'].includes(currentPageName)) {
+        window.location.href = createPageUrl('DriverDashboard');
+      }
     };
     loadUser();
   }, [currentPageName]);
