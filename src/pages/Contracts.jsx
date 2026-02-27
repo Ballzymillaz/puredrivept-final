@@ -16,6 +16,8 @@ export default function Contracts() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState('');
+  const [vehicleFilter, setVehicleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const qc = useQueryClient();
 
   const { data: contracts = [], isLoading } = useQuery({
