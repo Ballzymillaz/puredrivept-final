@@ -131,13 +131,24 @@ export default function Notifications({ currentUser }) {
       </PageHeader>
 
       {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        {['all', 'unread', 'alert', 'warning', 'info', 'success'].map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === f ? 'bg-indigo-600 text-white' : 'bg-white border text-gray-600 hover:bg-gray-50'}`}>
-            {f === 'all' ? 'Todas' : f === 'unread' ? `Não lidas (${unreadCount})` : TYPE_CONFIG[f]?.label || f}
-          </button>
-        ))}
+      <div className="space-y-2">
+        <div className="flex gap-2 flex-wrap">
+          {['all', 'unread', 'alert', 'warning', 'info', 'success'].map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === f ? 'bg-indigo-600 text-white' : 'bg-white border text-gray-600 hover:bg-gray-50'}`}>
+              {f === 'all' ? 'Todas' : f === 'unread' ? `Não lidas (${unreadCount})` : TYPE_CONFIG[f]?.label || f}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <span className="text-xs text-gray-400 self-center">Categoria:</span>
+          {['all', ...Object.keys(CATEGORY_LABELS)].map(c => (
+            <button key={c} onClick={() => setCategoryFilter(c)}
+              className={`px-3 py-1 rounded-lg text-xs transition-colors ${categoryFilter === c ? 'bg-gray-800 text-white' : 'bg-white border text-gray-500 hover:bg-gray-50'}`}>
+              {c === 'all' ? 'Todas' : CATEGORY_LABELS[c]}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Notifications list */}
