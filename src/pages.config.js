@@ -69,6 +69,7 @@ import Relatorios from './pages/Relatorios';
 import UPI from './pages/UPI';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
+import RelatoriosFrota from './pages/RelatoriosFrota';
 import __Layout from './Layout.jsx';
 
 
@@ -95,6 +96,7 @@ export const PAGES = {
     "UPI": UPI,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
+    "RelatoriosFrota": RelatoriosFrota,
 }
 
 export const pagesConfig = {

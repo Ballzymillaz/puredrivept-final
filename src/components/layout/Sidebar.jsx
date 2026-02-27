@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Car, FileText, CreditCard, TrendingUp,
   Target, Wallet, ShoppingCart, UserPlus, Coins, Receipt,
   ChevronLeft, ChevronRight, Settings, LogOut, Menu, X,
-  Building2, HandCoins, FileBarChart
+  Building2, HandCoins, FileBarChart, PieChart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -37,6 +37,7 @@ const NAV_ITEMS = [
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
+    { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
     { name: 'Dashboard Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
   ]},
 ];
