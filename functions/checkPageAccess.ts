@@ -16,6 +16,12 @@ Deno.serve(async (req) => {
       return Response.json({ hasAccess: true });
     }
 
+    // Default blocklist for drivers
+    const driverBlockedPages = ['VehiclePurchases'];
+    if (user.role === 'driver' && driverBlockedPages.includes(pageName)) {
+      return Response.json({ hasAccess: false });
+    }
+
     // Get permissions using service role to avoid 401 errors
     const perms = await base44.asServiceRole.entities.RolePermission.filter({
       role: user.role,
