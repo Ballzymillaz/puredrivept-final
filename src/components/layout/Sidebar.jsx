@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   ]},
   { section: 'Finanças', items: [
     { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
+    { name: 'Pagamentos Avançados', icon: HandCoins, page: 'AdvancedPayments' },
     { name: 'Fluxo de caixa', icon: TrendingUp, page: 'CashFlow' },
     { name: 'IVA', icon: Receipt, page: 'IVA' },
     { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
@@ -76,7 +77,7 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
       if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'DashboardModular', 'DriverPerformance', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'FleetVehicles', 'FleetDrivers', 'Documents', 'DocumentManagement', 'VehicleManagement', 'Payments', 'AdvancedPayments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'ReportBuilder', 'ReportVehiclePerformance', 'ReportDriverUtilization', 'DashboardModular', 'DriverPerformance', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Configuracoes'].includes(item.page);
       }
 
       if (hasRole('driver')) {

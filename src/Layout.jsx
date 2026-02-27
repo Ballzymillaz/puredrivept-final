@@ -13,6 +13,7 @@ const PAGE_TITLES = {
   Documents: 'Documentos',
   Applications: 'Candidaturas',
   Payments: 'Pagamentos semanais',
+  AdvancedPayments: 'Pagamentos Avançados',
   CashFlow: 'Fluxo de caixa',
   IVA: 'IVA',
   Loans: 'Empréstimos & Adiantamentos',
