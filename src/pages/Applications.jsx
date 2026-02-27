@@ -59,14 +59,39 @@ export default function Applications() {
           console.error('Failed to update user role:', err);
         }
 
-        // Send approval email
+        // Send approval email and initiate driver onboarding if driver
         try {
+          if (application.applicant_type === 'driver') {
+            // Create driver onboarding record
+            const driverRecord = await base44.entities.Driver.filter({ email: application.email });
+            if (driverRecord.length > 0) {
+              const driver = driverRecord[0];
+              await base44.entities.DriverOnboarding.create({
+                driver_id: driver.id,
+                driver_name: driver.full_name,
+                driver_email: driver.email,
+                current_step: 'documents',
+                status: 'in_progress',
+                documents_status: 'pending',
+                background_check_status: 'pending',
+                vehicle_assignment_status: 'pending',
+              });
+            }
+          }
+
+          // Send approval email with next steps
+          const emailBody = application.applicant_type === 'driver'
+            ? `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#f9f9f9"><div style="background:white;border-radius:12px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.08)"><div style="background:#4f46e5;border-radius:8px;padding:16px;text-align:center;margin-bottom:24px"><h1 style="color:white;margin:0;font-size:20px">PureDrive<sup style="font-size:11px">PT</sup></h1></div><p style="color:#374151;font-size:16px">Parabéns, <strong>${application.full_name}</strong>!</p><p style="color:#374151;font-size:15px;line-height:1.6">A sua candidatura foi <strong style="color:#10b981">APROVADA</strong> ✓</p><div style="background:#f3f4f6;border-radius:8px;padding:16px;margin:24px 0"><p style="margin:0;color:#374151;font-size:14px"><strong>Próximos passos do seu onboarding:</strong></p><ol style="color:#6b7280;margin:8px 0 0 20px"><li>Submeter documentos obrigatórios (carta, CC, TVDE)</li><li>Aguardar verificação de antecedentes</li><li>Receber atribuição de veículo</li></ol></div><p style="color:#6b7280;font-size:14px">O seu processo de onboarding já iniciou. Aceda à plataforma PureDrivePT para prosseguir com os próximos passos.</p><div style="text-align:center;margin:24px 0"><a href="${window.location.origin}" style="display:inline-block;background:#4f46e5;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">Aceder à Plataforma</a></div><p style="color:#9ca3af;font-size:12px;margin-top:24px">Esta é uma mensagem automática — não responda a este email.</p></div></body></html>`
+            : `Olá ${application.full_name},\n\nA sua candidatura foi aprovada! A nossa equipa entrará em contacto em breve para os próximos passos.\n\nAtenciosamente,\nEquipa PureDrive PT`;
+
           await base44.integrations.Core.SendEmail({
             to: application.email,
-            subject: 'Candidatura aprovada - PureDrive PT',
-            body: `Olá ${application.full_name},\n\nA sua candidatura foi aprovada! A nossa equipa entrará em contacto em breve para os próximos passos.\n\nAtenciosamente,\nEquipa PureDrive PT`,
+            subject: application.applicant_type === 'driver' ? '[PureDrivePT] Candidatura Aprovada - Inicie seu Onboarding' : 'Candidatura aprovada - PureDrive PT',
+            body: emailBody,
           });
-        } catch (_) {}
+        } catch (err) {
+          console.error('Error sending approval email or creating onboarding:', err);
+        }
       }
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['applications'] }); qc.invalidateQueries({ queryKey: ['drivers'] }); qc.invalidateQueries({ queryKey: ['fleetManagers'] }); qc.invalidateQueries({ queryKey: ['commercials'] }); setSelected(null); },
