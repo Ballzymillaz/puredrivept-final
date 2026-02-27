@@ -6,8 +6,8 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
 
     // Only admins can process document approvals
-    if (user?.role !== 'admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user?.role?.includes('admin')) {
+      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
     const { document_id, action, notes } = await req.json();
