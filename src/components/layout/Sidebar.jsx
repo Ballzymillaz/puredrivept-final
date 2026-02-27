@@ -31,6 +31,7 @@ const NAV_ITEMS = [
     { name: 'Reembolsos', icon: Receipt, page: 'Reimbursements' },
     { name: 'Indicações', icon: HandCoins, page: 'Referrals' },
     { name: 'Compra veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
+    { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
   ]},
   { section: 'Desempenho', items: [
     { name: 'Objetivos', icon: Target, page: 'Goals' },
