@@ -18,7 +18,13 @@ export default function Fleets({ currentUser }) {
 
   const queryClient = useQueryClient();
 
-  const { data: fleets = [] } = useQuery({ queryKey: ['fleets'], queryFn: () => base44.entities.Fleet.list('-created_date') });
+  const { data: fleets = [] } = useQuery({ 
+    queryKey: ['fleets'], 
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getFleets', {});
+      return res.data.fleets || [];
+    },
+  });
   const { data: vehicles = [] } = useQuery({ queryKey: ['vehicles'], queryFn: () => base44.entities.Vehicle.list() });
   const { data: drivers = [] } = useQuery({ queryKey: ['drivers'], queryFn: () => base44.entities.Driver.filter({ status: 'active' }) });
   const { data: fleetManagers = [] } = useQuery({ queryKey: ['fleet-managers'], queryFn: () => base44.entities.FleetManager.list() });
