@@ -23,8 +23,52 @@ export default function Applications() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Application.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['applications'] }); setSelected(null); },
+    mutationFn: async ({ id, data, application }) => {
+      await base44.entities.Application.update(id, data);
+
+      // When approving, create the corresponding entity record
+      if (data.status === 'approved' && application) {
+        const entityData = {
+          full_name: application.full_name,
+          email: application.email,
+          phone: application.phone,
+          nif: application.nif || '',
+          status: 'pending',
+          referred_by: application.referral_code || '',
+        };
+
+        // Map applicant_type to platform role
+        const roleMap = { driver: 'driver', fleet_manager: 'fleet_manager', commercial: 'commercial' };
+        const role = roleMap[application.applicant_type] || 'user';
+
+        if (application.applicant_type === 'driver') {
+          await base44.entities.Driver.create({ ...entityData, vehicle_deposit: 0, vehicle_deposit_paid: false, upi_balance: 0 });
+        } else if (application.applicant_type === 'fleet_manager') {
+          await base44.entities.FleetManager.create({ ...entityData, total_drivers: 0, total_earnings: 0 });
+        } else if (application.applicant_type === 'commercial') {
+          await base44.entities.Commercial.create({ ...entityData, total_drivers: 0, total_earnings: 0 });
+        }
+
+        // Update User role if user account exists with this email
+        try {
+          const users = await base44.entities.User.list();
+          const matchedUser = users.find(u => u.email === application.email);
+          if (matchedUser) {
+            await base44.entities.User.update(matchedUser.id, { role });
+          }
+        } catch (_) {}
+
+        // Send approval email
+        try {
+          await base44.integrations.Core.SendEmail({
+            to: application.email,
+            subject: 'Candidatura aprovada - PureDrive PT',
+            body: `Olá ${application.full_name},\n\nA sua candidatura foi aprovada! A nossa equipa entrará em contacto em breve para os próximos passos.\n\nAtenciosamente,\nEquipa PureDrive PT`,
+          });
+        } catch (_) {}
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['applications'] }); qc.invalidateQueries({ queryKey: ['drivers'] }); qc.invalidateQueries({ queryKey: ['fleetManagers'] }); qc.invalidateQueries({ queryKey: ['commercials'] }); setSelected(null); },
   });
 
   const filtered = statusFilter === 'all' ? applications : applications.filter(a => a.status === statusFilter);
@@ -68,8 +112,10 @@ export default function Applications() {
               {selected.message && <div className="bg-gray-50 p-3 rounded-lg text-sm">{selected.message}</div>}
               {selected.status === 'new' || selected.status === 'reviewing' ? (
                 <div className="flex gap-3 pt-2">
-                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'approved' } })}>Approuver</Button>
-                  <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' } })}>Rejeter</Button>
+                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={updateMutation.isPending} onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'approved' }, application: selected })}>
+                    {updateMutation.isPending ? 'A processar...' : 'Approuver'}
+                  </Button>
+                  <Button variant="outline" className="flex-1 text-red-600 border-red-200 hover:bg-red-50" disabled={updateMutation.isPending} onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' }, application: selected })}>Rejeter</Button>
                 </div>
               ) : (
                 <StatusBadge status={selected.status} />

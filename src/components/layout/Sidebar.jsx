@@ -56,7 +56,7 @@ export default function Sidebar({ currentPage, userRole }) {
         return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings'].includes(item.page);
       }
       if (userRole === 'driver') {
-        return ['Dashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases'].includes(item.page);
+        return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases'].includes(item.page);
       }
       return true;
     })
