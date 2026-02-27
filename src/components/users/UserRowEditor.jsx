@@ -11,6 +11,9 @@ const ALL_ROLES = [
   { value: 'driver', label: 'Motorista', color: 'bg-indigo-100 text-indigo-700' },
 ];
 
+// Roles that cannot be removed/unselected
+const REQUIRED_ROLE_VALIDATION = true;
+
 export default function UserRowEditor({ user }) {
   const [editing, setEditing] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState(user.role ? user.role.split(',').map(r => r.trim()) : []);
@@ -30,6 +33,15 @@ export default function UserRowEditor({ user }) {
     );
   };
 
+  const handleRemoveRole = (role) => {
+    // Prevent removing if it's the last role
+    if (selectedRoles.length === 1) {
+      alert('Um utilizador deve ter pelo menos um papel');
+      return;
+    }
+    toggleRole(role);
+  };
+
   const handleSave = () => {
     updateMutation.mutate({ id: user.id, role: selectedRoles.join(',') });
   };
@@ -45,11 +57,11 @@ export default function UserRowEditor({ user }) {
         {ALL_ROLES.map(role => (
           <button
             key={role.value}
-            onClick={() => toggleRole(role.value)}
-            className={`text-xs px-2.5 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
+            onClick={() => handleRemoveRole(role.value)}
+            className={`text-xs px-2.5 py-1.5 rounded-md font-medium transition-colors ${
               selectedRoles.includes(role.value)
-                ? role.color
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? `${role.color} cursor-pointer hover:opacity-80`
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer'
             }`}
           >
             {role.label}
