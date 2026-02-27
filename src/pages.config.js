@@ -85,6 +85,9 @@ import Vehicles from './pages/Vehicles';
 import FleetVehicles from './pages/FleetVehicles';
 import FleetDrivers from './pages/FleetDrivers';
 import FleetContracts from './pages/FleetContracts';
+import ReportVehiclePerformance from './pages/ReportVehiclePerformance';
+import ReportDriverUtilization from './pages/ReportDriverUtilization';
+import ReportContractStatus from './pages/ReportContractStatus';
 import __Layout from './Layout.jsx';
 
 
@@ -127,6 +130,9 @@ export const PAGES = {
     "FleetVehicles": FleetVehicles,
     "FleetDrivers": FleetDrivers,
     "FleetContracts": FleetContracts,
+    "ReportVehiclePerformance": ReportVehiclePerformance,
+    "ReportDriverUtilization": ReportDriverUtilization,
+    "ReportContractStatus": ReportContractStatus,
 }
 
 export const pagesConfig = {
