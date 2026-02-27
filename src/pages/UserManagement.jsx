@@ -13,6 +13,7 @@ import { Shield, Users, Search } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ALL_ROLES = [
+  { value: 'new', label: 'Novo', color: 'bg-gray-100 text-gray-700' },
   { value: 'admin', label: 'Administrador', color: 'bg-red-100 text-red-700' },
   { value: 'fleet_manager', label: 'Gestor de frota', color: 'bg-blue-100 text-blue-700' },
   { value: 'driver', label: 'Motorista', color: 'bg-indigo-100 text-indigo-700' },
