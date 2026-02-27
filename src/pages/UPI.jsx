@@ -9,21 +9,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Coins, TrendingUp, Users, ShoppingBag, ArrowDownUp, CheckCircle2 } from 'lucide-react';
+import { Coins, TrendingUp, Users, ShoppingBag, ArrowDownUp, CheckCircle2, BarChart2, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { format, startOfMonth, endOfMonth, subMonths, startOfWeek, startOfYear, isWithinInterval } from 'date-fns';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export default function UPI({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [showSellDialog, setShowSellDialog] = useState(false);
+  const [showAutoBuyDialog, setShowAutoBuyDialog] = useState(false);
+  const [autoBuyThreshold, setAutoBuyThreshold] = useState('');
   const [sellForm, setSellForm] = useState({ quantity: '', price_per_upi: '' });
+  const [txPeriod, setTxPeriod] = useState('all');
   const qc = useQueryClient();
-  const isDriver = currentUser?.role === 'driver';
-  const isAdmin = currentUser?.role === 'admin';
+  const userRoles = currentUser?.role ? currentUser.role.split(',').map(r => r.trim()) : [];
+  const isDriver = userRoles.includes('driver') && !userRoles.includes('admin');
+  const isAdmin = userRoles.includes('admin');
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['upi-transactions'],
@@ -41,7 +45,6 @@ export default function UPI({ currentUser }) {
   const myDriverRecord = isDriver ? drivers.find(d => d.email === currentUser?.email) : null;
   const myBalance = myDriverRecord?.upi_balance || 0;
 
-  // Filter for drivers: only their own transactions
   const myTransactions = isDriver
     ? transactions.filter(t => myDriverRecord && t.driver_id === myDriverRecord.id)
     : transactions;
@@ -66,6 +69,37 @@ export default function UPI({ currentUser }) {
     }
     return months;
   }, [orders]);
+
+  // Period filter for driver transactions
+  const filteredMyTx = useMemo(() => {
+    const base = isDriver ? transactions.filter(t => myDriverRecord && t.driver_id === myDriverRecord.id) : transactions;
+    if (txPeriod === 'all') return base;
+    const now = new Date();
+    return base.filter(t => {
+      const d = new Date(t.created_date);
+      if (txPeriod === 'week') return d >= startOfWeek(now, { weekStartsOn: 1 });
+      if (txPeriod === 'month') return d >= startOfMonth(now);
+      if (txPeriod === 'year') return d >= startOfYear(now);
+      return true;
+    });
+  }, [transactions, isDriver, myDriverRecord, txPeriod]);
+
+  // Transaction history chart (credits vs debits by month)
+  const txChartData = useMemo(() => {
+    const months = [];
+    const txSource = isDriver ? transactions.filter(t => myDriverRecord && t.driver_id === myDriverRecord.id) : transactions;
+    for (let i = 5; i >= 0; i--) {
+      const d = subMonths(new Date(), i);
+      const label = format(d, 'MMM yy');
+      const start = startOfMonth(d);
+      const end = endOfMonth(d);
+      const inMonth = txSource.filter(t => isWithinInterval(new Date(t.created_date), { start, end }));
+      const credits = inMonth.filter(t => t.type === 'earned' || t.type === 'credit').reduce((s, t) => s + (t.amount || 0), 0);
+      const debits = inMonth.filter(t => t.type === 'debit').reduce((s, t) => s + (t.amount || 0), 0);
+      months.push({ label, Créditos: Math.round(credits), Débitos: Math.round(debits) });
+    }
+    return months;
+  }, [transactions, isDriver, myDriverRecord]);
 
   // Mutations
   const createTxMutation = useMutation({
@@ -129,6 +163,33 @@ export default function UPI({ currentUser }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['upi-orders'] }),
   });
 
+  // Auto-buy: fill all orders at or below threshold
+  const autoBuyMutation = useMutation({
+    mutationFn: async (threshold) => {
+      const eligible = openOrders.filter(o => o.price_per_upi <= threshold);
+      for (const order of eligible) {
+        const seller = drivers.find(d => d.id === order.seller_id);
+        if (seller) {
+          await base44.entities.Driver.update(seller.id, { upi_balance: Math.max(0, (seller.upi_balance || 0) - order.quantity) });
+        }
+        await base44.entities.UPITransaction.create({
+          driver_id: order.seller_id, driver_name: order.seller_name,
+          type: 'debit', amount: order.quantity, source: 'upi_auto_buy',
+          notes: `Auto-compra UPI - €${order.price_per_upi}/UPI`, processed_by: 'system',
+        });
+        await base44.entities.UPIOrder.update(order.id, { status: 'filled', filled_by: currentUser?.email, filled_at: new Date().toISOString().split('T')[0] });
+      }
+      return eligible.length;
+    },
+    onSuccess: (count) => {
+      qc.invalidateQueries({ queryKey: ['upi-orders'] });
+      qc.invalidateQueries({ queryKey: ['drivers'] });
+      qc.invalidateQueries({ queryKey: ['upi-transactions'] });
+      setShowAutoBuyDialog(false);
+      alert(`${count} ordem(ns) executada(s) automaticamente.`);
+    },
+  });
+
   const totalUPI = Math.round(drivers.reduce((s, d) => s + (d.upi_balance || 0), 0) * 100) / 100;
   const totalEarned = Math.round(transactions.filter(t => t.type === 'earned').reduce((s, t) => s + (t.amount || 0), 0) * 100) / 100;
 
@@ -189,7 +250,12 @@ export default function UPI({ currentUser }) {
         actionLabel={isAdmin ? "Ajustar UPI" : undefined}
         onAction={isAdmin ? () => setShowForm(true) : undefined}
       >
-        {isDriver && myBalance > 0 && (
+        {isAdmin && (
+          <Button onClick={() => setShowAutoBuyDialog(true)} variant="outline" className="gap-2">
+            <Settings className="w-4 h-4" /> Auto-compra
+          </Button>
+        )}
+        {(isDriver || (!isAdmin && myDriverRecord)) && myBalance > 0 && (
           <Button onClick={() => setShowSellDialog(true)} className="bg-violet-600 hover:bg-violet-700 gap-2">
             <ShoppingBag className="w-4 h-4" /> Vender UPI
           </Button>
@@ -231,10 +297,11 @@ export default function UPI({ currentUser }) {
         </div>
       )}
 
-      <Tabs defaultValue={isDriver ? "market" : "transactions"}>
+      <Tabs defaultValue={isDriver ? "transactions" : "overview"}>
         <TabsList>
           {!isDriver && <TabsTrigger value="overview">Visão geral</TabsTrigger>}
           <TabsTrigger value="transactions">Transações</TabsTrigger>
+          <TabsTrigger value="history">Histórico</TabsTrigger>
           <TabsTrigger value="market">Mercado UPI</TabsTrigger>
         </TabsList>
 
@@ -283,8 +350,38 @@ export default function UPI({ currentUser }) {
 
         {/* Transactions */}
         <TabsContent value="transactions">
-          <DataTable columns={txColumns} data={myTransactions} isLoading={isLoading} emptyMessage="Nenhuma transação UPI"
+          {isDriver && (
+            <div className="flex gap-2 mb-3">
+              {['all', 'week', 'month', 'year'].map(p => (
+                <button key={p} onClick={() => setTxPeriod(p)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${txPeriod === p ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                  {p === 'all' ? 'Tudo' : p === 'week' ? 'Semana' : p === 'month' ? 'Mês' : 'Ano'}
+                </button>
+              ))}
+            </div>
+          )}
+          <DataTable columns={txColumns} data={filteredMyTx} isLoading={isLoading} emptyMessage="Nenhuma transação UPI"
             onRowClick={isAdmin ? (t) => { setEditing(t); setShowForm(true); } : undefined} />
+        </TabsContent>
+
+        {/* History chart */}
+        <TabsContent value="history">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Histórico de Transações UPI (6 meses)</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={txChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Créditos" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Débitos" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Market - Order book */}
