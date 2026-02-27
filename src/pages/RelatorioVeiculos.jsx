@@ -218,7 +218,7 @@ export default function RelatorioVeiculos() {
                         ) : '—'}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <a href={createPageUrl(`VehicleDetail?id=${v.id}`)} className="text-xs text-indigo-600 hover:underline">Ver</a>
+                        <Link to={createPageUrl(`VehicleDetail?id=${v.id}`)} className="text-xs text-indigo-600 hover:underline">Ver</Link>
                       </td>
                     </tr>
                   ))}
