@@ -56,7 +56,10 @@ export default function RoleManagement() {
   });
 
   const handleSubmit = () => {
-    if (!formData.role || !formData.page) return;
+    if (!formData.role || !formData.page) {
+      alert('Veuillez remplir tous les champs');
+      return;
+    }
     if (editingPermission) {
       updateMutation.mutate({ id: editingPermission.id, data: formData });
     } else {
