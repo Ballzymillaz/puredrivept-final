@@ -26,22 +26,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Handle commercial
-    if (roles.includes('commercial')) {
-      const existing = await base44.asServiceRole.entities.Commercial.filter({ email: targetEmail });
-      if (existing.length === 0) {
-        await base44.asServiceRole.entities.Commercial.create({
-          full_name: targetName || targetEmail,
-          email: targetEmail,
-          status: 'active',
-          user_id: targetUserId,
-        });
-      } else {
-        await base44.asServiceRole.entities.Commercial.update(existing[0].id, { user_id: targetUserId, status: 'active' });
-      }
-    }
-
-    // Handle driver
+// Handle driver
     if (roles.includes('driver')) {
       const existing = await base44.asServiceRole.entities.Driver.filter({ email: targetEmail });
       if (existing.length === 0) {
