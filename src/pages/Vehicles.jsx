@@ -6,11 +6,13 @@ import DataTable from '../components/shared/DataTable';
 import StatusBadge from '../components/shared/StatusBadge';
 import VehicleForm from '../components/vehicles/VehicleForm';
 import { Input } from '@/components/ui/input';
-import { Search, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Search, ExternalLink, AlertTriangle, Zap } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { createPageUrl } from '@/utils';
 import { differenceInDays } from 'date-fns';
 import { Link } from 'react-router-dom';
+import AutoAssignDialog from '../components/vehicles/AutoAssignDialog';
 
 export default function Vehicles({ currentUser }) {
   const [showForm, setShowForm] = useState(false);

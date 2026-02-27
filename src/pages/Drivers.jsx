@@ -7,7 +7,8 @@ import StatusBadge from '../components/shared/StatusBadge';
 import DriverForm from '../components/drivers/DriverForm';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Users } from 'lucide-react';
+import { Search, Users, Zap } from 'lucide-react';
+import AutoAssignDialog from '../components/vehicles/AutoAssignDialog';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle
 } from '@/components/ui/dialog';
