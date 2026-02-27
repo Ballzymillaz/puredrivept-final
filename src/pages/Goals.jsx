@@ -13,10 +13,10 @@ import { Target, Trophy } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 
 const TYPE_LABELS = {
-  weekly_revenue: 'CA hebdomadaire',
-  monthly_revenue: 'CA mensuel',
-  trip_count: 'Nombre de trajets',
-  passenger_rating: 'Note passagers',
+  weekly_revenue: 'Receita semanal',
+  monthly_revenue: 'Receita mensal',
+  trip_count: 'Número de viagens',
+  passenger_rating: 'Avaliação passageiros',
 };
 
 export default function Goals() {
@@ -69,11 +69,11 @@ export default function Goals() {
       <PageHeader title="Objetivos" subtitle="Bónus por desempenho" actionLabel="Novo objetivo" onAction={() => setShowForm(true)} />
 
       {isLoading ? (
-        <div className="text-center py-12 text-gray-400">Chargement...</div>
+        <div className="text-center py-12 text-gray-400">A carregar...</div>
       ) : goals.length === 0 ? (
         <div className="text-center py-16">
           <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">Aucun objectif défini</p>
+          <p className="text-gray-500">Nenhum objetivo definido</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
