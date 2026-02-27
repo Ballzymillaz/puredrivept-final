@@ -5,9 +5,10 @@ import PageHeader from '../components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Users, Car, Wallet, BarChart2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Car, Wallet, BarChart2, Download } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
@@ -21,9 +22,50 @@ const CONTRACT_LABELS = {
 };
 
 export default function RelatoriosFrota() {
-  const [filters, setFilters] = useState({ fleet_manager_id: '', driver_id: '', date_from: '', date_to: '' });
+  const [filters, setFilters] = useState({ fleet_manager_id: '', driver_id: '', date_from: '', date_to: '', vehicle_type: '' });
   const [selectedDriverChart, setSelectedDriverChart] = useState('');
   const setFilter = (k, v) => setFilters(f => ({ ...f, [k]: v }));
+
+  const handleExportCSV = () => {
+    const headers = ['Motorista', 'Contrato', 'Semanas', 'Bruto Total', 'Líquido Total', 'Média/Semana', 'Uber', 'Bolt'];
+    const rows = stats.perDriver.map(d => [
+      d.name, CONTRACT_LABELS[d.contract_type] || '—', d.weeks,
+      d.gross.toFixed(2), d.net.toFixed(2), d.avgWeekly.toFixed(2), d.uber.toFixed(2), d.bolt.toFixed(2)
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio_frota_${new Date().toISOString().split('T')[0]}.csv`);
+    link.click();
+  };
+
+  const handleExportPDF = async () => {
+    const jsPDF = (await import('jspdf')).jsPDF;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Relatório de Frota', 10, 10);
+    doc.setFontSize(10);
+    doc.text(`Data: ${new Date().toLocaleDateString('pt-PT')}`, 10, 20);
+    doc.text(`Motoristas ativos: ${stats.activeDrivers} | Total Bruto: €${stats.totalGross.toFixed(2)}`, 10, 28);
+    
+    const tableHeaders = ['Motorista', 'Contrato', 'Sem.', 'Bruto', 'Líquido', 'Média', 'Uber', 'Bolt'];
+    const tableRows = stats.perDriver.map(d => [
+      d.name, CONTRACT_LABELS[d.contract_type] || '—', d.weeks,
+      d.gross.toFixed(0), d.net.toFixed(0), d.avgWeekly.toFixed(0), d.uber.toFixed(0), d.bolt.toFixed(0)
+    ]);
+    
+    doc.autoTable({
+      head: [tableHeaders],
+      body: tableRows,
+      startY: 35,
+      theme: 'grid',
+      headStyles: { fillColor: [79, 70, 229] },
+    });
+    
+    doc.save(`relatorio_frota_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   const { data: drivers = [] } = useQuery({
     queryKey: ['drivers'],
@@ -32,6 +74,10 @@ export default function RelatoriosFrota() {
   const { data: fleetManagers = [] } = useQuery({
     queryKey: ['fleetManagers'],
     queryFn: () => base44.entities.FleetManager.list(),
+  });
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: () => base44.entities.Vehicle.list(),
   });
   const { data: payments = [] } = useQuery({
     queryKey: ['payments-all'],
@@ -42,8 +88,13 @@ export default function RelatoriosFrota() {
     let d = drivers;
     if (filters.fleet_manager_id) d = d.filter(dr => dr.fleet_manager_id === filters.fleet_manager_id);
     if (filters.driver_id) d = d.filter(dr => dr.id === filters.driver_id);
+    if (filters.vehicle_type) {
+      const vehiclesOfType = vehicles.filter(v => v.brand === filters.vehicle_type);
+      const vehicleIds = vehiclesOfType.map(v => v.id);
+      d = d.filter(dr => vehicleIds.includes(dr.assigned_vehicle_id));
+    }
     return d;
-  }, [drivers, filters.fleet_manager_id, filters.driver_id]);
+  }, [drivers, filters.fleet_manager_id, filters.driver_id, filters.vehicle_type, vehicles]);
 
   const filteredPayments = useMemo(() => {
     return payments.filter(p => {
@@ -122,38 +173,60 @@ export default function RelatoriosFrota() {
       <PageHeader title="Relatório de Frota" subtitle="Performance e rendimentos dos motoristas por gestor" />
 
       {/* Filters */}
-      <div className="bg-white rounded-xl border p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="space-y-1">
-          <Label className="text-xs">Gestor de frota</Label>
-          <Select value={filters.fleet_manager_id || 'all'} onValueChange={v => { setFilter('fleet_manager_id', v === 'all' ? '' : v); setFilter('driver_id', ''); }}>
-            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os gestores</SelectItem>
-              {fleetManagers.map(fm => <SelectItem key={fm.id} value={fm.id}>{fm.full_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Motorista</Label>
-          <Select value={filters.driver_id || 'all'} onValueChange={v => setFilter('driver_id', v === 'all' ? '' : v)}>
-            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os motoristas</SelectItem>
-              {(filters.fleet_manager_id ? drivers.filter(d => d.fleet_manager_id === filters.fleet_manager_id) : drivers).map(d => (
-                <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Data início</Label>
-          <Input type="date" value={filters.date_from} onChange={e => setFilter('date_from', e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Data fim</Label>
-          <Input type="date" value={filters.date_to} onChange={e => setFilter('date_to', e.target.value)} />
-        </div>
-      </div>
+       <div className="bg-white rounded-xl border p-4 space-y-3">
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+           <div className="space-y-1">
+             <Label className="text-xs">Gestor de frota</Label>
+             <Select value={filters.fleet_manager_id || 'all'} onValueChange={v => { setFilter('fleet_manager_id', v === 'all' ? '' : v); setFilter('driver_id', ''); }}>
+               <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">Todos os gestores</SelectItem>
+                 {fleetManagers.map(fm => <SelectItem key={fm.id} value={fm.id}>{fm.full_name}</SelectItem>)}
+               </SelectContent>
+             </Select>
+           </div>
+           <div className="space-y-1">
+             <Label className="text-xs">Motorista</Label>
+             <Select value={filters.driver_id || 'all'} onValueChange={v => setFilter('driver_id', v === 'all' ? '' : v)}>
+               <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">Todos os motoristas</SelectItem>
+                 {(filters.fleet_manager_id ? drivers.filter(d => d.fleet_manager_id === filters.fleet_manager_id) : drivers).map(d => (
+                   <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>
+                 ))}
+               </SelectContent>
+             </Select>
+           </div>
+           <div className="space-y-1">
+             <Label className="text-xs">Marca do veículo</Label>
+             <Select value={filters.vehicle_type || 'all'} onValueChange={v => setFilter('vehicle_type', v === 'all' ? '' : v)}>
+               <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">Todas as marcas</SelectItem>
+                 {[...new Set(vehicles.map(v => v.brand))].sort().map(brand => (
+                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                 ))}
+               </SelectContent>
+             </Select>
+           </div>
+           <div className="space-y-1">
+             <Label className="text-xs">Data início</Label>
+             <Input type="date" value={filters.date_from} onChange={e => setFilter('date_from', e.target.value)} />
+           </div>
+           <div className="space-y-1">
+             <Label className="text-xs">Data fim</Label>
+             <Input type="date" value={filters.date_to} onChange={e => setFilter('date_to', e.target.value)} />
+           </div>
+         </div>
+         <div className="flex gap-2 justify-end pt-2 border-t">
+           <Button onClick={handleExportCSV} size="sm" variant="outline" className="gap-2">
+             <Download className="w-3.5 h-3.5" /> CSV
+           </Button>
+           <Button onClick={handleExportPDF} size="sm" variant="outline" className="gap-2">
+             <Download className="w-3.5 h-3.5" /> PDF
+           </Button>
+         </div>
+       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -42,19 +42,6 @@ const ROLE_PERMISSIONS = {
       finances: ['read'],
     }
   },
-  commercial: {
-    label: 'Comercial',
-    color: 'bg-green-100 text-green-700',
-    permissions: {
-      drivers: ['read'],
-      vehicles: [],
-      payments: [],
-      reports: ['read'],
-      users: [],
-      settings: [],
-      finances: [],
-    }
-  },
   driver: {
     label: 'Motorista',
     color: 'bg-indigo-100 text-indigo-700',
