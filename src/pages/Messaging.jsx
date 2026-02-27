@@ -19,8 +19,10 @@ export default function Messaging({ currentUser }) {
   const [newForm, setNewForm] = useState({ type: 'direct', title: '', participants: [] });
   const messagesEndRef = useRef(null);
   const qc = useQueryClient();
-  const isAdmin = currentUser?.role === 'admin';
-  const isFleet = currentUser?.role === 'fleet_manager';
+  const userRoles = currentUser?.role ? currentUser.role.split(',').map(r => r.trim()) : [];
+  const isAdmin = userRoles.includes('admin');
+  const isFleet = userRoles.includes('fleet_manager');
+  const isDriver = userRoles.includes('driver') && !isAdmin && !isFleet;
 
   const { data: conversations = [], isLoading: convLoading } = useQuery({
     queryKey: ['conversations', currentUser?.email],
@@ -52,13 +54,22 @@ export default function Messaging({ currentUser }) {
     queryFn: () => base44.entities.FleetManager.list(),
   });
 
-  // All possible participants for admin
+  // Participants list filtered by role:
+  // admin → all users; fleet_manager → their affiliated drivers; commercial → n/a
   const allUsers = useMemo(() => {
     const u = [];
-    drivers.forEach(d => { if (d.email) u.push({ email: d.email, name: d.full_name, role: 'driver' }); });
-    fleetManagers.forEach(f => { if (f.email) u.push({ email: f.email, name: f.full_name, role: 'fleet_manager' }); });
+    if (isAdmin) {
+      drivers.forEach(d => { if (d.email) u.push({ email: d.email, name: d.full_name, role: 'driver' }); });
+      fleetManagers.forEach(f => { if (f.email) u.push({ email: f.email, name: f.full_name, role: 'fleet_manager' }); });
+    } else if (isFleet) {
+      // Find this fleet manager's record
+      const myFM = fleetManagers.find(f => f.email === currentUser?.email);
+      // Only their affiliated drivers
+      const myDrivers = myFM ? drivers.filter(d => d.fleet_manager_id === myFM.id) : [];
+      myDrivers.forEach(d => { if (d.email) u.push({ email: d.email, name: d.full_name, role: 'driver' }); });
+    }
     return u;
-  }, [drivers, fleetManagers]);
+  }, [drivers, fleetManagers, isAdmin, isFleet, currentUser]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -176,7 +187,7 @@ export default function Messaging({ currentUser }) {
               <Plus className="w-4 h-4" /> Nova conversa
             </Button>
           )}
-          {currentUser?.role === 'driver' && (
+          {isDriver && (
             <Button onClick={handleContactSupport} variant="outline" className="gap-2">
               <Headphones className="w-4 h-4" /> Contactar suporte
             </Button>
@@ -200,7 +211,7 @@ export default function Messaging({ currentUser }) {
               <div className="text-center py-12 px-4">
                 <MessageCircle className="w-10 h-10 text-gray-200 mx-auto mb-3" />
                 <p className="text-sm text-gray-400">Sem conversas</p>
-                {currentUser?.role === 'driver' && (
+                {isDriver && (
                   <button onClick={handleContactSupport} className="mt-3 text-sm text-indigo-600 hover:underline">
                     Contactar suporte
                   </button>
