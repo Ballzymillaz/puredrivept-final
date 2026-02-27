@@ -371,7 +371,11 @@ function NewRevenueForm({ drivers, onSubmit, isLoading, onCancel }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <Label className="text-xs">Motorista *</Label>
-        <Select value={form.driver_id} onValueChange={(v) => handleChange('driver_id', v)}>
+        <Select value={form.driver_id} onValueChange={(v) => {
+          const selectedDriver = drivers.find(d => d.id === v);
+          console.log('Selected Driver:', selectedDriver);
+          handleChange('driver_id', v);
+        }}>
           <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
           <SelectContent>
             {drivers.map(d => (
