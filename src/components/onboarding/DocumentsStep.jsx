@@ -24,10 +24,42 @@ export default function DocumentsStep({ onboarding, isAdmin, onUpdate }) {
 
   const handleUpload = async (key, file) => {
     setUploading(p => ({ ...p, [key]: true }));
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.entities.DriverOnboarding.update(onboarding.id, { [key]: file_url });
-    setUploading(p => ({ ...p, [key]: false }));
-    onUpdate();
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      
+      // Update onboarding with file URL
+      await base44.entities.DriverOnboarding.update(onboarding.id, { [key]: file_url });
+      
+      // Create Document record for tracking
+      const docTypeMap = {
+        driving_license_url: 'driving_license',
+        tvde_certificate_url: 'tvde_certificate',
+        id_card_url: 'id_card',
+        iban_proof_url: 'iban_proof'
+      };
+      
+      const docRecord = await base44.entities.Document.create({
+        doc_type: docTypeMap[key],
+        driver_email: onboarding.driver_email,
+        driver_id: onboarding.driver_id,
+        file_url,
+        status: 'pending'
+      });
+      
+      // Send to AI verification
+      await base44.functions.invoke('verifyDocumentAI', {
+        documentId: docRecord.id,
+        fileUrl: file_url,
+        docType: docTypeMap[key]
+      });
+      
+      setUploading(p => ({ ...p, [key]: false }));
+      onUpdate();
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Erro ao fazer upload do documento');
+      setUploading(p => ({ ...p, [key]: false }));
+    }
   };
 
   const handleSubmitForReview = async () => {
