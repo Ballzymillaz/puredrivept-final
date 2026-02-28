@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import PageHeader from '../components/shared/PageHeader';
@@ -9,13 +9,56 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import { TrendingDown, ShieldCheck, Info } from 'lucide-react';
+
+// Degressive quarterly schedule calculation
+function computeQuarterlySchedule(totalPrice, durationMonths) {
+  const totalWeeks = Math.round(durationMonths * 4.33);
+  const numQuarters = Math.ceil(totalWeeks / 13);
+  if (numQuarters < 2 || totalWeeks === 0) {
+    return [{ quarter: 1, weeks: totalWeeks, weeklyAmount: totalWeeks > 0 ? Math.round((totalPrice / totalWeeks) * 100) / 100 : 0, total: totalPrice }];
+  }
+
+  // M1 is highest, MT is lowest. Linear degression.
+  // M1 + (M1 - step) + ... + (M1 - (T-1)*step) = P
+  // T*M1 - step*(0+1+...+(T-1)) = P  => T*M1 - step*T*(T-1)/2 = P
+  // We want MT = M1 - (T-1)*step >= 0
+  // Choose step proportionally: step = 2*(M_avg - MT_min)/T where M_avg = P/(T*13)
+  const avgWeekly = totalPrice / totalWeeks;
+  // MT = 0.6 * avgWeekly (last quarter is 60% of average), M1 solves
+  const MT = Math.max(avgWeekly * 0.6, 1);
+  const step = (2 * (avgWeekly - MT)) / (numQuarters - 1 > 0 ? numQuarters - 1 : 1);
+  const M1 = MT + (numQuarters - 1) * step;
+
+  const quarters = [];
+  let weeksAssigned = 0;
+  let cumulativeTotal = 0;
+
+  for (let q = 1; q <= numQuarters; q++) {
+    const qWeeks = q < numQuarters ? Math.min(13, totalWeeks - weeksAssigned) : totalWeeks - weeksAssigned;
+    const rawWeekly = M1 - (q - 1) * step;
+    const weeklyAmount = q < numQuarters ? Math.round(rawWeekly * 100) / 100 : null; // last quarter adjusted
+    const qTotal = q < numQuarters ? Math.round(rawWeekly * qWeeks * 100) / 100 : Math.round((totalPrice - cumulativeTotal) * 100) / 100;
+    const finalWeekly = q < numQuarters ? weeklyAmount : Math.round((qTotal / qWeeks) * 100) / 100;
+
+    quarters.push({ quarter: q, weeks: qWeeks, weeklyAmount: finalWeekly, total: qTotal });
+    weeksAssigned += qWeeks;
+    if (q < numQuarters) cumulativeTotal += qTotal;
+  }
+
+  return quarters;
+}
 
 export default function VehiclePurchases({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState(null);
   const [editForm, setEditForm] = useState(null);
+  const [schedulePreview, setSchedulePreview] = useState(null);
   const qc = useQueryClient();
-  const isDriver = currentUser?.role === 'driver';
+
+  const isDriver = currentUser?.role === 'driver' || currentUser?.hasRole?.('driver');
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.hasRole?.('admin');
 
   const { data: allDrivers = [] } = useQuery({
     queryKey: ['drivers'],
@@ -26,9 +69,7 @@ export default function VehiclePurchases({ currentUser }) {
   const { data: purchases = [], isLoading } = useQuery({
     queryKey: ['vehicle-purchases', isDriver ? myDriverRecord?.id : 'all'],
     queryFn: async () => {
-      if (isDriver && myDriverRecord) {
-        return base44.entities.VehiclePurchase.filter({ driver_id: myDriverRecord.id });
-      }
+      if (isDriver && myDriverRecord) return base44.entities.VehiclePurchase.filter({ driver_id: myDriverRecord.id });
       return base44.entities.VehiclePurchase.list('-created_date');
     },
     enabled: !isDriver || !!myDriverRecord,
@@ -37,15 +78,13 @@ export default function VehiclePurchases({ currentUser }) {
     queryKey: ['vehicles'],
     queryFn: () => base44.entities.Vehicle.list(),
   });
-  const drivers = allDrivers;
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.VehiclePurchase.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); setShowForm(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); setShowForm(false); setSchedulePreview(null); },
   });
   const updateMutation = useMutation({
     mutationFn: async ({ id, data, oldPurchase }) => {
-      // Si paiement anticipé, créer une recette
       if (data.prepayment_amount && data.prepayment_amount !== oldPurchase.prepayment_amount) {
         const prepaymentDiff = data.prepayment_amount - (oldPurchase.prepayment_amount || 0);
         if (prepaymentDiff > 0) {
@@ -57,23 +96,16 @@ export default function VehiclePurchases({ currentUser }) {
             driver_id: oldPurchase.driver_id,
             notes: `VehiclePurchase ID: ${id}`,
           });
-          
-          // Recalculer le weekly installment
-          const newRemainingBalance = oldPurchase.total_price - data.prepayment_amount - (oldPurchase.paid_amount || 0);
-          const remainingWeeks = Math.max(1, oldPurchase.duration_months * 4.33 - ((oldPurchase.paid_amount || 0) / oldPurchase.weekly_installment));
-          const newWeeklyInstallment = Math.round((newRemainingBalance / remainingWeeks) * 100) / 100;
-          data.weekly_installment = newWeeklyInstallment;
-          data.remaining_balance = Math.max(0, newRemainingBalance);
+          const newRemaining = oldPurchase.total_price - data.prepayment_amount - (oldPurchase.paid_amount || 0);
+          data.remaining_balance = Math.max(0, newRemaining);
         }
       }
-      
-      return await base44.entities.VehiclePurchase.update(id, data);
+      return base44.entities.VehiclePurchase.update(id, data);
     },
-    onSuccess: () => { 
-      qc.invalidateQueries({ queryKey: ['vehicle-purchases'] }); 
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['vehicle-purchases'] });
       qc.invalidateQueries({ queryKey: ['expenses-all'] });
-      setSelected(null); 
-      setEditForm(null); 
+      setSelected(null); setEditForm(null);
     },
   });
   const deleteMutation = useMutation({
@@ -82,91 +114,150 @@ export default function VehiclePurchases({ currentUser }) {
   });
 
   const [form, setForm] = useState({ driver_id: '', driver_name: '', vehicle_id: '', duration_months: '' });
-
   const selectedVehicle = vehicles.find(v => v.id === form.vehicle_id);
-  const marketPrice = selectedVehicle?.market_price || 0;
-  const totalPrice = Math.round(marketPrice * 1.25 * 100) / 100;
+  const totalPrice = selectedVehicle?.market_price ? Math.round(selectedVehicle.market_price * 1.25 * 100) / 100 : 0;
   const months = parseInt(form.duration_months) || 0;
-  const weeks = months > 0 ? Math.round(months * 4.33) : 0;
-  const weeklyInstallment = weeks > 0 ? Math.round((totalPrice / weeks) * 100) / 100 : 0;
+
+  const schedule = useMemo(() => {
+    if (!totalPrice || !months) return null;
+    return computeQuarterlySchedule(totalPrice, months);
+  }, [totalPrice, months]);
+
+  const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const driver = drivers.find(d => d.id === form.driver_id);
+    const driver = allDrivers.find(d => d.id === form.driver_id);
+    const firstQuarterWeekly = schedule?.[0]?.weeklyAmount || 0;
     createMutation.mutate({
       driver_name: driver?.full_name || form.driver_name,
       driver_id: form.driver_id,
       vehicle_id: form.vehicle_id,
       vehicle_info: selectedVehicle ? `${selectedVehicle.brand} ${selectedVehicle.model} - ${selectedVehicle.license_plate}` : '',
-      base_price: marketPrice,
+      base_price: selectedVehicle?.market_price || 0,
       total_price: totalPrice,
       duration_months: months,
-      weekly_installment: weeklyInstallment,
+      weekly_installment: firstQuarterWeekly,
       remaining_balance: totalPrice,
       status: 'requested',
     });
   };
 
-  const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
-
+  // Columns — hide base_price for drivers
   const columns = [
     { header: 'Motorista', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
     { header: 'Veículo', render: (r) => <span className="text-sm">{r.vehicle_info}</span> },
-    { header: 'Preço base', render: (r) => fmt(r.base_price) },
-    { header: 'Preço total (+25%)', render: (r) => fmt(r.total_price) },
-    { header: 'Semanal', render: (r) => <span className="font-medium text-indigo-600">{fmt(r.weekly_installment)}</span> },
+    ...(!isDriver ? [{ header: 'Preço total', render: (r) => fmt(r.total_price) }] : []),
+    { header: 'Pagamento inicial', render: (r) => <span className="font-medium text-indigo-600">{fmt(r.weekly_installment)}/sem</span> },
     { header: 'Restante', render: (r) => <span className="text-red-600 font-medium">{fmt(r.remaining_balance)}</span> },
     { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
   ];
 
+  // Compute schedule for selected purchase
+  const selectedSchedule = useMemo(() => {
+    if (!selected) return null;
+    return computeQuarterlySchedule(selected.total_price, selected.duration_months);
+  }, [selected]);
+
   return (
     <div className="space-y-4">
-      <PageHeader title="Compra de veículos" subtitle="Opção de compra para motoristas" actionLabel={isDriver ? "Fazer pedido" : "Novo pedido"} onAction={() => setShowForm(true)} />
-      <DataTable columns={columns} data={purchases} isLoading={isLoading} onRowClick={isDriver ? undefined : setSelected} />
+      <PageHeader title="Compra de veículos" subtitle="Opção de compra — Financement interne" actionLabel={isDriver ? "Fazer pedido" : "Novo pedido"} onAction={() => setShowForm(true)} />
 
+      {isDriver && (
+        <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
+          <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-blue-900">Financiamento interno — sem aprovação bancária</p>
+            <p className="text-xs text-blue-700 mt-1">O pagamento é deduzido do seu salário semanal com uma tabela degressiva por trimestre. O valor diminui progressivamente ao longo do contrato.</p>
+          </div>
+        </div>
+      )}
+
+      <DataTable columns={columns} data={purchases} isLoading={isLoading} onRowClick={(r) => { setSelected(r); setEditForm(null); }} />
+
+      {/* Detail dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditForm(null); } }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Compra — {selected?.driver_name}</DialogTitle></DialogHeader>
           {selected && !editForm && (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {isDriver && (
+                <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                  <Info className="w-4 h-4 text-blue-600 shrink-0" />
+                  <p className="text-xs text-blue-800">Financiamento interno — aucune approbation bancaire requise</p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Veículo</span><p className="font-medium">{selected.vehicle_info}</p></div>
-                <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Preço total</span><p className="font-medium">{fmt(selected.total_price)}</p></div>
+                {!isDriver && <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Preço total</span><p className="font-medium">{fmt(selected.total_price)}</p></div>}
                 <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Duração</span><p className="font-medium">{selected.duration_months} meses</p></div>
                 <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Restante</span><p className="font-medium text-red-600">{fmt(selected.remaining_balance)}</p></div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setEditForm({ ...selected })}>Editar</Button>
-                <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar compra de veículo?')) deleteMutation.mutate(selected.id); }}>Eliminar</Button>
-                {selected.status === 'requested' && (
-                  <>
-                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'active', start_date: new Date().toISOString().split('T')[0] } })}>Aprovar</Button>
-                    <Button variant="outline" className="flex-1 text-red-600" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' } })}>Rejeitar</Button>
-                  </>
-                )}
-              </div>
+
+              {/* Quarterly schedule */}
+              {selectedSchedule && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                    <TrendingDown className="w-4 h-4 text-indigo-500" /> Tabela degressiva por trimestre
+                  </p>
+                  <div className="space-y-1.5">
+                    {selectedSchedule.map((q, i) => (
+                      <div key={i} className={`flex items-center justify-between p-2.5 rounded-lg ${i === 0 ? 'bg-indigo-50' : i === selectedSchedule.length - 1 ? 'bg-emerald-50' : 'bg-gray-50'}`}>
+                        <div>
+                          <p className="text-xs font-medium text-gray-700">Trimestre {q.quarter} <span className="text-gray-400">({q.weeks} semanas)</span></p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-sm font-bold ${i === 0 ? 'text-indigo-700' : i === selectedSchedule.length - 1 ? 'text-emerald-700' : 'text-gray-700'}`}>
+                            {fmt(q.weeklyAmount)}<span className="font-normal text-xs text-gray-500">/sem</span>
+                          </p>
+                          <p className="text-[10px] text-gray-400">Total: {fmt(q.total)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-2 text-center">Regra TVDE: máximo 7 anos. Total: {fmt(selected.total_price)}</p>
+                </div>
+              )}
+
+              {isAdmin && (
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setEditForm({ ...selected })}>Editar</Button>
+                  <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar?')) deleteMutation.mutate(selected.id); }}>Eliminar</Button>
+                  {selected.status === 'requested' && (
+                    <>
+                      <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'active', start_date: new Date().toISOString().split('T')[0] }, oldPurchase: selected })}>Aprovar</Button>
+                      <Button variant="outline" className="flex-1 text-red-600" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' }, oldPurchase: selected })}>Rejeitar</Button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
-          {selected && editForm && <PurchaseEditForm purchase={editForm} onSave={(data) => { updateMutation.mutate({ id: selected.id, data, oldPurchase: selected }); setEditForm(null); }} onCancel={() => setEditForm(null)} />}
+          {selected && editForm && (
+            <PurchaseEditForm purchase={editForm} onSave={(data) => { updateMutation.mutate({ id: selected.id, data, oldPurchase: selected }); setEditForm(null); }} onCancel={() => setEditForm(null)} />
+          )}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-md">
+      {/* Create dialog */}
+      <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setSchedulePreview(null); }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Novo pedido de compra</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5"><Label className="text-xs">Motorista</Label>
-              <Select value={form.driver_id} onValueChange={(v) => { const d = drivers.find(dr => dr.id === v); setForm(f => ({...f, driver_id: v, driver_name: d?.full_name || ''})); }} required>
-                <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
-                <SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            {!isDriver && (
+              <div className="space-y-1.5"><Label className="text-xs">Motorista</Label>
+                <Select value={form.driver_id} onValueChange={(v) => { const d = allDrivers.find(dr => dr.id === v); setForm(f => ({...f, driver_id: v, driver_name: d?.full_name || ''})); }} required>
+                  <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
+                  <SelectContent>{allDrivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-1.5"><Label className="text-xs">Veículo</Label>
               <Select value={form.vehicle_id} onValueChange={(v) => setForm(f => ({...f, vehicle_id: v}))}>
                 <SelectTrigger><SelectValue placeholder="Escolher veículo..." /></SelectTrigger>
                 <SelectContent>
                   {vehicles.map(v => (
-                    <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate}{v.market_price ? ` (${fmt(v.market_price)})` : ''}</SelectItem>
+                    <SelectItem key={v.id} value={v.id}>{v.brand} {v.model} - {v.license_plate}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -184,15 +275,26 @@ export default function VehiclePurchases({ currentUser }) {
                 </SelectContent>
               </Select>
             </div>
-            {form.vehicle_id && form.duration_months && (
-              <div className="bg-indigo-50 p-3 rounded-lg space-y-1 text-sm">
-                <p>Preço mercado: <strong>{fmt(marketPrice)}</strong></p>
-                <p>Preço total (+25%): <strong className="text-indigo-700">{fmt(totalPrice)}</strong></p>
-                <p>Duração: <strong>{weeks} semanas</strong></p>
-                <p>Pagamento semanal: <strong className="text-indigo-700">{fmt(weeklyInstallment)}</strong></p>
+
+            {schedule && (
+              <div className="space-y-2">
+                <div className="bg-indigo-50 p-3 rounded-lg space-y-1 text-sm">
+                  <p className="font-semibold text-indigo-900">Financiamento interno — aucune approbation bancaire requise</p>
+                  <p>Preço total (com financiamento): <strong className="text-indigo-700">{fmt(totalPrice)}</strong></p>
+                </div>
+                <p className="text-xs font-semibold text-gray-700 flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5 text-indigo-500" /> Tabela degressiva por trimestre</p>
+                <div className="space-y-1">
+                  {schedule.map((q, i) => (
+                    <div key={i} className={`flex items-center justify-between p-2 rounded-lg text-xs ${i === 0 ? 'bg-indigo-50' : i === schedule.length - 1 ? 'bg-emerald-50' : 'bg-gray-50'}`}>
+                      <span className="text-gray-600">T{q.quarter} ({q.weeks} sem)</span>
+                      <span className={`font-bold ${i === 0 ? 'text-indigo-700' : i === schedule.length - 1 ? 'text-emerald-700' : 'text-gray-700'}`}>{fmt(q.weeklyAmount)}/sem</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-gray-400 text-center">Regra TVDE: máximo 7 anos · Total exato: {fmt(totalPrice)}</p>
               </div>
             )}
-            <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">Criar pedido</Button>
+            <Button type="submit" disabled={createMutation.isPending || !schedule} className="w-full bg-indigo-600 hover:bg-indigo-700">Criar pedido</Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -201,21 +303,11 @@ export default function VehiclePurchases({ currentUser }) {
 }
 
 function PurchaseEditForm({ purchase, onSave, onCancel }) {
-  const [form, setForm] = useState({ 
-    ...purchase, 
-    prepayment_amount: purchase.prepayment_amount || 0 
-  });
-  
+  const [form, setForm] = useState({ ...purchase, prepayment_amount: purchase.prepayment_amount || 0 });
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ 
-      remaining_balance: parseFloat(form.remaining_balance) || 0,
-      paid_amount: parseFloat(form.paid_amount) || 0,
-      prepayment_amount: parseFloat(form.prepayment_amount) || 0,
-      status: form.status 
-    });
+    onSave({ remaining_balance: parseFloat(form.remaining_balance) || 0, paid_amount: parseFloat(form.paid_amount) || 0, prepayment_amount: parseFloat(form.prepayment_amount) || 0, status: form.status });
   };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5"><Label className="text-xs">Restante</Label><Input type="number" step="0.01" value={form.remaining_balance} onChange={(e) => setForm(f => ({ ...f, remaining_balance: e.target.value }))} /></div>

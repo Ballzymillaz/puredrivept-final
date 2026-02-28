@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import PageHeader from '../components/shared/PageHeader';
@@ -11,7 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { HandCoins, Users, Gift } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { HandCoins, Users, Gift, Clock, TrendingUp, Calendar } from 'lucide-react';
+import { addDays, differenceInDays, format, parseISO } from 'date-fns';
 
 const REFERRAL_RATES = {
   slot_standard: 5,
@@ -27,17 +29,19 @@ const CONTRACT_LABELS = {
   location: 'Location',
 };
 
-export default function Referrals() {
+export default function Referrals({ currentUser }) {
   const [editing, setEditing] = useState(null);
   const [detailsDialog, setDetailsDialog] = useState(null);
-  const [referrerFilter, setReferrerFilter] = useState('all');
   const qc = useQueryClient();
 
-  const { data: payments = [], isLoading } = useQuery({
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.hasRole?.('admin');
+  const isFleetManager = currentUser?.role === 'fleet_manager' || currentUser?.hasRole?.('fleet_manager');
+
+  const { data: payments = [], isLoading: loadingPayments } = useQuery({
     queryKey: ['referral-payments'],
     queryFn: () => base44.entities.ReferralPayment.list('-created_date', 200),
   });
-  const { data: drivers = [] } = useQuery({
+  const { data: allDrivers = [] } = useQuery({
     queryKey: ['drivers'],
     queryFn: () => base44.entities.Driver.list(),
   });
@@ -45,70 +49,110 @@ export default function Referrals() {
     queryKey: ['fleet-managers'],
     queryFn: () => base44.entities.FleetManager.list(),
   });
-  const { data: commercials = [] } = useQuery({
-    queryKey: ['commercials'],
-    queryFn: () => base44.entities.Commercial.list(),
+  const { data: vehiclePurchases = [] } = useQuery({
+    queryKey: ['vehicle-purchases'],
+    queryFn: () => base44.entities.VehiclePurchase.list(),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.ReferralPayment.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['referral-payments'] }); setEditing(null); },
   });
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.ReferralPayment.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['referral-payments'] }); setEditing(null); },
-  });
 
-  const filteredPayments = referrerFilter === 'all' 
-    ? payments 
-    : referrerFilter === 'none'
-    ? payments.filter(p => !p.referrer_id)
-    : payments.filter(p => p.referrer_id === referrerFilter);
+  // Determine which fleet manager the current user is
+  const myFleetManager = useMemo(() => {
+    if (!isFleetManager || isAdmin) return null;
+    return fleetManagers.find(fm => fm.email === currentUser?.email || fm.user_id === currentUser?.id);
+  }, [fleetManagers, currentUser, isFleetManager, isAdmin]);
 
-  const totalPaid = filteredPayments.filter(p => p.status === 'paid').reduce((s, p) => s + (p.weekly_amount || 0) + (p.bonus_amount || 0), 0);
-  const totalPending = filteredPayments.filter(p => p.status === 'pending').reduce((s, p) => s + (p.weekly_amount || 0), 0);
-  const totalSemanal = filteredPayments.reduce((s, p) => s + (p.weekly_amount || 0), 0);
-  
-  const activeReferrals = drivers.filter(d => d.fleet_manager_id || d.commercial_id).map(d => ({
+  // Filter drivers based on role
+  const visibleDrivers = useMemo(() => {
+    if (isAdmin) return allDrivers.filter(d => d.status === 'active' && d.fleet_manager_id);
+    if (isFleetManager && myFleetManager) return allDrivers.filter(d => d.fleet_manager_id === myFleetManager.id && d.status === 'active');
+    return [];
+  }, [allDrivers, isAdmin, isFleetManager, myFleetManager]);
+
+  // Filter payments by role
+  const visiblePayments = useMemo(() => {
+    if (isAdmin) return payments;
+    if (isFleetManager && myFleetManager) return payments.filter(p => p.referrer_id === myFleetManager.id);
+    return [];
+  }, [payments, isAdmin, isFleetManager, myFleetManager]);
+
+  // Compute active referrals with weekly commission
+  const activeReferrals = useMemo(() => visibleDrivers.map(d => ({
     driver_name: d.full_name,
     driver_id: d.id,
-    referrer_type: d.fleet_manager_id ? 'fleet_manager' : 'commercial',
-    referrer_id: d.fleet_manager_id || d.commercial_id,
-    referrer_name: d.fleet_manager_name || d.commercial_name,
+    referrer_id: d.fleet_manager_id,
+    referrer_name: d.fleet_manager_name,
     contract_type: d.contract_type,
-  }));
+    weekly_commission: REFERRAL_RATES[d.contract_type] || 0,
+    start_date: d.start_date,
+  })), [visibleDrivers]);
 
-  // Get all unique referrers for filter
-  const allReferrers = [...fleetManagers.map(f => ({ id: f.id, name: f.full_name, type: 'fleet_manager' })), 
-                        ...commercials.map(c => ({ id: c.id, name: c.full_name, type: 'commercial' }))];
+  // Bonus tracking per driver
+  const bonusTrackers = useMemo(() => {
+    return visibleDrivers.map(d => {
+      const startDate = d.start_date ? parseISO(d.start_date) : null;
+      const today = new Date();
+      const daysSinceStart = startDate ? differenceInDays(today, startDate) : 0;
+
+      const locationBonusTriggered = d.contract_type === 'location' && daysSinceStart >= 30;
+      const locationDaysRemaining = Math.max(0, 30 - daysSinceStart);
+      const locationEstDate = startDate ? addDays(startDate, 30) : null;
+
+      const purchase = vehiclePurchases.find(vp => vp.driver_id === d.id && vp.status === 'active');
+      const purchaseDaysSince = purchase?.start_date ? differenceInDays(today, parseISO(purchase.start_date)) : 0;
+      const purchaseBonusTriggered = !!purchase && purchaseDaysSince >= 60;
+      const purchaseDaysRemaining = Math.max(0, 60 - purchaseDaysSince);
+      const purchaseEstDate = purchase?.start_date ? addDays(parseISO(purchase.start_date), 60) : null;
+
+      return {
+        driver_id: d.id,
+        driver_name: d.full_name,
+        contract_type: d.contract_type,
+        daysSinceStart,
+        locationBonusTriggered,
+        locationDaysRemaining,
+        locationEstDate,
+        hasPurchase: !!purchase,
+        purchaseBonusTriggered,
+        purchaseDaysRemaining,
+        purchaseEstDate,
+      };
+    });
+  }, [visibleDrivers, vehiclePurchases]);
+
+  const totalPaid = visiblePayments.filter(p => p.status === 'paid').reduce((s, p) => s + (p.weekly_amount || 0) + (p.bonus_amount || 0), 0);
+  const totalPending = visiblePayments.filter(p => p.status === 'pending').reduce((s, p) => s + (p.weekly_amount || 0), 0);
+  const weeklyProjection = activeReferrals.reduce((s, r) => s + r.weekly_commission, 0);
 
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
 
   const columns = [
-    { header: 'Indicador', render: (r) => (<div><p className="font-medium text-sm">{r.referrer_name}</p><p className="text-xs text-gray-500 capitalize">{r.referrer_type?.replace('_', ' ')}</p></div>) },
-    { header: 'Motorista', render: (r) => <span className="text-sm">{r.driver_name}</span> },
-    { header: 'Contrato', render: (r) => <span className="text-sm">{CONTRACT_LABELS[r.driver_contract_type] || '—'}</span> },
-    { header: 'Semanal', render: (r) => <span className="font-medium text-indigo-600">{fmt(r.weekly_amount)}</span> },
-    { header: 'Bónus', render: (r) => r.bonus_amount > 0 ? <span className="font-medium text-emerald-600">{fmt(r.bonus_amount)}</span> : '—' },
-    { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
-  ];
+    { header: 'Motorista', render: (r) => <div><p className="font-medium text-sm">{r.driver_name}</p><p className="text-xs text-gray-500">{CONTRACT_LABELS[r.contract_type] || '—'}</p></div> },
+    { header: 'Gestor', render: (r) => isAdmin ? <span className="text-sm">{r.referrer_name}</span> : null },
+    { header: 'Comissão semanal', render: (r) => <span className="font-medium text-indigo-600">{fmt(r.weekly_commission)}</span> },
+    { header: 'Bónus próximo', render: (r) => {
+      const tracker = bonusTrackers.find(t => t.driver_id === r.driver_id);
+      if (!tracker) return '—';
+      if (tracker.contract_type === 'location') {
+        if (tracker.locationBonusTriggered) return <span className="text-emerald-600 text-xs font-medium">✓ 60€ desbloqueado</span>;
+        return <span className="text-amber-600 text-xs">{tracker.locationDaysRemaining}d para 60€</span>;
+      }
+      if (tracker.hasPurchase) {
+        if (tracker.purchaseBonusTriggered) return <span className="text-purple-600 text-xs font-medium">✓ 250€ desbloqueado</span>;
+        return <span className="text-purple-600 text-xs">{tracker.purchaseDaysRemaining}d para 250€</span>;
+      }
+      return '—';
+    }},
+  ].filter(c => c.render !== null || c.header !== 'Gestor');
+
+  const filteredColumns = isAdmin ? columns : columns.filter(c => c.header !== 'Gestor');
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Indicações" subtitle="Pagamentos a comerciais e gestores" />
-      
-      <div className="flex gap-3">
-        <Select value={referrerFilter} onValueChange={setReferrerFilter}>
-          <SelectTrigger className="w-64"><SelectValue placeholder="Filtrar por indicador..." /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="none">Nenhum</SelectItem>
-            {allReferrers.map(r => (
-              <SelectItem key={r.id} value={r.id}>{r.name} ({r.type === 'fleet_manager' ? 'Gestor' : 'Comercial'})</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <PageHeader title="Indicações & Comissões" subtitle={isAdmin ? "Comissões de todos os gestores de frota" : "As suas comissões e motoristas"} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="cursor-pointer" onClick={() => setDetailsDialog('paid')}>
@@ -122,9 +166,10 @@ export default function Referrals() {
         </div>
       </div>
 
-      <Card className="border-0 shadow-sm p-4">
-        <CardHeader className="p-0 pb-3"><CardTitle className="text-sm font-semibold text-gray-700">Tabela de comissões</CardTitle></CardHeader>
-        <CardContent className="p-0">
+      {/* Commission rates table */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold text-gray-700">Tabela de comissões</CardTitle></CardHeader>
+        <CardContent className="pt-0 space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {Object.entries(REFERRAL_RATES).map(([type, rate]) => (
               <div key={type} className="bg-gray-50 rounded-lg p-3 text-center">
@@ -134,36 +179,121 @@ export default function Referrals() {
               </div>
             ))}
           </div>
-          <div className="mt-3 space-y-2">
-            <div className="p-3 bg-emerald-50 rounded-lg flex items-center gap-2">
-              <Gift className="w-4 h-4 text-emerald-600" />
+          <div className="flex gap-3">
+            <div className="flex-1 p-3 bg-emerald-50 rounded-lg flex items-center gap-2">
+              <Gift className="w-4 h-4 text-emerald-600 shrink-0" />
               <p className="text-sm text-emerald-800"><strong>Bónus aluguer:</strong> 60€ após 30 dias contínuos</p>
             </div>
-            <div className="p-3 bg-purple-50 rounded-lg flex items-center gap-2">
-              <Gift className="w-4 h-4 text-purple-600" />
-              <p className="text-sm text-purple-800"><strong>Bónus venda de carro:</strong> 250€ após 60 dias contínuos</p>
+            <div className="flex-1 p-3 bg-purple-50 rounded-lg flex items-center gap-2">
+              <Gift className="w-4 h-4 text-purple-600 shrink-0" />
+              <p className="text-sm text-purple-800"><strong>Bónus opção compra:</strong> 250€ após 60 dias contínuos</p>
             </div>
+          </div>
+          <div className="p-3 bg-indigo-50 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-indigo-600" />
+              <span className="text-sm text-indigo-800 font-medium">Projeção semanal</span>
+            </div>
+            <span className="text-lg font-bold text-indigo-700">{fmt(weeklyProjection)}</span>
           </div>
         </CardContent>
       </Card>
 
-      <DataTable columns={columns} data={filteredPayments} isLoading={isLoading} onRowClick={setEditing} />
+      {/* Next bonus tracker */}
+      {bonusTrackers.filter(t => !t.locationBonusTriggered || !t.purchaseBonusTriggered).length > 0 && (
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Clock className="w-4 h-4" /> Próximos bónus</CardTitle></CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              {bonusTrackers.map(t => {
+                const items = [];
+                if (t.contract_type === 'location' && !t.locationBonusTriggered) {
+                  const pct = Math.min(100, (t.daysSinceStart / 30) * 100);
+                  items.push(
+                    <div key={`loc-${t.driver_id}`} className="bg-emerald-50 rounded-lg p-3">
+                      <div className="flex justify-between items-start mb-1">
+                        <div>
+                          <p className="text-sm font-medium text-emerald-900">{t.driver_name} — Bónus Location 60€</p>
+                          <p className="text-xs text-emerald-700">{t.daysSinceStart} dias / 30 dias — {t.locationDaysRemaining}d restantes</p>
+                        </div>
+                        {t.locationEstDate && <span className="text-xs text-emerald-600 flex items-center gap-1"><Calendar className="w-3 h-3" />{format(t.locationEstDate, 'dd/MM')}</span>}
+                      </div>
+                      <Progress value={pct} className="h-1.5" />
+                    </div>
+                  );
+                }
+                if (t.hasPurchase && !t.purchaseBonusTriggered) {
+                  const pct = Math.min(100, ((60 - t.purchaseDaysRemaining) / 60) * 100);
+                  items.push(
+                    <div key={`pur-${t.driver_id}`} className="bg-purple-50 rounded-lg p-3">
+                      <div className="flex justify-between items-start mb-1">
+                        <div>
+                          <p className="text-sm font-medium text-purple-900">{t.driver_name} — Bónus Opção Compra 250€</p>
+                          <p className="text-xs text-purple-700">{60 - t.purchaseDaysRemaining} dias / 60 dias — {t.purchaseDaysRemaining}d restantes</p>
+                        </div>
+                        {t.purchaseEstDate && <span className="text-xs text-purple-600 flex items-center gap-1"><Calendar className="w-3 h-3" />{format(t.purchaseEstDate, 'dd/MM')}</span>}
+                      </div>
+                      <Progress value={pct} className="h-1.5" />
+                    </div>
+                  );
+                }
+                return items;
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      <div className="flex justify-end p-4 bg-indigo-50 rounded-lg">
-        <div className="text-right">
-          <p className="text-xs text-gray-600">Total Semanal</p>
-          <p className="text-xl font-bold text-indigo-700">{fmt(totalSemanal)}</p>
-        </div>
-      </div>
+      {/* Active referrals table */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold text-gray-700">Motoristas ativos</CardTitle></CardHeader>
+        <CardContent className="pt-0">
+          <DataTable columns={filteredColumns} data={activeReferrals} isLoading={loadingPayments} emptyMessage="Nenhum motorista afiliado" />
+        </CardContent>
+      </Card>
+
+      {/* Payment history */}
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold text-gray-700">Histórico de pagamentos</CardTitle></CardHeader>
+        <CardContent className="pt-0">
+          <DataTable
+            columns={[
+              { header: 'Semana', render: (r) => <span className="text-sm">{r.week_label || '—'}</span> },
+              { header: 'Motorista', render: (r) => <span className="text-sm">{r.driver_name}</span> },
+              ...(isAdmin ? [{ header: 'Gestor', render: (r) => <span className="text-sm">{r.referrer_name}</span> }] : []),
+              { header: 'Semanal', render: (r) => <span className="font-medium text-indigo-600">{fmt(r.weekly_amount)}</span> },
+              { header: 'Bónus', render: (r) => r.bonus_amount > 0 ? <span className="font-medium text-emerald-600">{fmt(r.bonus_amount)}</span> : '—' },
+              { header: 'Estado', render: (r) => <StatusBadge status={r.status} /> },
+            ]}
+            data={visiblePayments}
+            isLoading={loadingPayments}
+            onRowClick={isAdmin ? setEditing : undefined}
+            emptyMessage="Nenhum pagamento registado"
+          />
+        </CardContent>
+      </Card>
 
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Editar indicação</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Editar pagamento</DialogTitle></DialogHeader>
           {editing && (
-            <>
-              <ReferralEditForm referral={editing} onSave={(data) => updateMutation.mutate({ id: editing.id, data })} onCancel={() => setEditing(null)} />
-              <Button variant="outline" className="w-full text-red-600" onClick={() => { if (confirm('Eliminar indicação?')) deleteMutation.mutate(editing.id); }}>Eliminar</Button>
-            </>
+            <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate({ id: editing.id, data: { weekly_amount: parseFloat(editing.weekly_amount), bonus_amount: parseFloat(editing.bonus_amount), status: editing.status } }); }} className="space-y-4">
+              <div className="space-y-1.5"><Label className="text-xs">Valor semanal</Label><Input type="number" step="0.01" value={editing.weekly_amount} onChange={(e) => setEditing(p => ({ ...p, weekly_amount: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Bónus</Label><Input type="number" step="0.01" value={editing.bonus_amount || 0} onChange={(e) => setEditing(p => ({ ...p, bonus_amount: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
+                <Select value={editing.status} onValueChange={(v) => setEditing(p => ({ ...p, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="paid">Pago</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" className="flex-1" onClick={() => setEditing(null)}>Cancelar</Button>
+                <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700">Guardar</Button>
+              </div>
+            </form>
           )}
         </DialogContent>
       </Dialog>
@@ -177,129 +307,40 @@ export default function Referrals() {
               {detailsDialog === 'active' && 'Detalhes: Indicações Ativas'}
             </DialogTitle>
           </DialogHeader>
-          <ReferralDetailsContent type={detailsDialog} payments={payments} activeReferrals={activeReferrals} fmt={fmt} />
+          {detailsDialog === 'paid' && (
+            <div className="space-y-2">
+              <div className="p-3 bg-green-50 rounded-lg"><p className="text-sm font-semibold">Total: {fmt(totalPaid)}</p></div>
+              {visiblePayments.filter(p => p.status === 'paid').map(p => (
+                <div key={p.id} className="flex justify-between items-center p-3 border-b">
+                  <div><p className="font-medium">{p.referrer_name}</p><p className="text-sm text-gray-500">{p.driver_name} — {p.week_label}</p></div>
+                  <p className="font-medium">{fmt((p.weekly_amount || 0) + (p.bonus_amount || 0))}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {detailsDialog === 'pending' && (
+            <div className="space-y-2">
+              <div className="p-3 bg-amber-50 rounded-lg"><p className="text-sm font-semibold">Total: {fmt(totalPending)}</p></div>
+              {visiblePayments.filter(p => p.status === 'pending').map(p => (
+                <div key={p.id} className="flex justify-between items-center p-3 border-b">
+                  <div><p className="font-medium">{p.referrer_name}</p><p className="text-sm text-gray-500">{p.driver_name} — {p.week_label}</p></div>
+                  <p className="font-medium text-amber-600">{fmt(p.weekly_amount)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {detailsDialog === 'active' && (
+            <div className="space-y-2">
+              {activeReferrals.map((r, idx) => (
+                <div key={idx} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
+                  <div><p className="font-medium">{r.driver_name}</p><p className="text-sm text-gray-500">{CONTRACT_LABELS[r.contract_type] || '—'}</p></div>
+                  <div className="text-right"><p className="font-medium">{r.referrer_name}</p><p className="text-indigo-600 font-medium">{fmt(r.weekly_commission)}/sem</p></div>
+                </div>
+              ))}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function ReferralDetailsContent({ type, payments, activeReferrals, fmt }) {
-  if (type === 'paid') {
-    const paidPayments = payments.filter(p => p.status === 'paid');
-    const total = paidPayments.reduce((s, p) => s + (p.weekly_amount || 0) + (p.bonus_amount || 0), 0);
-    return (
-      <div className="space-y-3">
-        <div className="p-3 bg-green-50 rounded-lg">
-          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
-        </div>
-        <div className="space-y-2">
-          {paidPayments.map(p => (
-            <div key={p.id} className="flex justify-between items-center p-3 border-b">
-              <div>
-                <p className="font-medium">{p.referrer_name}</p>
-                <p className="text-sm text-gray-500">{p.driver_name} - {p.week_label}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium">{fmt((p.weekly_amount || 0) + (p.bonus_amount || 0))}</p>
-                <p className="text-sm text-gray-500">Pago</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (type === 'pending') {
-    const pendingPayments = payments.filter(p => p.status === 'pending');
-    const total = pendingPayments.reduce((s, p) => s + (p.weekly_amount || 0), 0);
-    return (
-      <div className="space-y-3">
-        <div className="p-3 bg-amber-50 rounded-lg">
-          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
-        </div>
-        <div className="space-y-2">
-          {pendingPayments.map(p => (
-            <div key={p.id} className="flex justify-between items-center p-3 border-b">
-              <div>
-                <p className="font-medium">{p.referrer_name}</p>
-                <p className="text-sm text-gray-500">{p.driver_name} - {p.week_label}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium text-amber-600">{fmt(p.weekly_amount)}</p>
-                <p className="text-sm text-gray-500">Pendente</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (type === 'active') {
-    return (
-      <div className="space-y-2">
-        {activeReferrals.length === 0 ? (
-          <p className="text-center py-4 text-gray-400">Nenhuma indicação ativa</p>
-        ) : (
-          activeReferrals.map((r, idx) => (
-            <div key={idx} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
-              <div>
-                <p className="font-medium">{r.driver_name}</p>
-                <p className="text-sm text-gray-500">{CONTRACT_LABELS[r.contract_type] || '—'}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium">{r.referrer_name}</p>
-                <p className="text-sm text-gray-500 capitalize">{r.referrer_type?.replace('_', ' ')}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    );
-  }
-
-  return null;
-}
-
-function ReferralEditForm({ referral, onSave, onCancel }) {
-  const [form, setForm] = useState({ ...referral });
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave({ weekly_amount: parseFloat(form.weekly_amount), bonus_amount: parseFloat(form.bonus_amount), status: form.status, bonus_paid: form.bonus_paid });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-1.5"><Label className="text-xs">Valor semanal</Label><Input type="number" step="0.01" value={form.weekly_amount} onChange={(e) => setForm(f => ({ ...f, weekly_amount: e.target.value }))} /></div>
-      <div className="space-y-1.5"><Label className="text-xs">Bónus</Label><Input type="number" step="0.01" value={form.bonus_amount} onChange={(e) => setForm(f => ({ ...f, bonus_amount: e.target.value }))} /></div>
-      <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
-        <Select value={form.status} onValueChange={(v) => setForm(f => ({ ...f, status: v }))}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pending">Pendente</SelectItem>
-            <SelectItem value="paid">Pago</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1">Cancelar</Button>
-        <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700">Guardar</Button>
-      </div>
-    </form>
-  );
-}
-
-function ReferralDeleteButton({ referralId, onDelete }) {
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      className="text-red-600 mt-2 w-full"
-      onClick={() => { if (confirm('Eliminar indicação?')) onDelete(referralId); }}
-    >
-      Eliminar
-    </Button>
   );
 }
