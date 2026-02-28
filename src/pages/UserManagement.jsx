@@ -54,12 +54,12 @@ export default function UserManagement({ currentUser }) {
   };
 
   const handleSave = () => {
-    const role = selectedRoles.join(',') || 'user';
+    const role = selectedRoles.join(',') || 'pending';
     updateMutation.mutate({ id: editing.id, role });
   };
 
   const handleInvite = async () => {
-    const role = inviteRoles.join(',') || 'user';
+    const role = inviteRoles.join(',') || 'pending';
     await base44.users.inviteUser(inviteEmail, role === 'admin' ? 'admin' : 'user');
     setShowInvite(false);
     setInviteEmail('');
