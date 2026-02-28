@@ -23,7 +23,7 @@ export default function UserManagement({ currentUser }) {
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRoles, setInviteRoles] = useState(['user']);
+  const [inviteRoles, setInviteRoles] = useState(['pending']);
   const [showInvite, setShowInvite] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState([]);
   const qc = useQueryClient();

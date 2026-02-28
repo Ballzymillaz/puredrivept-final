@@ -51,6 +51,7 @@ import Applications from './pages/Applications';
 import Apply from './pages/Apply';
 import CashFlow from './pages/CashFlow';
 import Commercials from './pages/Commercials';
+import ContaValidacao from './pages/ContaValidacao';
 import Contracts from './pages/Contracts';
 import Dashboard from './pages/Dashboard';
 import Documents from './pages/Documents';
@@ -77,7 +78,6 @@ import UserManagement from './pages/UserManagement';
 import VehicleDetail from './pages/VehicleDetail';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import ContaValidacao from './pages/ContaValidacao';
 import __Layout from './Layout.jsx';
 
 
@@ -86,6 +86,7 @@ export const PAGES = {
     "Apply": Apply,
     "CashFlow": CashFlow,
     "Commercials": Commercials,
+    "ContaValidacao": ContaValidacao,
     "Contracts": Contracts,
     "Dashboard": Dashboard,
     "Documents": Documents,
@@ -112,7 +113,6 @@ export const PAGES = {
     "VehicleDetail": VehicleDetail,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "ContaValidacao": ContaValidacao,
 }
 
 export const pagesConfig = {
