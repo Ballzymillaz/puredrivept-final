@@ -29,7 +29,7 @@ const NAV_ITEMS = [
     { name: 'Fluxo de caixa', icon: TrendingUp, page: 'CashFlow' },
     { name: 'IVA', icon: Receipt, page: 'IVA', adminOnly: true },
     { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
-    { name: 'Reembolsos', icon: Receipt, page: 'Reimbursements' },
+    { name: 'Ajustamentos', icon: Receipt, page: 'Reimbursements' },
     { name: 'Indicações', icon: HandCoins, page: 'Referrals' },
     { name: 'Compra veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
   ]},
