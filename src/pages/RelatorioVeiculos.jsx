@@ -77,8 +77,6 @@ export default function RelatorioVeiculos() {
         `${v.vehicle?.brand || ''} ${v.vehicle?.model || ''}`,
         v.vehicle?.license_plate || '',
         v.count,
-        v.totalCost.toFixed(2),
-        v.fuelCost.toFixed(2),
         v.maintCost.toFixed(2),
         v.lastMaint?.service_date || '',
         v.nextMaint?.next_service_date || '',
@@ -202,7 +200,6 @@ export default function RelatorioVeiculos() {
                       <td className="py-3 px-4 font-medium text-sm">{v.vehicle?.brand} {v.vehicle?.model}</td>
                       <td className="py-3 px-4 font-mono text-xs">{v.vehicle?.license_plate}</td>
                       <td className="py-3 px-4 text-right text-gray-600">{v.count}</td>
-                      <td className="py-3 px-4 text-right text-orange-600">{fmt(v.fuelCost)}</td>
                       <td className="py-3 px-4 text-right text-indigo-600">{fmt(v.maintCost)}</td>
                       <td className="py-3 px-4 text-right font-semibold text-red-600">{fmt(v.totalCost)}</td>
                       <td className="py-3 px-4 text-xs text-gray-500">{fmtDate(v.lastMaint?.service_date)}</td>
