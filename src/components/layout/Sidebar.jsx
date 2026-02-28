@@ -37,6 +37,7 @@ const NAV_ITEMS = [
     { name: 'Objetivos', icon: Target, page: 'Goals' },
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
+    { name: 'Contratos', icon: FileText, page: 'Contracts' },
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
     { name: 'Relatório Frotas', icon: PieChart, page: 'RelatorioFrotas' },
     { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
