@@ -106,8 +106,8 @@ export default function RelatorioVeiculos() {
       if (y > 270) { doc.addPage(); y = 20; }
       const label = `${v.vehicle?.brand || ''} ${v.vehicle?.model || ''}`.substring(0, 20);
       doc.text(label, 10, y); doc.text(v.vehicle?.license_plate || '', 50, y);
-      doc.text(String(v.count), 82, y); doc.text(fmt(v.fuelCost), 100, y);
-      doc.text(fmt(v.maintCost), 130, y); doc.text(fmt(v.totalCost), 160, y); y += 6;
+      doc.text(String(v.count), 82, y); doc.text(fmt(v.maintCost), 110, y);
+      doc.text(fmt(v.totalCost), 150, y); y += 6;
     });
     doc.save(`relatorio_veiculos_${format(new Date(), 'yyyyMMdd')}.pdf`);
   };
