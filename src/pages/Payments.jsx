@@ -15,7 +15,10 @@ import { CreditCard, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { startOfWeek, endOfWeek, format, addWeeks } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 
-export default function Payments() {
+export default function Payments({ currentUser }) {
+  const isAdmin = currentUser?.role?.includes('admin');
+  const isFleetManager = currentUser?.role?.includes('fleet_manager') && !isAdmin;
+
   const [selected, setSelected] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [driverFilter, setDriverFilter] = useState('all');

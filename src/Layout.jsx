@@ -35,7 +35,7 @@ const PAGE_TITLES = {
 };
 
 // Public pages that don't need auth or sidebar
-const PUBLIC_PAGES = ['PublicSite', 'Apply'];
+const PUBLIC_PAGES = ['PublicSite', 'Apply', 'ContaValidacao'];
 
 export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
