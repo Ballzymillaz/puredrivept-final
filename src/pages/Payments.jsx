@@ -16,8 +16,9 @@ import { startOfWeek, endOfWeek, format, addWeeks } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function Payments({ currentUser }) {
-  const isAdmin = currentUser?.role?.includes('admin');
-  const isFleetManager = currentUser?.role?.includes('fleet_manager') && !isAdmin;
+  const isAdmin = currentUser?.role === 'admin' || currentUser?._realRole === 'admin';
+  const isFleetManager = currentUser?.role === 'fleet_manager' && !isAdmin;
+  const isSimulation = !!currentUser?._isSimulation;
 
   const [selected, setSelected] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
