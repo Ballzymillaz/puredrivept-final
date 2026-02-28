@@ -50,7 +50,7 @@ export default function RelatorioVeiculos() {
       const vehicle = vehicles.find(v => v.id === id);
       const mRecords = filteredMaint.filter(m => m.vehicle_id === id);
       const totalCost = mRecords.reduce((s, m) => s + (m.cost || 0), 0);
-      const fuelCost = mRecords.filter(m => m.type === 'fuel').reduce((s, m) => s + (m.cost || 0), 0);
+      const fuelCost = 0;
       const maintCost = mRecords.filter(m => m.type !== 'fuel').reduce((s, m) => s + (m.cost || 0), 0);
       const lastMaint = mRecords[0];
       const nextMaint = mRecords.find(m => m.next_service_date);

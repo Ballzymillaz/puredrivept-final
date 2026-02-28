@@ -19,7 +19,6 @@ const DOC_TYPES_DRIVER = [
   { key: 'tvde_certificate', label: 'Certificado TVDE', icon: FileCheck },
   { key: 'id_card', label: 'Cartão de cidadão', icon: IdCard },
   { key: 'iban_proof', label: 'Comprovativo IBAN', icon: FileText },
-  { key: 'insurance', label: 'Seguro', icon: Shield },
 ];
 
 const DOC_TYPES_VEHICLE = [
