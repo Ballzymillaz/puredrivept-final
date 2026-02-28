@@ -203,7 +203,7 @@ export default function CashFlow({ currentUser }) {
       <Card className="border-0 shadow-sm">
         <CardHeader><CardTitle className="text-sm font-semibold">Despesas recentes</CardTitle></CardHeader>
         <CardContent>
-          <DataTable columns={expenseColumns} data={expenses.slice(0, 20)} onRowClick={(r) => { setEditing(r); setShowForm(true); }} />
+          <DataTable columns={expenseColumns} data={expenses.slice(0, 20)} onRowClick={isAdmin ? (r) => { setEditing(r); setShowForm(true); } : undefined} />
         </CardContent>
       </Card>
 
