@@ -4,7 +4,8 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Rocket, TrendingUp, TrendingDown, Users, Zap, Award, BarChart3, Coins } from 'lucide-react';
 
-export default function Dashboard() {
+export default function Dashboard({ currentUser }) {
+  const isSimulation = !!currentUser?._isSimulation;
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['dashboard-metrics'],
     queryFn: () => base44.functions.invoke('getDashboardMetrics').then(res => res.data),
@@ -34,6 +35,11 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {isSimulation && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-2 text-xs text-amber-800 font-medium">
+          🔒 Modo simulação ativo — vista somente leitura
+        </div>
+      )}
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">PureDrive em crescimento sustentável 🚀</h1>
