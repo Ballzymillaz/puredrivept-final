@@ -255,7 +255,7 @@ export default function Drivers({ currentUser }) {
                           <UserCircle className="w-4 h-4" /> Ver perfil
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => { setEditingDriver(driver); setShowForm(true); }} className="gap-2">
-                          <CarFront className="w-4 h-4" /> Atribuir veículo
+                          <Car className="w-4 h-4" /> Atribuir veículo
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => updateMutation.mutate({ id: driver.id, data: { status: 'suspended' } })}
