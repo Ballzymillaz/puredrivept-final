@@ -163,7 +163,8 @@ export default function Payments({ currentUser }) {
     const statusMatch = statusFilter === 'all' || p.status === statusFilter;
     const driverMatch = driverFilter === 'all' || p.driver_id === driverFilter;
     const weekMatch = weekFilter === 'all' || p.period_label === weekFilter;
-    return statusMatch && driverMatch && weekMatch;
+    const roleMatch = !allowedDriverIds || allowedDriverIds.has(p.driver_id);
+    return statusMatch && driverMatch && weekMatch && roleMatch;
   });
   const totalGross = filtered.reduce((s, p) => s + (p.total_gross || 0), 0);
   const totalNet = filtered.reduce((s, p) => s + (p.net_amount || 0), 0);
