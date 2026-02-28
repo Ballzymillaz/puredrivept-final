@@ -16,7 +16,7 @@ const PAGE_TITLES = {
   CashFlow: 'Fluxo de caixa',
   IVA: 'IVA',
   Loans: 'Empréstimos & Adiantamentos',
-  Reimbursements: 'Reembolsos',
+  Reimbursements: 'Ajustamentos Financeiros',
   Referrals: 'Indicações',
   VehiclePurchases: 'Compra de veículos',
   Goals: 'Objetivos',
