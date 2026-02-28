@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Search, Users, AlertTriangle, Car, ShieldAlert, MoreVertical, UserCircle, CarFront, Ban, Plus } from 'lucide-react';
+import { Search, Users, AlertTriangle, Car, ShieldAlert, MoreVertical, UserCircle, Ban, Plus } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
 
