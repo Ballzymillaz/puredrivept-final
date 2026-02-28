@@ -9,12 +9,56 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Coins, TrendingUp, Users, ShoppingBag, ArrowDownUp, CheckCircle2, BarChart2, Settings } from 'lucide-react';
+import { Coins, TrendingUp, Users, ShoppingBag, ArrowDownUp, CheckCircle2, Settings, Lock, Unlock, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { format, startOfMonth, endOfMonth, subMonths, startOfWeek, startOfYear, isWithinInterval } from 'date-fns';
+import { Progress } from '@/components/ui/progress';
+import { format, addYears, parseISO, subMonths, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+// Vesting: 25% per year over 4 years
+function computeVesting(transaction) {
+  const createdYear = new Date(transaction.created_date).getFullYear();
+  const currentYear = new Date().getFullYear();
+  const yearsPassed = currentYear - createdYear;
+  const ratio = Math.min(yearsPassed * 0.25, 1);
+  const total = transaction.amount || 0;
+  return {
+    total,
+    vested: Math.round(total * ratio * 100) / 100,
+    locked: Math.round(total * (1 - ratio) * 100) / 100,
+    ratio,
+    nextRelease: addYears(new Date(transaction.created_date), yearsPassed + 1),
+    nextAmount: Math.round(total * 0.25 * 100) / 100,
+    fullyVested: ratio >= 1,
+  };
+}
+
+// Aggregate vesting across all transactions for a driver
+function aggregateVesting(transactions) {
+  let totalVested = 0, totalLocked = 0, totalUPI = 0;
+  let earliestNext = null, nextAmount = 0;
+  transactions.filter(t => t.type === 'earned' || t.type === 'credit').forEach(t => {
+    const v = computeVesting(t);
+    totalUPI += v.total;
+    totalVested += v.vested;
+    totalLocked += v.locked;
+    if (!v.fullyVested) {
+      if (!earliestNext || v.nextRelease < earliestNext) {
+        earliestNext = v.nextRelease;
+        nextAmount = v.nextAmount;
+      }
+    }
+  });
+  // Subtract debits
+  const totalDebits = transactions.filter(t => t.type === 'debit').reduce((s, t) => s + (t.amount || 0), 0);
+  totalVested = Math.max(0, totalVested - totalDebits);
+  return { totalUPI, totalVested: Math.round(totalVested * 100) / 100, totalLocked: Math.round(totalLocked * 100) / 100, earliestNext, nextAmount };
+}
+
+// Company reserve = same as total driver UPI (1:1 matching)
+const COMPANY_RESERVE = 10000; // placeholder, ideally from config
 
 export default function UPI({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
@@ -23,11 +67,10 @@ export default function UPI({ currentUser }) {
   const [showAutoBuyDialog, setShowAutoBuyDialog] = useState(false);
   const [autoBuyThreshold, setAutoBuyThreshold] = useState('');
   const [sellForm, setSellForm] = useState({ quantity: '', price_per_upi: '' });
-  const [txPeriod, setTxPeriod] = useState('all');
   const qc = useQueryClient();
-  const userRoles = currentUser?.role ? currentUser.role.split(',').map(r => r.trim()) : [];
-  const isDriver = userRoles.includes('driver') && !userRoles.includes('admin');
-  const isAdmin = userRoles.includes('admin');
+
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.hasRole?.('admin');
+  const isDriver = (currentUser?.role === 'driver' || currentUser?.hasRole?.('driver')) && !isAdmin;
 
   const { data: transactions = [], isLoading } = useQuery({
     queryKey: ['upi-transactions'],
@@ -43,63 +86,36 @@ export default function UPI({ currentUser }) {
   });
 
   const myDriverRecord = isDriver ? drivers.find(d => d.email === currentUser?.email) : null;
-  const myBalance = myDriverRecord?.upi_balance || 0;
+  const myTxs = useMemo(() => isDriver && myDriverRecord ? transactions.filter(t => t.driver_id === myDriverRecord.id) : [], [transactions, isDriver, myDriverRecord]);
+  const myVesting = useMemo(() => isDriver && myDriverRecord ? aggregateVesting(myTxs) : null, [myTxs, isDriver, myDriverRecord]);
 
-  const myTransactions = isDriver
-    ? transactions.filter(t => myDriverRecord && t.driver_id === myDriverRecord.id)
-    : transactions;
-
-  // Open orders sorted by price
   const openOrders = orders.filter(o => o.status === 'open').sort((a, b) => a.price_per_upi - b.price_per_upi);
   const bestAsk = openOrders.length > 0 ? openOrders[0].price_per_upi : null;
 
-  // UPI price history chart (group by month using filled orders)
-  const priceChartData = useMemo(() => {
-    const months = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = subMonths(new Date(), i);
-      const label = format(d, 'MMM yy');
-      const monthStart = startOfMonth(d).toISOString().split('T')[0];
-      const monthEnd = endOfMonth(d).toISOString().split('T')[0];
-      const filledInMonth = orders.filter(o => o.status === 'filled' && o.filled_at >= monthStart && o.filled_at <= monthEnd);
-      const avgPrice = filledInMonth.length > 0
-        ? filledInMonth.reduce((s, o) => s + o.price_per_upi, 0) / filledInMonth.length
-        : null;
-      months.push({ label, price: avgPrice });
-    }
-    return months;
-  }, [orders]);
+  // UPI totals
+  const totalDriverUPI = Math.round(drivers.reduce((s, d) => s + (d.upi_balance || 0), 0) * 100) / 100;
+  const totalCirculation = totalDriverUPI + COMPANY_RESERVE;
 
-  // Period filter for driver transactions
-  const filteredMyTx = useMemo(() => {
-    const base = isDriver ? transactions.filter(t => myDriverRecord && t.driver_id === myDriverRecord.id) : transactions;
-    if (txPeriod === 'all') return base;
-    const now = new Date();
-    return base.filter(t => {
-      const d = new Date(t.created_date);
-      if (txPeriod === 'week') return d >= startOfWeek(now, { weekStartsOn: 1 });
-      if (txPeriod === 'month') return d >= startOfMonth(now);
-      if (txPeriod === 'year') return d >= startOfYear(now);
-      return true;
-    });
-  }, [transactions, isDriver, myDriverRecord, txPeriod]);
+  // Per-driver vesting for admin overview
+  const driverVestingOverview = useMemo(() => {
+    if (!isAdmin) return [];
+    return drivers.filter(d => d.upi_balance > 0).map(d => {
+      const dTxs = transactions.filter(t => t.driver_id === d.id);
+      const v = aggregateVesting(dTxs);
+      return { ...d, ...v };
+    }).sort((a, b) => b.upi_balance - a.upi_balance);
+  }, [drivers, transactions, isAdmin]);
 
-  // Transaction history chart (credits vs debits by month)
-  const txChartData = useMemo(() => {
-    const months = [];
-    const txSource = isDriver ? transactions.filter(t => myDriverRecord && t.driver_id === myDriverRecord.id) : transactions;
-    for (let i = 5; i >= 0; i--) {
-      const d = subMonths(new Date(), i);
-      const label = format(d, 'MMM yy');
-      const start = startOfMonth(d);
-      const end = endOfMonth(d);
-      const inMonth = txSource.filter(t => isWithinInterval(new Date(t.created_date), { start, end }));
-      const credits = inMonth.filter(t => t.type === 'earned' || t.type === 'credit').reduce((s, t) => s + (t.amount || 0), 0);
-      const debits = inMonth.filter(t => t.type === 'debit').reduce((s, t) => s + (t.amount || 0), 0);
-      months.push({ label, Créditos: Math.round(credits), Débitos: Math.round(debits) });
-    }
-    return months;
-  }, [transactions, isDriver, myDriverRecord]);
+  // Price chart
+  const priceChartData = useMemo(() => Array.from({ length: 6 }, (_, i) => {
+    const d = subMonths(new Date(), 5 - i);
+    const label = format(d, 'MMM yy');
+    const mStart = startOfMonth(d).toISOString().split('T')[0];
+    const mEnd = endOfMonth(d).toISOString().split('T')[0];
+    const filled = orders.filter(o => o.status === 'filled' && o.filled_at >= mStart && o.filled_at <= mEnd);
+    const avg = filled.length > 0 ? filled.reduce((s, o) => s + o.price_per_upi, 0) / filled.length : null;
+    return { label, price: avg };
+  }), [orders]);
 
   // Mutations
   const createTxMutation = useMutation({
@@ -117,13 +133,13 @@ export default function UPI({ currentUser }) {
   });
 
   const deleteTxMutation = useMutation({
-    mutationFn: async (transaction) => {
-      const driver = drivers.find(d => d.id === transaction.driver_id);
+    mutationFn: async (tx) => {
+      const driver = drivers.find(d => d.id === tx.driver_id);
       if (driver) {
-        const delta = transaction.type === 'credit' ? -transaction.amount : transaction.type === 'debit' ? transaction.amount : -transaction.amount;
+        const delta = tx.type === 'credit' ? -tx.amount : tx.type === 'debit' ? tx.amount : -tx.amount;
         await base44.entities.Driver.update(driver.id, { upi_balance: Math.max(0, (driver.upi_balance || 0) + delta) });
       }
-      return await base44.entities.UPITransaction.delete(transaction.id);
+      return base44.entities.UPITransaction.delete(tx.id);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['upi-transactions'] }); qc.invalidateQueries({ queryKey: ['drivers'] }); setEditing(null); setShowForm(false); },
   });
@@ -135,27 +151,12 @@ export default function UPI({ currentUser }) {
 
   const fillOrderMutation = useMutation({
     mutationFn: async (order) => {
-      // Admin buys: pay seller (credit their cash equivalent via a note), deduct from seller's UPI
       const seller = drivers.find(d => d.id === order.seller_id);
-      if (seller) {
-        await base44.entities.Driver.update(seller.id, { upi_balance: Math.max(0, (seller.upi_balance || 0) - order.quantity) });
-      }
-      await base44.entities.UPITransaction.create({
-        driver_id: order.seller_id,
-        driver_name: order.seller_name,
-        type: 'debit',
-        amount: order.quantity,
-        source: 'upi_sale',
-        notes: `Venda UPI - ${order.quantity} × €${order.price_per_upi} = €${(order.quantity * order.price_per_upi).toFixed(2)}`,
-        processed_by: currentUser?.email,
-      });
-      return base44.entities.UPIOrder.update(order.id, {
-        status: 'filled',
-        filled_by: currentUser?.email,
-        filled_at: new Date().toISOString().split('T')[0],
-      });
+      if (seller) await base44.entities.Driver.update(seller.id, { upi_balance: Math.max(0, (seller.upi_balance || 0) - order.quantity) });
+      await base44.entities.UPITransaction.create({ driver_id: order.seller_id, driver_name: order.seller_name, type: 'debit', amount: order.quantity, source: 'upi_sale', notes: `Venda UPI - ${order.quantity} × €${order.price_per_upi}`, processed_by: currentUser?.email });
+      return base44.entities.UPIOrder.update(order.id, { status: 'filled', filled_by: currentUser?.email, filled_at: new Date().toISOString().split('T')[0] });
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['upi-orders'] }); qc.invalidateQueries({ queryKey: ['drivers'] }); qc.invalidateQueries({ queryKey: ['upi-transactions'] }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['upi-orders', 'drivers', 'upi-transactions'] }); },
   });
 
   const cancelOrderMutation = useMutation({
@@ -163,35 +164,19 @@ export default function UPI({ currentUser }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['upi-orders'] }),
   });
 
-  // Auto-buy: fill all orders at or below threshold
   const autoBuyMutation = useMutation({
     mutationFn: async (threshold) => {
       const eligible = openOrders.filter(o => o.price_per_upi <= threshold);
       for (const order of eligible) {
         const seller = drivers.find(d => d.id === order.seller_id);
-        if (seller) {
-          await base44.entities.Driver.update(seller.id, { upi_balance: Math.max(0, (seller.upi_balance || 0) - order.quantity) });
-        }
-        await base44.entities.UPITransaction.create({
-          driver_id: order.seller_id, driver_name: order.seller_name,
-          type: 'debit', amount: order.quantity, source: 'upi_auto_buy',
-          notes: `Auto-compra UPI - €${order.price_per_upi}/UPI`, processed_by: 'system',
-        });
+        if (seller) await base44.entities.Driver.update(seller.id, { upi_balance: Math.max(0, (seller.upi_balance || 0) - order.quantity) });
+        await base44.entities.UPITransaction.create({ driver_id: order.seller_id, driver_name: order.seller_name, type: 'debit', amount: order.quantity, source: 'upi_auto_buy', notes: `Auto-compra - €${order.price_per_upi}/UPI`, processed_by: 'system' });
         await base44.entities.UPIOrder.update(order.id, { status: 'filled', filled_by: currentUser?.email, filled_at: new Date().toISOString().split('T')[0] });
       }
       return eligible.length;
     },
-    onSuccess: (count) => {
-      qc.invalidateQueries({ queryKey: ['upi-orders'] });
-      qc.invalidateQueries({ queryKey: ['drivers'] });
-      qc.invalidateQueries({ queryKey: ['upi-transactions'] });
-      setShowAutoBuyDialog(false);
-      alert(`${count} ordem(ns) executada(s) automaticamente.`);
-    },
+    onSuccess: (count) => { qc.invalidateQueries({ queryKey: ['upi-orders'] }); qc.invalidateQueries({ queryKey: ['drivers'] }); qc.invalidateQueries({ queryKey: ['upi-transactions'] }); setShowAutoBuyDialog(false); alert(`${count} ordem(ns) executada(s).`); },
   });
-
-  const totalUPI = Math.round(drivers.reduce((s, d) => s + (d.upi_balance || 0), 0) * 100) / 100;
-  const totalEarned = Math.round(transactions.filter(t => t.type === 'earned').reduce((s, t) => s + (t.amount || 0), 0) * 100) / 100;
 
   const [form, setForm] = useState({ driver_id: '', type: 'credit', amount: '', notes: '' });
   React.useEffect(() => {
@@ -207,34 +192,23 @@ export default function UPI({ currentUser }) {
       setEditing(null); setShowForm(false);
     } else {
       const driver = drivers.find(d => d.id === form.driver_id);
-      await createTxMutation.mutateAsync({
-        ...form, driver_name: driver?.full_name || '',
-        amount: parseFloat(form.amount),
-        source: 'admin_adjustment', processed_by: currentUser?.email,
-      });
+      await createTxMutation.mutateAsync({ ...form, driver_name: driver?.full_name || '', amount: parseFloat(form.amount), source: 'admin_adjustment', processed_by: currentUser?.email });
     }
   };
 
-  const handleSellOrder = async (e) => {
+  const handleSell = async (e) => {
     e.preventDefault();
-    if (!myDriverRecord) return;
+    if (!myDriverRecord || !myVesting) return;
     const qty = parseFloat(sellForm.quantity);
-    if (qty > myBalance) { alert('Saldo insuficiente'); return; }
-    await createOrderMutation.mutateAsync({
-      seller_id: myDriverRecord.id,
-      seller_name: myDriverRecord.full_name,
-      quantity: qty,
-      price_per_upi: parseFloat(sellForm.price_per_upi),
-    });
+    if (qty > myVesting.totalVested) { alert('Apenas pode vender UPI vestidos (desbloqueados)'); return; }
+    await createOrderMutation.mutateAsync({ seller_id: myDriverRecord.id, seller_name: myDriverRecord.full_name, quantity: qty, price_per_upi: parseFloat(sellForm.price_per_upi) });
   };
-
-  const topDrivers = [...drivers].filter(d => d.upi_balance > 0).sort((a, b) => (b.upi_balance || 0) - (a.upi_balance || 0)).slice(0, 10);
 
   const txColumns = [
     { header: 'Motorista', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
     { header: 'Tipo', render: (r) => (
       <span className={`text-xs font-medium px-2 py-1 rounded-full ${r.type === 'earned' ? 'bg-indigo-50 text-indigo-700' : r.type === 'credit' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-        {r.type === 'earned' ? 'Ganho' : r.type === 'credit' ? 'Creditado' : r.source === 'upi_sale' ? 'Venda' : 'Debitado'}
+        {r.type === 'earned' ? 'Ganho' : r.type === 'credit' ? 'Creditado' : 'Debitado'}
       </span>
     )},
     { header: 'Montante', render: (r) => <span className="font-medium">{r.amount} UPI</span> },
@@ -246,91 +220,112 @@ export default function UPI({ currentUser }) {
     <div className="space-y-4">
       <PageHeader
         title="Moeda UPI"
-        subtitle={isDriver ? `O meu saldo: ${myBalance} UPI` : "4% dos rendimentos Uber + Bolt"}
+        subtitle={isDriver ? `O meu saldo vestido: ${myVesting?.totalVested || 0} UPI` : "4% dos rendimentos Uber + Bolt · Vesting anual 25%"}
         actionLabel={isAdmin ? "Ajustar UPI" : undefined}
         onAction={isAdmin ? () => setShowForm(true) : undefined}
       >
-        {isAdmin && (
-          <Button onClick={() => setShowAutoBuyDialog(true)} variant="outline" className="gap-2">
-            <Settings className="w-4 h-4" /> Auto-compra
-          </Button>
-        )}
-        {(isDriver || (!isAdmin && myDriverRecord)) && myBalance > 0 && (
+        {isAdmin && <Button onClick={() => setShowAutoBuyDialog(true)} variant="outline" className="gap-2"><Settings className="w-4 h-4" /> Auto-compra</Button>}
+        {isDriver && (myVesting?.totalVested || 0) > 0 && (
           <Button onClick={() => setShowSellDialog(true)} className="bg-violet-600 hover:bg-violet-700 gap-2">
             <ShoppingBag className="w-4 h-4" /> Vender UPI
           </Button>
         )}
       </PageHeader>
 
-      {/* Balances for admin */}
+      {/* Admin stats */}
       {isAdmin && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard title="UPI total em circulação" value={`${totalUPI.toLocaleString()} UPI`} icon={Coins} color="violet" />
-          <StatCard title="UPI ganhos (auto)" value={`${totalEarned.toLocaleString()} UPI`} icon={TrendingUp} color="indigo" />
-          <StatCard title="Motoristas com UPI" value={drivers.filter(d => d.upi_balance > 0).length} icon={Users} color="blue" />
+          <StatCard title="UPI em circulação (total)" value={`${totalCirculation.toLocaleString()} UPI`} icon={Coins} color="violet" />
+          <StatCard title="UPI motoristas" value={`${totalDriverUPI.toLocaleString()} UPI`} icon={Users} color="indigo" />
+          <StatCard title="Reserva empresa (1:1)" value={`${COMPANY_RESERVE.toLocaleString()} UPI`} icon={TrendingUp} color="blue" />
         </div>
       )}
 
-      {/* Driver balance card */}
-      {isDriver && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="pt-5">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm text-gray-500">O meu saldo UPI</p>
-                <Coins className="w-5 h-5 text-violet-500" />
+      {/* Driver: vesting timeline */}
+      {isDriver && myVesting && (
+        <Card className="border-0 shadow-sm">
+          <CardContent className="p-5">
+            <p className="text-sm font-semibold text-gray-800 mb-4">O meu portfolio UPI</p>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="bg-violet-50 rounded-xl p-3 text-center">
+                <Coins className="w-5 h-5 text-violet-500 mx-auto mb-1" />
+                <p className="text-xs text-gray-500">UPI Total</p>
+                <p className="text-2xl font-bold text-violet-700">{myVesting.totalUPI}</p>
               </div>
-              <p className="text-3xl font-bold text-violet-700">{myBalance} <span className="text-lg font-normal">UPI</span></p>
-            </CardContent>
-          </Card>
-          {bestAsk && (
-            <Card>
-              <CardContent className="pt-5">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm text-gray-500">Melhor preço de venda (ASK)</p>
-                  <ArrowDownUp className="w-5 h-5 text-emerald-500" />
+              <div className="bg-emerald-50 rounded-xl p-3 text-center">
+                <Unlock className="w-5 h-5 text-emerald-500 mx-auto mb-1" />
+                <p className="text-xs text-gray-500">Disponíveis (vestidos)</p>
+                <p className="text-2xl font-bold text-emerald-700">{myVesting.totalVested}</p>
+              </div>
+              <div className="bg-orange-50 rounded-xl p-3 text-center">
+                <Lock className="w-5 h-5 text-orange-500 mx-auto mb-1" />
+                <p className="text-xs text-gray-500">Bloqueados</p>
+                <p className="text-2xl font-bold text-orange-700">{myVesting.totalLocked}</p>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-3 text-center">
+                <Calendar className="w-5 h-5 text-blue-500 mx-auto mb-1" />
+                <p className="text-xs text-gray-500">Próxima libertação</p>
+                {myVesting.earliestNext ? (
+                  <>
+                    <p className="text-sm font-bold text-blue-700">{myVesting.nextAmount} UPI</p>
+                    <p className="text-xs text-blue-600">{format(myVesting.earliestNext, 'dd/MM/yyyy')}</p>
+                  </>
+                ) : <p className="text-sm font-medium text-gray-400">100% vestido</p>}
+              </div>
+            </div>
+            {myVesting.totalUPI > 0 && (
+              <div>
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>Vesting: {Math.round((myVesting.totalVested / myVesting.totalUPI) * 100)}%</span>
+                  <span>{myVesting.totalVested} / {myVesting.totalUPI} UPI</span>
                 </div>
-                <p className="text-3xl font-bold text-emerald-600">€{bestAsk.toFixed(2)} <span className="text-lg font-normal">/UPI</span></p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                <Progress value={(myVesting.totalVested / myVesting.totalUPI) * 100} className="h-2" />
+              </div>
+            )}
+            {isDriver && myVesting.totalLocked > 0 && (
+              <p className="text-xs text-orange-600 mt-3 bg-orange-50 p-2 rounded-lg">
+                ⚠️ Em caso de saída, os UPI bloqueados são perdidos definitivamente.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      <Tabs defaultValue={isDriver ? "transactions" : "overview"}>
+      <Tabs defaultValue={isDriver ? "market" : "overview"}>
         <TabsList>
           {!isDriver && <TabsTrigger value="overview">Visão geral</TabsTrigger>}
           <TabsTrigger value="transactions">Transações</TabsTrigger>
-          <TabsTrigger value="history">Histórico</TabsTrigger>
           <TabsTrigger value="market">Mercado UPI</TabsTrigger>
         </TabsList>
 
-        {/* Overview tab (admin only) */}
+        {/* Admin overview */}
         {!isDriver && (
           <TabsContent value="overview">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <Card className="lg:col-span-1">
-                <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold text-gray-700">Top detentores UPI</CardTitle></CardHeader>
+              <Card className="border-0 shadow-sm lg:col-span-1">
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Top detentores + Vesting</CardTitle></CardHeader>
                 <CardContent>
-                  {topDrivers.length === 0 ? (
+                  {driverVestingOverview.length === 0 ? (
                     <p className="text-center py-6 text-sm text-gray-400">Nenhum UPI distribuído</p>
                   ) : (
                     <div className="space-y-2">
-                      {topDrivers.map((d, i) => (
-                        <div key={d.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-gray-400 w-5">#{i + 1}</span>
+                      {driverVestingOverview.slice(0, 8).map((d, i) => (
+                        <div key={d.id} className="p-2 bg-gray-50 rounded-lg">
+                          <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium">{d.full_name}</span>
+                            <span className="text-sm font-bold text-violet-600">{d.upi_balance} UPI</span>
                           </div>
-                          <span className="text-sm font-bold text-violet-600">{d.upi_balance} UPI</span>
+                          <div className="flex gap-2 text-[10px]">
+                            <span className="text-emerald-600">✓ {d.totalVested} vestido</span>
+                            <span className="text-orange-500">🔒 {d.totalLocked} bloqueado</span>
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </CardContent>
               </Card>
-              {/* Price chart */}
-              <Card className="lg:col-span-2">
+              <Card className="border-0 shadow-sm lg:col-span-2">
                 <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Evolução do preço UPI (6 meses)</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={220}>
@@ -350,50 +345,16 @@ export default function UPI({ currentUser }) {
 
         {/* Transactions */}
         <TabsContent value="transactions">
-          {isDriver && (
-            <div className="flex gap-2 mb-3">
-              {['all', 'week', 'month', 'year'].map(p => (
-                <button key={p} onClick={() => setTxPeriod(p)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${txPeriod === p ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                  {p === 'all' ? 'Tudo' : p === 'week' ? 'Semana' : p === 'month' ? 'Mês' : 'Ano'}
-                </button>
-              ))}
-            </div>
-          )}
-          <DataTable columns={txColumns} data={filteredMyTx} isLoading={isLoading} emptyMessage="Nenhuma transação UPI"
+          <DataTable columns={txColumns} data={isDriver ? myTxs : transactions} isLoading={isLoading} emptyMessage="Nenhuma transação UPI"
             onRowClick={isAdmin ? (t) => { setEditing(t); setShowForm(true); } : undefined} />
         </TabsContent>
 
-        {/* History chart */}
-        <TabsContent value="history">
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Histórico de Transações UPI (6 meses)</CardTitle></CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={txChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="Créditos" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Débitos" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Market - Order book */}
+        {/* Market */}
         <TabsContent value="market">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Order book */}
-            <Card>
+            <Card className="border-0 shadow-sm">
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <ArrowDownUp className="w-4 h-4 text-violet-500" />
-                  Order Book — Ofertas de venda (ASK)
-                </CardTitle>
+                <CardTitle className="text-sm font-semibold flex items-center gap-2"><ArrowDownUp className="w-4 h-4 text-violet-500" /> Order Book — Ofertas de venda (ASK)</CardTitle>
               </CardHeader>
               <CardContent>
                 {openOrders.length === 0 ? (
@@ -401,17 +362,16 @@ export default function UPI({ currentUser }) {
                 ) : (
                   <div className="space-y-2">
                     <div className="grid grid-cols-4 text-xs font-medium text-gray-500 px-2 mb-1">
-                      <span>Vendedor</span><span className="text-right">Qtd</span><span className="text-right">Preço/UPI</span><span className="text-right">Total</span>
+                      <span>Vendedor</span><span className="text-right">Qtd</span><span className="text-right">Preço/UPI</span><span className="text-right">Ação</span>
                     </div>
-                    {openOrders.map((o) => (
+                    {openOrders.map(o => (
                       <div key={o.id} className="grid grid-cols-4 items-center p-2.5 bg-violet-50 border border-violet-100 rounded-lg text-sm">
                         <span className="font-medium text-gray-800 truncate">{o.seller_name?.split(' ')[0]}</span>
-                        <span className="text-right font-medium">{o.quantity} UPI</span>
+                        <span className="text-right">{o.quantity} UPI</span>
                         <span className="text-right text-violet-700 font-semibold">€{o.price_per_upi.toFixed(2)}</span>
                         <div className="flex justify-end gap-1">
-                          <span className="text-gray-600 text-xs mr-1">€{(o.quantity * o.price_per_upi).toFixed(0)}</span>
                           {isAdmin && (
-                            <button onClick={() => { if (confirm(`Comprar ${o.quantity} UPI de ${o.seller_name} por €${(o.quantity * o.price_per_upi).toFixed(2)}?`)) fillOrderMutation.mutate(o); }}
+                            <button onClick={() => { if (confirm(`Comprar ${o.quantity} UPI de ${o.seller_name}?`)) fillOrderMutation.mutate(o); }}
                               className="p-1 rounded bg-emerald-600 hover:bg-emerald-700">
                               <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                             </button>
@@ -426,12 +386,10 @@ export default function UPI({ currentUser }) {
                 )}
               </CardContent>
             </Card>
-
-            {/* Price history chart */}
-            <Card>
+            <Card className="border-0 shadow-sm">
               <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Evolução do preço UPI (6 meses)</CardTitle></CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={260}>
+                <ResponsiveContainer width="100%" height={220}>
                   <LineChart data={priceChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="label" tick={{ fontSize: 11 }} />
@@ -454,10 +412,8 @@ export default function UPI({ currentUser }) {
                 )}
               </CardContent>
             </Card>
-
-            {/* My open orders (driver) */}
             {isDriver && (
-              <Card className="lg:col-span-2">
+              <Card className="border-0 shadow-sm lg:col-span-2">
                 <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">As minhas ordens de venda</CardTitle></CardHeader>
                 <CardContent>
                   {orders.filter(o => o.seller_id === myDriverRecord?.id).length === 0 ? (
@@ -466,16 +422,12 @@ export default function UPI({ currentUser }) {
                     <div className="space-y-2">
                       {orders.filter(o => o.seller_id === myDriverRecord?.id).map(o => (
                         <div key={o.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <span className="font-medium">{o.quantity} UPI</span> a <span className="text-violet-700 font-semibold">€{o.price_per_upi.toFixed(2)}/UPI</span>
-                          </div>
+                          <div><span className="font-medium">{o.quantity} UPI</span> a <span className="text-violet-700 font-semibold">€{o.price_per_upi.toFixed(2)}/UPI</span></div>
                           <div className="flex items-center gap-3">
                             <Badge className={o.status === 'open' ? 'bg-green-100 text-green-700' : o.status === 'filled' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'}>
                               {o.status === 'open' ? 'Aberta' : o.status === 'filled' ? 'Executada' : 'Cancelada'}
                             </Badge>
-                            {o.status === 'open' && (
-                              <button onClick={() => cancelOrderMutation.mutate(o.id)} className="text-xs text-red-500 hover:underline">Cancelar</button>
-                            )}
+                            {o.status === 'open' && <button onClick={() => cancelOrderMutation.mutate(o.id)} className="text-xs text-red-500 hover:underline">Cancelar</button>}
                           </div>
                         </div>
                       ))}
@@ -494,29 +446,17 @@ export default function UPI({ currentUser }) {
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>Auto-compra UPI</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Define um preço máximo. Todas as ordens abertas com preço ≤ ao limite serão compradas automaticamente.
-              </p>
+              <p className="text-sm text-gray-600">Define um preço máximo. Todas as ordens ≤ ao limite serão compradas automaticamente.</p>
               {openOrders.length > 0 && (
                 <div className="bg-violet-50 p-3 rounded-lg text-sm">
                   <p>Melhor ASK: <strong className="text-violet-700">€{openOrders[0].price_per_upi.toFixed(2)}</strong></p>
                   <p className="text-gray-500">{openOrders.length} ordem(ns) abertas</p>
                 </div>
               )}
-              <div className="space-y-1.5">
-                <Label className="text-xs">Preço máximo por UPI (€)</Label>
-                <Input type="number" step="0.01" min="0.01" value={autoBuyThreshold}
-                  onChange={e => setAutoBuyThreshold(e.target.value)} placeholder="Ex: 1.50" />
-              </div>
-              {autoBuyThreshold && (
-                <p className="text-xs text-gray-500">
-                  {openOrders.filter(o => o.price_per_upi <= parseFloat(autoBuyThreshold)).length} ordem(ns) elegível(eis)
-                </p>
-              )}
+              <div className="space-y-1.5"><Label className="text-xs">Preço máximo por UPI (€)</Label><Input type="number" step="0.01" min="0.01" value={autoBuyThreshold} onChange={e => setAutoBuyThreshold(e.target.value)} placeholder="Ex: 1.50" /></div>
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setShowAutoBuyDialog(false)}>Cancelar</Button>
-                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={!autoBuyThreshold || autoBuyMutation.isPending}
-                  onClick={() => autoBuyMutation.mutate(parseFloat(autoBuyThreshold))}>
+                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={!autoBuyThreshold || autoBuyMutation.isPending} onClick={() => autoBuyMutation.mutate(parseFloat(autoBuyThreshold))}>
                   {autoBuyMutation.isPending ? 'A executar...' : 'Executar'}
                 </Button>
               </div>
@@ -525,7 +465,7 @@ export default function UPI({ currentUser }) {
         </Dialog>
       )}
 
-      {/* Admin: adjust UPI dialog */}
+      {/* Adjust UPI */}
       {isAdmin && (
         <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setEditing(null); }}>
           <DialogContent className="max-w-sm">
@@ -561,35 +501,28 @@ export default function UPI({ currentUser }) {
         </Dialog>
       )}
 
-      {/* Driver: sell UPI dialog */}
+      {/* Sell dialog */}
       {isDriver && (
         <Dialog open={showSellDialog} onOpenChange={setShowSellDialog}>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Vender os meus UPI</DialogTitle></DialogHeader>
-            <div className="bg-violet-50 p-3 rounded-lg text-sm mb-2">
-              <p className="text-violet-700">Saldo disponível: <strong>{myBalance} UPI</strong></p>
-              {bestAsk && <p className="text-gray-600 mt-1">Melhor preço atual no mercado: <strong>€{bestAsk.toFixed(2)}/UPI</strong></p>}
+            <DialogHeader><DialogTitle>Vender UPI (vestidos)</DialogTitle></DialogHeader>
+            <div className="bg-violet-50 p-3 rounded-lg text-sm mb-2 space-y-1">
+              <p className="text-violet-700">UPI disponíveis (vestidos): <strong>{myVesting?.totalVested || 0}</strong></p>
+              <p className="text-orange-600">UPI bloqueados: <strong>{myVesting?.totalLocked || 0}</strong> (não vendáveis)</p>
+              {bestAsk && <p className="text-gray-600">Melhor preço mercado: <strong>€{bestAsk.toFixed(2)}/UPI</strong></p>}
             </div>
-            <form onSubmit={handleSellOrder} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Quantidade a vender</Label>
-                <Input type="number" min="1" max={myBalance} step="1" value={sellForm.quantity}
-                  onChange={(e) => setSellForm(f => ({ ...f, quantity: e.target.value }))} required placeholder={`Máx: ${myBalance}`} />
+            <form onSubmit={handleSell} className="space-y-4">
+              <div className="space-y-1.5"><Label className="text-xs">Quantidade (máx: {myVesting?.totalVested || 0})</Label>
+                <Input type="number" min="1" max={myVesting?.totalVested || 0} step="1" value={sellForm.quantity} onChange={(e) => setSellForm(f => ({ ...f, quantity: e.target.value }))} required />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Preço por UPI (€)</Label>
-                <Input type="number" min="0.01" step="0.01" value={sellForm.price_per_upi}
-                  onChange={(e) => setSellForm(f => ({ ...f, price_per_upi: e.target.value }))} required />
+              <div className="space-y-1.5"><Label className="text-xs">Preço por UPI (€)</Label>
+                <Input type="number" min="0.01" step="0.01" value={sellForm.price_per_upi} onChange={(e) => setSellForm(f => ({ ...f, price_per_upi: e.target.value }))} required />
               </div>
               {sellForm.quantity && sellForm.price_per_upi && (
-                <div className="bg-indigo-50 p-3 rounded-lg text-sm">
-                  Total estimado: <strong className="text-indigo-700">€{(parseFloat(sellForm.quantity) * parseFloat(sellForm.price_per_upi)).toFixed(2)}</strong>
-                </div>
+                <div className="bg-indigo-50 p-3 rounded-lg text-sm">Total estimado: <strong className="text-indigo-700">€{(parseFloat(sellForm.quantity) * parseFloat(sellForm.price_per_upi)).toFixed(2)}</strong></div>
               )}
-              <p className="text-xs text-gray-500">A sua ordem ficará no order book até ser comprada pelo administrador (a empresa).</p>
-              <Button type="submit" disabled={createOrderMutation.isPending} className="w-full bg-violet-600 hover:bg-violet-700">
-                {createOrderMutation.isPending ? 'A colocar...' : 'Colocar ordem de venda'}
-              </Button>
+              <p className="text-xs text-gray-500">A ordem fica no order book até ser comprada pela empresa.</p>
+              <Button type="submit" disabled={createOrderMutation.isPending} className="w-full bg-violet-600 hover:bg-violet-700">Colocar ordem de venda</Button>
             </form>
           </DialogContent>
         </Dialog>

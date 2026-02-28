@@ -12,37 +12,54 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent } from '@/components/ui/card';
 import { TrendingDown, ShieldCheck, Info } from 'lucide-react';
 
-// Degressive quarterly schedule calculation
+// Degressive quarterly schedule — T1 always starts at €300/week, then decreases linearly
+// Returns null if T1 > 300 would be needed (i.e. 300 is not enough to cover totalPrice)
 function computeQuarterlySchedule(totalPrice, durationMonths) {
   const totalWeeks = Math.round(durationMonths * 4.33);
   const numQuarters = Math.ceil(totalWeeks / 13);
-  if (numQuarters < 2 || totalWeeks === 0) {
-    return [{ quarter: 1, weeks: totalWeeks, weeklyAmount: totalWeeks > 0 ? Math.round((totalPrice / totalWeeks) * 100) / 100 : 0, total: totalPrice }];
+  if (totalWeeks === 0) return null;
+  if (numQuarters < 2) {
+    const weekly = Math.round((totalPrice / totalWeeks) * 100) / 100;
+    return [{ quarter: 1, weeks: totalWeeks, weeklyAmount: weekly, total: totalPrice }];
   }
 
-  // M1 is highest, MT is lowest. Linear degression.
-  // M1 + (M1 - step) + ... + (M1 - (T-1)*step) = P
-  // T*M1 - step*(0+1+...+(T-1)) = P  => T*M1 - step*T*(T-1)/2 = P
-  // We want MT = M1 - (T-1)*step >= 0
-  // Choose step proportionally: step = 2*(M_avg - MT_min)/T where M_avg = P/(T*13)
-  const avgWeekly = totalPrice / totalWeeks;
-  // MT = 0.6 * avgWeekly (last quarter is 60% of average), M1 solves
-  const MT = Math.max(avgWeekly * 0.6, 1);
-  const step = (2 * (avgWeekly - MT)) / (numQuarters - 1 > 0 ? numQuarters - 1 : 1);
-  const M1 = MT + (numQuarters - 1) * step;
+  // T1 is fixed at €300/week
+  const M1 = 300;
+
+  // Compute step from T1 down: sum = sum_q=1..T of (M1 - (q-1)*step) * weeksQ = totalPrice
+  // Assuming all quarters = 13 weeks except last
+  const fullQuarterWeeks = 13;
+  const lastQuarterWeeks = totalWeeks - (numQuarters - 1) * fullQuarterWeeks;
+
+  // sum = M1 * totalWeeks - step * (sum_q=1..T of (q-1)*weeksQ)
+  // denominator = sum of (q-1)*weeksQ
+  let denominator = 0;
+  for (let q = 1; q <= numQuarters; q++) {
+    const qw = q < numQuarters ? fullQuarterWeeks : lastQuarterWeeks;
+    denominator += (q - 1) * qw;
+  }
+  // M1*totalWeeks - step*denominator = totalPrice
+  // step = (M1*totalWeeks - totalPrice) / denominator
+  const step = denominator > 0 ? (M1 * totalWeeks - totalPrice) / denominator : 0;
+
+  // If step < 0, T1=300 is not enough → return null so we can filter this duration
+  if (step < 0) return null;
 
   const quarters = [];
   let weeksAssigned = 0;
   let cumulativeTotal = 0;
 
   for (let q = 1; q <= numQuarters; q++) {
-    const qWeeks = q < numQuarters ? Math.min(13, totalWeeks - weeksAssigned) : totalWeeks - weeksAssigned;
+    const qWeeks = q < numQuarters ? fullQuarterWeeks : lastQuarterWeeks;
     const rawWeekly = M1 - (q - 1) * step;
-    const weeklyAmount = q < numQuarters ? Math.round(rawWeekly * 100) / 100 : null; // last quarter adjusted
-    const qTotal = q < numQuarters ? Math.round(rawWeekly * qWeeks * 100) / 100 : Math.round((totalPrice - cumulativeTotal) * 100) / 100;
-    const finalWeekly = q < numQuarters ? weeklyAmount : Math.round((qTotal / qWeeks) * 100) / 100;
+    const weeklyAmount = q < numQuarters
+      ? Math.round(rawWeekly * 100) / 100
+      : Math.round((totalPrice - cumulativeTotal) / Math.max(1, qWeeks) * 100) / 100;
+    const qTotal = q < numQuarters
+      ? Math.round(rawWeekly * qWeeks * 100) / 100
+      : Math.round((totalPrice - cumulativeTotal) * 100) / 100;
 
-    quarters.push({ quarter: q, weeks: qWeeks, weeklyAmount: finalWeekly, total: qTotal });
+    quarters.push({ quarter: q, weeks: qWeeks, weeklyAmount, total: qTotal });
     weeksAssigned += qWeeks;
     if (q < numQuarters) cumulativeTotal += qTotal;
   }
