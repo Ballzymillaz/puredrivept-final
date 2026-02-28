@@ -60,6 +60,7 @@ function aggregateVesting(transactions) {
 // No static reserve — company UPI is dynamically computed as sum of all earned UPI (1:1 matching)
 
 export default function UPI({ currentUser }) {
+  const isSimulation = !!currentUser?._isSimulation;
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [showSellDialog, setShowSellDialog] = useState(false);
@@ -221,11 +222,11 @@ export default function UPI({ currentUser }) {
       <PageHeader
         title="Moeda UPI"
         subtitle={isDriver ? `O meu saldo vestido: ${myVesting?.totalVested || 0} UPI` : "4% dos rendimentos Uber + Bolt · Vesting anual 25%"}
-        actionLabel={isAdmin ? "Ajustar UPI" : undefined}
-        onAction={isAdmin ? () => setShowForm(true) : undefined}
+        actionLabel={isAdmin && !isSimulation ? "Ajustar UPI" : undefined}
+        onAction={isAdmin && !isSimulation ? () => setShowForm(true) : undefined}
       >
-        {isAdmin && <Button onClick={() => setShowAutoBuyDialog(true)} variant="outline" className="gap-2"><Settings className="w-4 h-4" /> Auto-compra</Button>}
-        {isDriver && (myVesting?.totalVested || 0) > 0 && (
+        {isAdmin && !isSimulation && <Button onClick={() => setShowAutoBuyDialog(true)} variant="outline" className="gap-2"><Settings className="w-4 h-4" /> Auto-compra</Button>}
+        {isDriver && !isSimulation && (myVesting?.totalVested || 0) > 0 && (
           <Button onClick={() => setShowSellDialog(true)} className="bg-violet-600 hover:bg-violet-700 gap-2">
             <ShoppingBag className="w-4 h-4" /> Vender UPI
           </Button>
@@ -370,7 +371,7 @@ export default function UPI({ currentUser }) {
                         <span className="text-right">{o.quantity} UPI</span>
                         <span className="text-right text-violet-700 font-semibold">€{o.price_per_upi.toFixed(2)}</span>
                         <div className="flex justify-end gap-1">
-                          {isAdmin && (
+                          {isAdmin && !isSimulation && (
                             <button onClick={() => { if (confirm(`Comprar ${o.quantity} UPI de ${o.seller_name}?`)) fillOrderMutation.mutate(o); }}
                               className="p-1 rounded bg-emerald-600 hover:bg-emerald-700">
                               <CheckCircle2 className="w-3.5 h-3.5 text-white" />
