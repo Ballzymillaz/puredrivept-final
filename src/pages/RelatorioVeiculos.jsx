@@ -72,7 +72,7 @@ export default function RelatorioVeiculos() {
 
   const exportCSV = () => {
     const rows = [
-      ['Veículo', 'Matrícula', 'Nº Registos', 'Custo Total', 'Combustível', 'Manutenção', 'Última Serviço', 'Próximo Serviço'],
+      ['Veículo', 'Matrícula', 'Nº Registos', 'Manutenção', 'Última Serviço', 'Próximo Serviço'],
       ...stats.perVehicle.map(v => [
         `${v.vehicle?.brand || ''} ${v.vehicle?.model || ''}`,
         v.vehicle?.license_plate || '',
@@ -97,8 +97,8 @@ export default function RelatorioVeiculos() {
     doc.setFontSize(9); doc.setTextColor(100, 100, 100);
     doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageW / 2, y, { align: 'center' }); y += 10;
     doc.setFontSize(8); doc.setFont(undefined, 'bold'); doc.setTextColor(80, 80, 80);
-    ['Veículo', 'Matrícula', 'Registos', 'Combustível', 'Manutenção', 'Total'].forEach((h, i) => {
-      doc.text(h, [10, 50, 80, 105, 135, 165][i], y);
+    ['Veículo', 'Matrícula', 'Registos', 'Manutenção', 'Total'].forEach((h, i) => {
+      doc.text(h, [10, 50, 80, 115, 155][i], y);
     }); y += 4;
     doc.line(10, y, pageW - 10, y); y += 3;
     doc.setFont(undefined, 'normal'); doc.setTextColor(30, 30, 30);
