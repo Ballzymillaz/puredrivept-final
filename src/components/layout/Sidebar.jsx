@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   { section: 'Finanças', items: [
     { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
     { name: 'Fluxo de caixa', icon: TrendingUp, page: 'CashFlow' },
-    { name: 'IVA', icon: Receipt, page: 'IVA' },
+    { name: 'IVA', icon: Receipt, page: 'IVA', adminOnly: true },
     { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
     { name: 'Reembolsos', icon: Receipt, page: 'Reimbursements' },
     { name: 'Indicações', icon: HandCoins, page: 'Referrals' },
