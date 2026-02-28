@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertTriangle, X } from 'lucide-react';
-import { useSimulation } from '@/lib/SimulationContext';
+import { useSimulation } from '@/components/shared/SimulationContext';
 
 export default function SimulationBanner() {
   const { simulation, setSimulation } = useSimulation();

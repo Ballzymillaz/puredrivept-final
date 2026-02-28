@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import TopBar from './components/layout/TopBar';
+import SimulationBanner from './components/shared/SimulationBanner';
+import { SimulationProvider, useSimulation } from './components/shared/SimulationContext';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 
@@ -24,7 +26,8 @@ const PAGE_TITLES = {
   UPI: 'Moeda UPI',
   Messaging: 'Mensagens',
   RelatoriosFrota: 'Relatório de Frota',
-  RelatorioVeiculos: 'Relatório de Veículos', // legacy
+  RelatorioVeiculos: 'Relatório de Veículos',
+  Relatorios: 'Relatórios',
   Notifications: 'Notificações',
   VehicleDetail: 'Detalhe do Veículo',
   UserManagement: 'Gestão de Utilizadores',
@@ -34,12 +37,13 @@ const PAGE_TITLES = {
   RelatorioFrotas: 'Relatório de Desempenho de Frotas',
 };
 
-// Public pages that don't need auth or sidebar
 const PUBLIC_PAGES = ['PublicSite', 'Apply', 'ContaValidacao'];
 
-export default function Layout({ children, currentPageName }) {
+// Inner layout that has access to simulation context
+function LayoutInner({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { simulation } = useSimulation();
 
   useEffect(() => {
     const loadUser = async () => {
@@ -47,29 +51,23 @@ export default function Layout({ children, currentPageName }) {
         setLoading(false);
         return;
       }
-      
-      // Redirect root to PublicSite
       if (window.location.pathname === '/') {
         window.location.href = createPageUrl('PublicSite');
         return;
       }
-
       const isAuth = await base44.auth.isAuthenticated();
       if (!isAuth) {
         base44.auth.redirectToLogin();
         return;
       }
       const me = await base44.auth.me();
-      // Support multi-roles: roles can be comma-separated or a single string
       const userRoles = me?.role ? me.role.split(',').map(r => r.trim()) : [];
       const hasRole = (r) => userRoles.includes(r);
       setUser({ ...me, roles: userRoles, hasRole });
       setLoading(false);
 
-      // Redirect pure drivers (no admin/fleet role) to their allowed pages
       const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications', 'Dashboard'];
       if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
-        // Auto-redirect driver from root Dashboard to DriverDashboard
         if (currentPageName === 'Dashboard') {
           window.location.href = createPageUrl('DriverDashboard');
           return;
@@ -79,7 +77,6 @@ export default function Layout({ children, currentPageName }) {
           return;
         }
       }
-      // Redirect pure fleet_manager away from admin-only pages
       const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Relatorios'];
       if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('RelatoriosFrota');
@@ -89,9 +86,7 @@ export default function Layout({ children, currentPageName }) {
     loadUser();
   }, [currentPageName]);
 
-  if (PUBLIC_PAGES.includes(currentPageName)) {
-    return <>{children}</>;
-  }
+  if (PUBLIC_PAGES.includes(currentPageName)) return <>{children}</>;
 
   if (loading) {
     return (
@@ -106,17 +101,37 @@ export default function Layout({ children, currentPageName }) {
     );
   }
 
-  const sidebarCollapsed = false; // Will be managed by Sidebar internally
+  // Build the effective currentUser passed to pages
+  // When simulation is active, override role + inject simulation metadata
+  const effectiveUser = simulation
+    ? {
+        ...user,
+        role: simulation.role,
+        _isSimulation: true,
+        _simulatedTargetId: simulation.targetId,
+        _simulatedTargetName: simulation.targetName,
+        _realRole: user?.role,
+      }
+    : user;
 
   return (
     <div className="min-h-screen bg-gray-50/80">
       <Sidebar currentPage={currentPageName} userRole={user?.role || 'admin'} currentUser={user} />
       <div className="lg:ml-60 min-h-screen flex flex-col">
         <TopBar user={user} pageTitle={PAGE_TITLES[currentPageName] || currentPageName} />
+        <SimulationBanner />
         <main className="flex-1 p-4 md:p-6">
-          {React.cloneElement(children, { currentUser: user })}
+          {React.cloneElement(children, { currentUser: effectiveUser })}
         </main>
       </div>
     </div>
+  );
+}
+
+export default function Layout({ children, currentPageName }) {
+  return (
+    <SimulationProvider>
+      <LayoutInner children={children} currentPageName={currentPageName} />
+    </SimulationProvider>
   );
 }
