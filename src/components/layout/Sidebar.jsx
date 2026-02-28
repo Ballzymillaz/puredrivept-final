@@ -59,7 +59,7 @@ export default function Sidebar({ currentPage, userRole }) {
     if (hasRole('admin')) return true;
       if (item.adminDriverOnly && !hasRole('admin') && !hasRole('driver')) return false;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Relatorios'].includes(item.page);
       }
       if (hasRole('driver')) {
         return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'].includes(item.page);

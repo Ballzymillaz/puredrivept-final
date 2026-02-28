@@ -80,7 +80,7 @@ export default function Layout({ children, currentPageName }) {
         }
       }
       // Redirect pure fleet_manager away from admin-only pages
-      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'];
+      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Relatorios'];
       if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
         window.location.href = createPageUrl('RelatoriosFrota');
         return;
