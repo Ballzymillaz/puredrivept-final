@@ -171,7 +171,6 @@ export default function RelatorioVeiculos() {
                 <Tooltip formatter={v => `€${v}`} />
                 <Legend />
                 <Bar dataKey="Manutenção" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Combustível" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -190,7 +189,6 @@ export default function RelatorioVeiculos() {
                     <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Veículo</th>
                     <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Matrícula</th>
                     <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Registos</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Combustível</th>
                     <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Manutenção</th>
                     <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Total</th>
                     <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Último serviço</th>
