@@ -269,16 +269,18 @@ export default function Payments({ currentUser }) {
               <div className="flex gap-2">
                 <Button onClick={() => setEditMode(true)} variant="outline" className="flex-1">Editar</Button>
                 <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar pagamento?')) deleteMutation.mutate(selected); }}>Eliminar</Button>
-                <Select value={selected.status} onValueChange={(v) => updateMutation.mutate({ id: selected.id, data: { status: v }, oldPayment: selected })}>
-                  <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Rascunho</SelectItem>
-                    <SelectItem value="processing">Processando</SelectItem>
-                    <SelectItem value="approved">Aprovado</SelectItem>
-                    <SelectItem value="paid">Pago</SelectItem>
-                    <SelectItem value="disputed">Contestado</SelectItem>
-                  </SelectContent>
-                </Select>
+                {isAdmin && (
+                  <Select value={selected.status} onValueChange={(v) => updateMutation.mutate({ id: selected.id, data: { status: v }, oldPayment: selected })}>
+                    <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Rascunho</SelectItem>
+                      <SelectItem value="processing">Processando</SelectItem>
+                      <SelectItem value="approved">Aprovado</SelectItem>
+                      <SelectItem value="paid">Pago</SelectItem>
+                      <SelectItem value="disputed">Contestado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
           )}
