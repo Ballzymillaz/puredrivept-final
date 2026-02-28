@@ -66,6 +66,16 @@ export default function Layout({ children, currentPageName }) {
       setUser({ ...me, roles: userRoles, hasRole });
       setLoading(false);
 
+      // Redirect "pending" users to validation page
+      if (hasRole('pending') && !hasRole('admin') && !hasRole('driver') && !hasRole('fleet_manager') && !hasRole('commercial')) {
+        if (currentPageName !== 'ContaValidacao') {
+          window.location.href = createPageUrl('ContaValidacao');
+          return;
+        }
+        setLoading(false);
+        return;
+      }
+
       // Redirect pure drivers (no admin/fleet role) to their allowed pages
       const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications', 'Dashboard'];
       if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
