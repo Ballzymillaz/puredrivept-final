@@ -72,11 +72,15 @@ export default function CashFlow({ currentUser }) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['expenses-all'] }); setEditing(null); setShowForm(false); },
   });
 
+  const basePayments = isFleetManager
+    ? payments.filter(p => fleetDriverIds?.has(p.driver_id))
+    : payments;
+
   const filteredPayments = driverFilter === 'all' 
-    ? payments 
+    ? basePayments 
     : driverFilter === 'none'
-    ? payments.filter(p => !p.driver_id)
-    : payments.filter(p => p.driver_id === driverFilter);
+    ? basePayments.filter(p => !p.driver_id)
+    : basePayments.filter(p => p.driver_id === driverFilter);
 
   const totalRevenue = filteredPayments.reduce((s, p) => s + (p.total_gross || 0), 0);
   const totalCommissions = filteredPayments.reduce((s, p) => s + (p.commission_amount || 0), 0);
