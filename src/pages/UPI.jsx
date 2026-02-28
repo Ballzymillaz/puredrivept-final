@@ -57,8 +57,7 @@ function aggregateVesting(transactions) {
   return { totalUPI, totalVested: Math.round(totalVested * 100) / 100, totalLocked: Math.round(totalLocked * 100) / 100, earliestNext, nextAmount };
 }
 
-// Company reserve = same as total driver UPI (1:1 matching)
-const COMPANY_RESERVE = 10000; // placeholder, ideally from config
+// No static reserve — company UPI is dynamically computed as sum of all earned UPI (1:1 matching)
 
 export default function UPI({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
@@ -92,9 +91,10 @@ export default function UPI({ currentUser }) {
   const openOrders = orders.filter(o => o.status === 'open').sort((a, b) => a.price_per_upi - b.price_per_upi);
   const bestAsk = openOrders.length > 0 ? openOrders[0].price_per_upi : null;
 
-  // UPI totals
+  // UPI totals — company UPI = sum of all "earned" transactions (1:1 synchronised emission)
   const totalDriverUPI = Math.round(drivers.reduce((s, d) => s + (d.upi_balance || 0), 0) * 100) / 100;
-  const totalCirculation = totalDriverUPI + COMPANY_RESERVE;
+  const companyUPI = Math.round(transactions.filter(t => t.type === 'earned').reduce((s, t) => s + (t.amount || 0), 0) * 100) / 100;
+  const totalCirculation = totalDriverUPI + companyUPI;
 
   // Per-driver vesting for admin overview
   const driverVestingOverview = useMemo(() => {
@@ -237,7 +237,7 @@ export default function UPI({ currentUser }) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard title="UPI em circulação (total)" value={`${totalCirculation.toLocaleString()} UPI`} icon={Coins} color="violet" />
           <StatCard title="UPI motoristas" value={`${totalDriverUPI.toLocaleString()} UPI`} icon={Users} color="indigo" />
-          <StatCard title="Reserva empresa (1:1)" value={`${COMPANY_RESERVE.toLocaleString()} UPI`} icon={TrendingUp} color="blue" />
+          <StatCard title="UPI Empresa (matching 1:1)" value={`${companyUPI.toLocaleString()} UPI`} icon={TrendingUp} color="blue" />
         </div>
       )}
 
