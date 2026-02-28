@@ -63,9 +63,6 @@ export default function Sidebar({ currentPage, userRole }) {
       if (hasRole('fleet_manager') && !hasRole('driver')) {
         return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
       }
-      if (hasRole('commercial') && !hasRole('admin')) {
-        return ['Dashboard', 'Drivers', 'Documents', 'Referrals', 'Rankings', 'Messaging'].includes(item.page);
-      }
       if (hasRole('driver')) {
         return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'].includes(item.page);
       }
