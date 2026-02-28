@@ -221,11 +221,11 @@ export default function Drivers({ currentUser }) {
                     </div>
                   </td>
 
-                  <td className="px-4 py-3 hidden lg:table-cell">
-                    {driver.vehicle_deposit_paid ? (
-                      <Badge className="bg-green-100 text-green-700 border-0 text-xs">Sim</Badge>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    {driver.contract_type ? (
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{driver.contract_type.replace('_', ' ')}</span>
                     ) : (
-                      <Badge className="bg-red-100 text-red-600 border-0 text-xs">Não</Badge>
+                      <span className="text-xs text-gray-400">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell">
@@ -233,6 +233,13 @@ export default function Drivers({ currentUser }) {
                       <span className="text-sm font-mono text-gray-700">{driver.assigned_vehicle_plate}</span>
                     ) : (
                       <span className="text-xs text-red-400 flex items-center gap-1"><Car className="w-3 h-3" />Sem veículo</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    {driver.vehicle_deposit_paid ? (
+                      <Badge className="bg-green-100 text-green-700 border-0 text-xs">Sim</Badge>
+                    ) : (
+                      <Badge className="bg-red-100 text-red-600 border-0 text-xs">Não</Badge>
                     )}
                   </td>
                   <td className="px-4 py-3">
