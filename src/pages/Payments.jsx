@@ -184,7 +184,7 @@ export default function Payments({ currentUser }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Pagamentos semanais" subtitle={`${payments.length} pagamentos`} actionLabel="Novo pagamento" onAction={() => { setShowForm(true); }} />
+      <PageHeader title="Pagamentos semanais" subtitle={`${filtered.length} pagamentos`} actionLabel={isAdmin ? "Novo pagamento" : undefined} onAction={isAdmin ? () => { setShowForm(true); } : undefined} />
       
       <div className="flex flex-wrap gap-3">
         <Select value={driverFilter} onValueChange={setDriverFilter}>

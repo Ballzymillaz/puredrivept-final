@@ -16,7 +16,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const PIE_COLORS = ['#6366f1', '#f43f5e', '#f59e0b', '#10b981', '#8b5cf6', '#06b6d4'];
 
-export default function CashFlow() {
+export default function CashFlow({ currentUser }) {
+  const isAdmin = currentUser?.role?.includes('admin');
+  const isFleetManager = currentUser?.role?.includes('fleet_manager') && !isAdmin;
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [detailsDialog, setDetailsDialog] = useState(null);
