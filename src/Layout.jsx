@@ -24,7 +24,7 @@ const PAGE_TITLES = {
   UPI: 'Moeda UPI',
   Messaging: 'Mensagens',
   RelatoriosFrota: 'Relatório de Frota',
-  RelatorioVeiculos: 'Relatório de Veículos',
+  RelatorioVeiculos: 'Relatório de Veículos', // legacy
   Notifications: 'Notificações',
   VehicleDetail: 'Detalhe do Veículo',
   UserManagement: 'Gestão de Utilizadores',
