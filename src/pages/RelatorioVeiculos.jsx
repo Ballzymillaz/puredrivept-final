@@ -65,7 +65,6 @@ export default function RelatorioVeiculos() {
     const chartData = perVehicle.slice(0, 10).map(v => ({
       name: v.vehicle?.license_plate || v.id.slice(-4),
       Manutenção: Math.round(v.maintCost),
-      Combustível: Math.round(v.fuelCost),
     }));
 
     return { perVehicle, totalCost, totalFuel, alerts, chartData };
@@ -155,8 +154,7 @@ export default function RelatorioVeiculos() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card><CardContent className="pt-4"><p className="text-xs text-gray-500">Custo total</p><p className="text-xl font-bold text-red-600">{fmt(stats.totalCost)}</p></CardContent></Card>
-        <Card><CardContent className="pt-4"><p className="text-xs text-gray-500">Combustível</p><p className="text-xl font-bold text-orange-500">{fmt(stats.totalFuel)}</p></CardContent></Card>
-        <Card><CardContent className="pt-4"><p className="text-xs text-gray-500">Manutenção</p><p className="text-xl font-bold text-amber-600">{fmt(stats.totalCost - stats.totalFuel)}</p></CardContent></Card>
+        <Card><CardContent className="pt-4"><p className="text-xs text-gray-500">Manutenção</p><p className="text-xl font-bold text-amber-600">{fmt(stats.totalCost)}</p></CardContent></Card>
         <Card><CardContent className="pt-4"><p className="text-xs text-gray-500">Registos</p><p className="text-xl font-bold text-gray-700">{filteredMaint.length}</p></CardContent></Card>
       </div>
 
