@@ -67,7 +67,7 @@ export default function UserManagement({ currentUser }) {
   };
 
   const getRoleBadges = (roleStr) => {
-    if (!roleStr) return <Badge className="text-xs bg-gray-100 text-gray-500 border-0">user</Badge>;
+    if (!roleStr) return <Badge className="text-xs bg-amber-100 text-amber-700 border-0">pending</Badge>;
     const roles = roleStr.split(',').map(r => r.trim()).filter(Boolean);
     return roles.map(r => {
       const cfg = ALL_ROLES.find(ar => ar.value === r);
