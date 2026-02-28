@@ -59,7 +59,7 @@ export default function RelatorioVeiculos() {
     }).sort((a, b) => b.totalCost - a.totalCost);
 
     const totalCost = filteredMaint.reduce((s, m) => s + (m.cost || 0), 0);
-    const totalFuel = filteredMaint.filter(m => m.type === 'fuel').reduce((s, m) => s + (m.cost || 0), 0);
+    const totalFuel = 0;
     const alerts = perVehicle.filter(v => v.daysToNext !== null && v.daysToNext <= 30 && v.daysToNext >= 0);
 
     const chartData = perVehicle.slice(0, 10).map(v => ({
