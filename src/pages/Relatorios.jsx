@@ -8,461 +8,400 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, TrendingUp, Wallet, Shield, Zap, Table } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import { format, parseISO, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Download, TrendingUp, TrendingDown, Users, Wallet, BarChart2, Trophy } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, subQuarters } from 'date-fns';
 
-const CONTRACT_LABELS = {
-  slot_standard: 'Slot Standard',
-  slot_premium: 'Slot Premium',
-  slot_black: 'Slot Black',
-  location: 'Aluguer',
-};
-
+const CONTRACT_LABELS = { slot_standard: 'Slot Standard', slot_premium: 'Slot Premium', slot_black: 'Slot Black', location: 'Aluguer' };
 const fmt = (n) => `€${(n || 0).toFixed(2)}`;
 
-const COLUMNS_CONFIG = [
-  { key: 'driver_name', label: 'Motorista', default: true },
-  { key: 'period_label', label: 'Período', default: true },
-  { key: 'total_gross', label: 'Bruto', default: true },
-  { key: 'total_deductions', label: 'Deduções', default: true },
-  { key: 'net_amount', label: 'Líquido', default: true },
-  { key: 'upi_earned', label: 'UPI', default: true },
-  { key: 'commission_amount', label: 'Comissão', default: false },
-  { key: 'slot_fee', label: 'Slot fee', default: false },
-  { key: 'vehicle_rental', label: 'Aluguer veículo', default: false },
-  { key: 'via_verde_amount', label: 'Via Verde', default: false },
-  { key: 'loan_installment', label: 'Empréstimo', default: false },
-  { key: 'iva_amount', label: 'IVA', default: false },
-  { key: 'irs_retention', label: 'IRS', default: false },
-  { key: 'goal_bonus', label: 'Bónus objetivo', default: false },
-];
+function GrowthBadge({ current, previous }) {
+  if (!previous) return null;
+  const pct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+  return (
+    <span className={`text-xs font-medium flex items-center gap-0.5 ${pct >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+      {pct >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+      {Math.abs(pct).toFixed(1)}%
+    </span>
+  );
+}
 
-export default function Relatorios() {
-  const [filters, setFilters] = useState({
-    driver_id: '',
-    contract_type: '',
-    date_from: '',
-    date_to: '',
-  });
-  const [showColumnPicker, setShowColumnPicker] = useState(false);
-  const [selectedCols, setSelectedCols] = useState(COLUMNS_CONFIG.filter(c => c.default).map(c => c.key));
+export default function Relatorios({ currentUser }) {
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
-  const { data: drivers = [] } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list('-created_date'),
-  });
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.hasRole?.('admin');
+  const isFleetManager = currentUser?.role === 'fleet_manager' || currentUser?.hasRole?.('fleet_manager');
+  const isDriver = currentUser?.role === 'driver' || currentUser?.hasRole?.('driver');
 
-  const { data: payments = [], isLoading } = useQuery({
-    queryKey: ['payments'],
-    queryFn: () => base44.entities.WeeklyPayment.list('-week_start'),
-  });
+  const { data: allDrivers = [] } = useQuery({ queryKey: ['drivers'], queryFn: () => base44.entities.Driver.list() });
+  const { data: fleetManagers = [] } = useQuery({ queryKey: ['fleet-managers'], queryFn: () => base44.entities.FleetManager.list() });
+  const { data: payments = [], isLoading } = useQuery({ queryKey: ['payments'], queryFn: () => base44.entities.WeeklyPayment.list('-week_start', 1000) });
+  const { data: loans = [] } = useQuery({ queryKey: ['loans'], queryFn: () => base44.entities.Loan.list(), enabled: isAdmin });
 
-  const setFilter = (k, v) => setFilters(f => ({ ...f, [k]: v }));
+  // Role-based data scoping
+  const myDriverRecord = useMemo(() => isDriver ? allDrivers.find(d => d.email === currentUser?.email) : null, [allDrivers, currentUser, isDriver]);
+  const myFleetManager = useMemo(() => isFleetManager ? fleetManagers.find(fm => fm.email === currentUser?.email || fm.user_id === currentUser?.id) : null, [fleetManagers, currentUser, isFleetManager]);
+  const myDriverIds = useMemo(() => {
+    if (!isFleetManager || !myFleetManager) return [];
+    return allDrivers.filter(d => d.fleet_manager_id === myFleetManager.id).map(d => d.id);
+  }, [allDrivers, myFleetManager, isFleetManager]);
 
-  const filteredPayments = useMemo(() => {
-    return payments.filter(p => {
-      if (p.status !== 'paid') return false;
-      if (filters.driver_id && p.driver_id !== filters.driver_id) return false;
-      if (filters.contract_type) {
-        const driver = drivers.find(d => d.id === p.driver_id);
-        if (!driver || driver.contract_type !== filters.contract_type) return false;
-      }
-      if (filters.date_from && p.week_start < filters.date_from) return false;
-      if (filters.date_to && p.week_end > filters.date_to) return false;
-      return true;
-    });
-  }, [payments, filters, drivers]);
+  const scopedPayments = useMemo(() => {
+    let p = payments.filter(pay => pay.status === 'paid' || pay.status === 'approved');
+    if (isDriver && myDriverRecord) p = p.filter(pay => pay.driver_id === myDriverRecord.id);
+    if (isFleetManager) p = p.filter(pay => myDriverIds.includes(pay.driver_id));
+    if (dateFrom) p = p.filter(pay => pay.week_start >= dateFrom);
+    if (dateTo) p = p.filter(pay => pay.week_end <= dateTo);
+    return p;
+  }, [payments, isDriver, isFleetManager, myDriverRecord, myDriverIds, dateFrom, dateTo]);
 
+  const scopedDrivers = useMemo(() => {
+    if (isAdmin) return allDrivers;
+    if (isFleetManager) return allDrivers.filter(d => myDriverIds.includes(d.id));
+    if (isDriver && myDriverRecord) return [myDriverRecord];
+    return [];
+  }, [allDrivers, isAdmin, isFleetManager, isDriver, myDriverRecord, myDriverIds]);
+
+  // Monthly data (12 months)
+  const monthlyData = useMemo(() => Array.from({ length: 12 }, (_, i) => {
+    const d = subMonths(new Date(), 11 - i);
+    const start = startOfMonth(d).toISOString().split('T')[0];
+    const end = endOfMonth(d).toISOString().split('T')[0];
+    const inMonth = scopedPayments.filter(p => p.week_start >= start && p.week_start <= end);
+    return {
+      label: format(d, 'MMM yy'),
+      Bruto: Math.round(inMonth.reduce((s, p) => s + (p.total_gross || 0), 0)),
+      Deduções: Math.round(inMonth.reduce((s, p) => s + (p.total_deductions || 0), 0)),
+    };
+  }), [scopedPayments]);
+
+  // Aggregate stats
   const stats = useMemo(() => {
-    const total = filteredPayments.length;
-    const totalGross = filteredPayments.reduce((s, p) => s + (p.total_gross || 0), 0);
-    const totalNet = filteredPayments.reduce((s, p) => s + (p.net_amount || 0), 0);
-    const totalDeductions = filteredPayments.reduce((s, p) => s + (p.total_deductions || 0), 0);
-    const totalUpi = filteredPayments.reduce((s, p) => s + (p.upi_earned || 0), 0);
-    const avgUpi = total > 0 ? totalUpi / total : 0;
+    const totalGross = scopedPayments.reduce((s, p) => s + (p.total_gross || 0), 0);
+    const totalDeductions = scopedPayments.reduce((s, p) => s + (p.total_deductions || 0), 0);
+    const totalCommissions = scopedPayments.reduce((s, p) => s + (p.commission_amount || 0), 0);
+    const totalRankBonus = scopedPayments.reduce((s, p) => s + (p.goal_bonus || 0), 0);
+    const totalUPI = scopedPayments.reduce((s, p) => s + (p.upi_earned || 0), 0);
+    const avgGross = scopedPayments.length > 0 ? totalGross / scopedPayments.length : 0;
+    const activeLoans = isAdmin ? loans.filter(l => l.status === 'active') : [];
+    const totalActiveLoans = activeLoans.reduce((s, l) => s + (l.remaining_balance || 0), 0);
+    const margin = totalGross > 0 ? ((totalDeductions / totalGross) * 100) : 0;
 
-    // Get unique drivers in filtered payments
-    const driverIds = [...new Set(filteredPayments.map(p => p.driver_id))];
-    const driversData = driverIds.map(id => {
-      const d = drivers.find(dr => dr.id === id);
-      const dPayments = filteredPayments.filter(p => p.driver_id === id);
-      return {
-        id,
-        name: dPayments[0]?.driver_name || '—',
-        contract_type: d?.contract_type,
-        vehicle_deposit: d?.vehicle_deposit || 0,
-        vehicle_deposit_paid: d?.vehicle_deposit_paid || false,
-        payments: dPayments,
-        gross: dPayments.reduce((s, p) => s + (p.total_gross || 0), 0),
-        net: dPayments.reduce((s, p) => s + (p.net_amount || 0), 0),
-        deductions: dPayments.reduce((s, p) => s + (p.total_deductions || 0), 0),
-        upi: dPayments.reduce((s, p) => s + (p.upi_earned || 0), 0),
-      };
+    // Per driver
+    const driverMap = {};
+    scopedPayments.forEach(p => {
+      if (!driverMap[p.driver_id]) driverMap[p.driver_id] = { id: p.driver_id, name: p.driver_name, gross: 0, deductions: 0, upi: 0, rankBonus: 0, count: 0 };
+      driverMap[p.driver_id].gross += (p.total_gross || 0);
+      driverMap[p.driver_id].deductions += (p.total_deductions || 0);
+      driverMap[p.driver_id].upi += (p.upi_earned || 0);
+      driverMap[p.driver_id].rankBonus += (p.goal_bonus || 0);
+      driverMap[p.driver_id].count += 1;
     });
+    const perDriver = Object.values(driverMap).sort((a, b) => b.gross - a.gross);
 
-    // Average gross per driver per week
-    const uniqueDriverCount = driverIds.length;
-    const avgGrossPerDriverPerWeek = uniqueDriverCount > 0 && total > 0
-      ? totalGross / uniqueDriverCount / (total / (uniqueDriverCount || 1))
-      : 0;
-    // Better: total gross / nb drivers / nb weeks
-    const totalWeeks = total > 0 && uniqueDriverCount > 0 ? Math.round(total / uniqueDriverCount) : 0;
-    const avgGrossPerWeek = uniqueDriverCount > 0 && totalWeeks > 0 ? totalGross / uniqueDriverCount / totalWeeks : 0;
+    // Contract distribution
+    const byContract = {};
+    scopedDrivers.forEach(d => { const ct = d.contract_type || 'unknown'; byContract[ct] = (byContract[ct] || 0) + 1; });
 
-    return { total, totalGross, totalNet, totalDeductions, avgUpi, driversData, avgGrossPerDriverPerWeek: avgGrossPerWeek, uniqueDriverCount, totalWeeks };
-  }, [filteredPayments, drivers]);
+    // Current vs previous month
+    const now = new Date();
+    const currMonthStart = startOfMonth(now).toISOString().split('T')[0];
+    const currMonthEnd = endOfMonth(now).toISOString().split('T')[0];
+    const prevMonthDate = subMonths(now, 1);
+    const prevMonthStart = startOfMonth(prevMonthDate).toISOString().split('T')[0];
+    const prevMonthEnd = endOfMonth(prevMonthDate).toISOString().split('T')[0];
+    const currMonth = scopedPayments.filter(p => p.week_start >= currMonthStart && p.week_start <= currMonthEnd);
+    const prevMonth = scopedPayments.filter(p => p.week_start >= prevMonthStart && p.week_start <= prevMonthEnd);
+    const currMonthGross = currMonth.reduce((s, p) => s + (p.total_gross || 0), 0);
+    const prevMonthGross = prevMonth.reduce((s, p) => s + (p.total_gross || 0), 0);
 
-  const selectedDriver = drivers.find(d => d.id === filters.driver_id);
+    // Quarterly
+    const currQStart = startOfQuarter(now).toISOString().split('T')[0];
+    const currQEnd = endOfQuarter(now).toISOString().split('T')[0];
+    const prevQStart = startOfQuarter(subQuarters(now, 1)).toISOString().split('T')[0];
+    const prevQEnd = endOfQuarter(subQuarters(now, 1)).toISOString().split('T')[0];
+    const currQ = scopedPayments.filter(p => p.week_start >= currQStart && p.week_start <= currQEnd);
+    const prevQ = scopedPayments.filter(p => p.week_start >= prevQStart && p.week_start <= prevQEnd);
+    const currQGross = currQ.reduce((s, p) => s + (p.total_gross || 0), 0);
+    const prevQGross = prevQ.reduce((s, p) => s + (p.total_gross || 0), 0);
+
+    return { totalGross, totalDeductions, totalCommissions, totalRankBonus, totalUPI, avgGross, totalActiveLoans, margin, perDriver, byContract, currMonthGross, prevMonthGross, currQGross, prevQGross };
+  }, [scopedPayments, scopedDrivers, loans, isAdmin]);
 
   const exportCSV = () => {
-    const cols = COLUMNS_CONFIG.filter(c => selectedCols.includes(c.key));
     const rows = [
-      cols.map(c => c.label),
-      ...filteredPayments.map(p => cols.map(c => {
-        const v = p[c.key];
-        return typeof v === 'number' ? v.toFixed(2) : (v || '');
-      }))
+      ['Motorista', 'Período', 'Bruto', 'Deduções', 'Comissão', 'UPI'],
+      ...scopedPayments.map(p => [p.driver_name, p.period_label, p.total_gross?.toFixed(2), p.total_deductions?.toFixed(2), p.commission_amount?.toFixed(2), p.upi_earned?.toFixed(2)])
     ];
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url;
-    a.download = `relatorio_${format(new Date(), 'yyyyMMdd')}.csv`; a.click();
-  };
-
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    const pageW = doc.internal.pageSize.getWidth();
-    let y = 20;
-
-    // Title
-    doc.setFontSize(18);
-    doc.setTextColor(67, 56, 202);
-    doc.text('PureDrivePT - Relatório de Performance', pageW / 2, y, { align: 'center' });
-    y += 8;
-
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    const subtitle = [
-      selectedDriver ? `Motorista: ${selectedDriver.full_name}` : 'Todos os motoristas',
-      filters.contract_type ? `Contrato: ${CONTRACT_LABELS[filters.contract_type]}` : '',
-      filters.date_from ? `De: ${filters.date_from}` : '',
-      filters.date_to ? `Até: ${filters.date_to}` : '',
-    ].filter(Boolean).join('  |  ');
-    doc.text(subtitle || 'Todos os dados', pageW / 2, y, { align: 'center' });
-    y += 6;
-    doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageW / 2, y, { align: 'center' });
-    y += 10;
-
-    // Summary box
-    doc.setDrawColor(200, 200, 200);
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(10, y, pageW - 20, 28, 2, 2, 'FD');
-    y += 8;
-
-    doc.setFontSize(9);
-    doc.setTextColor(50, 50, 50);
-    const col1 = 20, col2 = 70, col3 = 120, col4 = 160;
-    doc.setFont(undefined, 'bold');
-    doc.text('Total Bruto', col1, y);
-    doc.text('Total Líquido', col2, y);
-    doc.text('Total Deduções', col3, y);
-    doc.text('Média UPI/sem', col4, y);
-    y += 5;
-    doc.setFont(undefined, 'normal');
-    doc.setTextColor(67, 56, 202);
-    doc.setFontSize(11);
-    doc.text(`€${stats.totalGross.toFixed(2)}`, col1, y);
-    doc.text(`€${stats.totalNet.toFixed(2)}`, col2, y);
-    doc.text(`€${stats.totalDeductions.toFixed(2)}`, col3, y);
-    doc.text(`€${stats.avgUpi.toFixed(2)}`, col4, y);
-    y += 18;
-
-    // Per driver section
-    if (stats.driversData.length > 1) {
-      doc.setFontSize(11);
-      doc.setTextColor(30, 30, 30);
-      doc.setFont(undefined, 'bold');
-      doc.text('Resumo por Motorista', 10, y);
-      y += 6;
-
-      doc.setFontSize(8);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(80, 80, 80);
-      doc.text('Motorista', 10, y);
-      doc.text('Contrato', 65, y);
-      doc.text('Semanas', 100, y);
-      doc.text('Bruto', 125, y);
-      doc.text('Líquido', 155, y);
-      doc.text('Caução', 185, y);
-      y += 4;
-      doc.setDrawColor(200, 200, 200);
-      doc.line(10, y, pageW - 10, y);
-      y += 3;
-
-      doc.setFont(undefined, 'normal');
-      for (const d of stats.driversData) {
-        if (y > 260) { doc.addPage(); y = 20; }
-        doc.setTextColor(30, 30, 30);
-        doc.text(d.name.substring(0, 28), 10, y);
-        doc.text(CONTRACT_LABELS[d.contract_type] || '—', 65, y);
-        doc.text(String(d.payments.length), 105, y);
-        doc.text(`€${d.gross.toFixed(2)}`, 120, y);
-        doc.text(`€${d.net.toFixed(2)}`, 150, y);
-        doc.setTextColor(d.vehicle_deposit_paid ? 22 : 220, d.vehicle_deposit_paid ? 163 : 100, d.vehicle_deposit_paid ? 74 : 0);
-        doc.text(d.vehicle_deposit_paid ? 'Pago' : `€${d.vehicle_deposit}/500`, 183, y);
-        doc.setTextColor(30, 30, 30);
-        y += 6;
-      }
-      y += 4;
-    }
-
-    // Payment history
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(30, 30, 30);
-    doc.text('Histórico de Pagamentos', 10, y);
-    y += 6;
-
-    doc.setFontSize(8);
-    doc.setFont(undefined, 'bold');
-    doc.setTextColor(80, 80, 80);
-    doc.text('Motorista', 10, y);
-    doc.text('Período', 60, y);
-    doc.text('Bruto', 100, y);
-    doc.text('Deduções', 125, y);
-    doc.text('Líquido', 155, y);
-    doc.text('UPI', 185, y);
-    y += 4;
-    doc.line(10, y, pageW - 10, y);
-    y += 3;
-
-    doc.setFont(undefined, 'normal');
-    for (const p of filteredPayments) {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.setTextColor(30, 30, 30);
-      doc.text(p.driver_name?.substring(0, 22) || '—', 10, y);
-      doc.text(p.period_label?.substring(0, 18) || '—', 60, y);
-      doc.text(`€${(p.total_gross || 0).toFixed(2)}`, 98, y);
-      doc.text(`€${(p.total_deductions || 0).toFixed(2)}`, 123, y);
-      doc.text(`€${(p.net_amount || 0).toFixed(2)}`, 153, y);
-      doc.text(`€${(p.upi_earned || 0).toFixed(2)}`, 183, y);
-      y += 5;
-    }
-
-    const fileName = `relatorio_${selectedDriver ? selectedDriver.full_name.replace(/ /g, '_') : 'geral'}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-    doc.save(fileName);
+    const csv = rows.map(r => r.map(c => `"${c || ''}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `relatorio_${format(new Date(), 'yyyyMMdd')}.csv`;
+    a.click();
   };
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Relatórios" subtitle="Performance detalhada dos motoristas">
-        <Button variant="outline" size="sm" onClick={() => setShowColumnPicker(!showColumnPicker)} className="gap-1.5">
-          <Table className="w-3.5 h-3.5" /> Colunas
-        </Button>
-        <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1.5">
-          <Download className="w-3.5 h-3.5" /> CSV
-        </Button>
+      <PageHeader title="Relatórios" subtitle="Centro analítico">
+        {(isAdmin || isFleetManager) && (
+          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1.5">
+            <Download className="w-3.5 h-3.5" /> CSV
+          </Button>
+        )}
       </PageHeader>
 
-      {/* Column picker */}
-      {showColumnPicker && (
-        <div className="bg-white border rounded-xl p-4">
-          <p className="text-sm font-semibold mb-3">Selecionar colunas para exportação e tabela</p>
-          <div className="flex flex-wrap gap-2">
-            {COLUMNS_CONFIG.map(col => (
-              <label key={col.key} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border cursor-pointer text-xs transition-colors ${selectedCols.includes(col.key) ? 'bg-indigo-50 border-indigo-300 text-indigo-700' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
-                <input type="checkbox" checked={selectedCols.includes(col.key)} onChange={() => setSelectedCols(prev => prev.includes(col.key) ? prev.filter(k => k !== col.key) : [...prev, col.key])} className="w-3 h-3 accent-indigo-600" />
-                {col.label}
-              </label>
-            ))}
+      {/* Date filters */}
+      <div className="bg-white rounded-xl border p-4 grid grid-cols-2 gap-4 max-w-sm">
+        <div className="space-y-1"><Label className="text-xs">De</Label><Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} /></div>
+        <div className="space-y-1"><Label className="text-xs">Até</Label><Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} /></div>
+      </div>
+
+      <Tabs defaultValue="performance">
+        <TabsList>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="finance">Finanças</TabsTrigger>
+          <TabsTrigger value="comparativo">Análise Comparativa</TabsTrigger>
+        </TabsList>
+
+        {/* ========== PERFORMANCE ========== */}
+        <TabsContent value="performance" className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card><CardContent className="pt-5">
+              <p className="text-xs text-gray-500 mb-1">Total Bruto</p>
+              <p className="text-2xl font-bold text-indigo-700">{fmt(stats.totalGross)}</p>
+              <p className="text-xs text-gray-400 mt-1">{scopedPayments.length} pagamentos</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-5">
+              <p className="text-xs text-gray-500 mb-1">Média Bruto / semana</p>
+              <p className="text-2xl font-bold text-gray-800">{fmt(stats.avgGross)}</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-5">
+              <p className="text-xs text-gray-500 mb-1">Motoristas ativos</p>
+              <p className="text-2xl font-bold text-emerald-600">{scopedDrivers.filter(d => d.status === 'active').length}</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-5">
+              <p className="text-xs text-gray-500 mb-1">UPI gerados</p>
+              <p className="text-2xl font-bold text-violet-600">{stats.totalUPI.toFixed(1)}</p>
+            </CardContent></Card>
           </div>
-        </div>
-      )}
 
-      {/* Filters */}
-      <div className="bg-white rounded-xl border p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="space-y-1">
-          <Label className="text-xs">Motorista</Label>
-          <Select value={filters.driver_id} onValueChange={v => setFilter('driver_id', v === 'all' ? '' : v)}>
-            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Tipo de contrato</Label>
-          <Select value={filters.contract_type} onValueChange={v => setFilter('contract_type', v === 'all' ? '' : v)}>
-            <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="slot_standard">Slot Standard</SelectItem>
-              <SelectItem value="slot_premium">Slot Premium</SelectItem>
-              <SelectItem value="slot_black">Slot Black</SelectItem>
-              <SelectItem value="location">Aluguer</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">De (data)</Label>
-          <Input type="date" value={filters.date_from} onChange={e => setFilter('date_from', e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Até (data)</Label>
-          <Input type="date" value={filters.date_to} onChange={e => setFilter('date_to', e.target.value)} />
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-gray-500">Total Bruto</p>
-              <TrendingUp className="w-4 h-4 text-indigo-400" />
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{fmt(stats.totalGross)}</p>
-            <p className="text-xs text-gray-400 mt-1">{stats.total} pagamentos</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-gray-500">Total Líquido</p>
-              <Wallet className="w-4 h-4 text-green-400" />
-            </div>
-            <p className="text-2xl font-bold text-green-600">{fmt(stats.totalNet)}</p>
-            <p className="text-xs text-gray-400 mt-1">Após deduções</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-gray-500">Total Deduções</p>
-              <FileText className="w-4 h-4 text-red-400" />
-            </div>
-            <p className="text-2xl font-bold text-red-500">{fmt(stats.totalDeductions)}</p>
-            <p className="text-xs text-gray-400 mt-1">
-              {stats.totalGross > 0 ? ((stats.totalDeductions / stats.totalGross) * 100).toFixed(1) : 0}% do bruto
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-gray-500">Média UPI / semana</p>
-              <Zap className="w-4 h-4 text-yellow-400" />
-            </div>
-            <p className="text-2xl font-bold text-yellow-600">{fmt(stats.avgUpi)}</p>
-            <p className="text-xs text-gray-400 mt-1">Por pagamento</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-gray-500">Média Bruto / motorista / semana</p>
-              <TrendingUp className="w-4 h-4 text-indigo-400" />
-            </div>
-            <p className="text-2xl font-bold text-indigo-700">{fmt(stats.avgGrossPerDriverPerWeek)}</p>
-            <p className="text-xs text-gray-400 mt-1">{stats.uniqueDriverCount} motoristas · {stats.totalWeeks} sem. méd.</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Per driver table */}
-      {stats.driversData.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-sm font-semibold">Resumo por Motorista</CardTitle>
-            <Button onClick={exportPDF} size="sm" className="bg-indigo-600 hover:bg-indigo-700 gap-2">
-              <Download className="w-3.5 h-3.5" /> PDF
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-y">
-                    <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Motorista</th>
-                    <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Contrato</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Semanas</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Bruto Total</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Deduções</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Líquido Total</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">UPI Ganho</th>
-                    <th className="text-center py-2.5 px-4 text-xs font-medium text-gray-500">Caução</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {stats.driversData.map(d => (
-                    <tr key={d.id} className="hover:bg-gray-50">
-                      <td className="py-3 px-4 font-medium text-gray-900">{d.name}</td>
-                      <td className="py-3 px-4 text-gray-500 text-xs">{CONTRACT_LABELS[d.contract_type] || '—'}</td>
-                      <td className="py-3 px-4 text-right text-gray-700">{d.payments.length}</td>
-                      <td className="py-3 px-4 text-right font-medium">{fmt(d.gross)}</td>
-                      <td className="py-3 px-4 text-right text-red-500">{fmt(d.deductions)}</td>
-                      <td className="py-3 px-4 text-right font-semibold text-green-600">{fmt(d.net)}</td>
-                      <td className="py-3 px-4 text-right text-yellow-600">{fmt(d.upi)}</td>
-                      <td className="py-3 px-4 text-center">
-                        {d.vehicle_deposit_paid ? (
-                          <Badge className="bg-green-100 text-green-700 border-0 text-xs">Pago ✓</Badge>
-                        ) : (
-                          <Badge className="bg-orange-100 text-orange-700 border-0 text-xs">€{d.vehicle_deposit}/500</Badge>
-                        )}
-                      </td>
-                    </tr>
+          {/* Top performers */}
+          {stats.perDriver.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" /> Top Performers</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {stats.perDriver.slice(0, 10).map((d, i) => (
+                    <div key={d.id} className="flex items-center justify-between p-2.5 rounded-lg bg-gray-50 hover:bg-gray-100">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-gray-400 w-5">#{i + 1}</span>
+                        <div>
+                          <p className="text-sm font-medium">{d.name}</p>
+                          <p className="text-xs text-gray-400">{d.count} semanas</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-indigo-700">{fmt(d.gross)}</p>
+                        <p className="text-xs text-gray-400">{fmt(d.deductions)} deduções</p>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-      {/* Payment history */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold">Histórico de Pagamentos ({filteredPayments.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {isLoading ? (
-            <p className="text-center py-8 text-gray-400 text-sm">A carregar...</p>
-          ) : filteredPayments.length === 0 ? (
-            <p className="text-center py-8 text-gray-400 text-sm">Nenhum pagamento encontrado.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-y">
-                    <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Motorista</th>
-                    <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Período</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Bruto</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Deduções</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Líquido</th>
-                    <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">UPI</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredPayments.map(p => (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className="py-2.5 px-4 font-medium text-gray-900 text-xs">{p.driver_name}</td>
-                      <td className="py-2.5 px-4 text-gray-500 text-xs">{p.period_label}</td>
-                      <td className="py-2.5 px-4 text-right text-xs">{fmt(p.total_gross)}</td>
-                      <td className="py-2.5 px-4 text-right text-xs text-red-500">{fmt(p.total_deductions)}</td>
-                      <td className="py-2.5 px-4 text-right text-xs font-semibold text-green-600">{fmt(p.net_amount)}</td>
-                      <td className="py-2.5 px-4 text-right text-xs text-yellow-600">{fmt(p.upi_earned)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Contract distribution */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Distribuição por Contrato</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                {Object.entries(stats.byContract).map(([ct, count]) => (
+                  <div key={ct} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">{CONTRACT_LABELS[ct] || ct}</span>
+                    <Badge className="bg-indigo-100 text-indigo-700 border-0">{count}</Badge>
+                  </div>
+                ))}
+                {Object.keys(stats.byContract).length === 0 && <p className="text-sm text-gray-400 text-center py-4">Sem dados</p>}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Evolução Bruto (12 meses)</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                    <YAxis tickFormatter={v => `€${v}`} tick={{ fontSize: 9 }} />
+                    <Tooltip formatter={v => `€${v}`} />
+                    <Line type="monotone" dataKey="Bruto" stroke="#6366f1" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* ========== FINANCE ========== */}
+        <TabsContent value="finance" className="space-y-4">
+          {isAdmin && (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Total Bruto Global</p>
+                <p className="text-2xl font-bold text-indigo-700">{fmt(stats.totalGross)}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Total Deduções</p>
+                <p className="text-2xl font-bold text-red-500">{fmt(stats.totalDeductions)}</p>
+                <p className="text-xs text-gray-400">{stats.totalGross > 0 ? ((stats.totalDeductions / stats.totalGross) * 100).toFixed(1) : 0}% do bruto</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Total Comissões Fleet</p>
+                <p className="text-2xl font-bold text-amber-600">{fmt(stats.totalCommissions)}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Total Bónus Ranking</p>
+                <p className="text-2xl font-bold text-emerald-600">{fmt(stats.totalRankBonus)}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Empréstimos Ativos</p>
+                <p className="text-2xl font-bold text-orange-600">{fmt(stats.totalActiveLoans)}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Margem (% deduções/bruto)</p>
+                <p className="text-2xl font-bold text-gray-800">{stats.margin.toFixed(1)}%</p>
+              </CardContent></Card>
             </div>
           )}
-        </CardContent>
-      </Card>
+
+          {isFleetManager && (
+            <div className="grid grid-cols-2 gap-4">
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Bruto gerado pelos meus motoristas</p>
+                <p className="text-2xl font-bold text-indigo-700">{fmt(stats.totalGross)}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Comissões recebidas</p>
+                <p className="text-2xl font-bold text-amber-600">{fmt(stats.totalCommissions)}</p>
+              </CardContent></Card>
+            </div>
+          )}
+
+          {isDriver && (
+            <div className="grid grid-cols-2 gap-4">
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Total Bruto</p>
+                <p className="text-2xl font-bold text-indigo-700">{fmt(stats.totalGross)}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Total Deduções</p>
+                <p className="text-2xl font-bold text-red-500">{fmt(stats.totalDeductions)}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">Bónus Ranking</p>
+                <p className="text-2xl font-bold text-emerald-600">{fmt(stats.totalRankBonus)}</p>
+              </CardContent></Card>
+              <Card><CardContent className="pt-5">
+                <p className="text-xs text-gray-500 mb-1">UPI gerados</p>
+                <p className="text-2xl font-bold text-violet-600">{stats.totalUPI.toFixed(1)}</p>
+              </CardContent></Card>
+            </div>
+          )}
+
+          {/* Bruto vs Deduções chart */}
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Bruto vs Deduções (12 meses)</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={v => `€${v}`} tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={v => `€${v}`} />
+                  <Legend />
+                  <Bar dataKey="Bruto" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Deduções" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ========== COMPARATIVO ========== */}
+        <TabsContent value="comparativo" className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Mês atual vs Mês anterior</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-xl">
+                  <div>
+                    <p className="text-xs text-gray-500">Mês atual</p>
+                    <p className="text-xl font-bold text-indigo-700">{fmt(stats.currMonthGross)}</p>
+                  </div>
+                  <GrowthBadge current={stats.currMonthGross} previous={stats.prevMonthGross} />
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div>
+                    <p className="text-xs text-gray-500">Mês anterior</p>
+                    <p className="text-xl font-bold text-gray-600">{fmt(stats.prevMonthGross)}</p>
+                  </div>
+                </div>
+                <div className="text-center p-2">
+                  <p className="text-xs text-gray-500">Diferença</p>
+                  <p className={`text-lg font-bold ${stats.currMonthGross >= stats.prevMonthGross ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {stats.currMonthGross >= stats.prevMonthGross ? '+' : ''}{fmt(stats.currMonthGross - stats.prevMonthGross)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Trimestre atual vs Trimestre anterior</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-xl">
+                  <div>
+                    <p className="text-xs text-gray-500">Trimestre atual</p>
+                    <p className="text-xl font-bold text-indigo-700">{fmt(stats.currQGross)}</p>
+                  </div>
+                  <GrowthBadge current={stats.currQGross} previous={stats.prevQGross} />
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div>
+                    <p className="text-xs text-gray-500">Trimestre anterior</p>
+                    <p className="text-xl font-bold text-gray-600">{fmt(stats.prevQGross)}</p>
+                  </div>
+                </div>
+                <div className="text-center p-2">
+                  <p className="text-xs text-gray-500">Diferença</p>
+                  <p className={`text-lg font-bold ${stats.currQGross >= stats.prevQGross ? 'text-emerald-600' : 'text-red-500'}`}>
+                    {stats.currQGross >= stats.prevQGross ? '+' : ''}{fmt(stats.currQGross - stats.prevQGross)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 12-month evolution */}
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Evolução 12 meses</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={v => `€${v}`} tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={v => `€${v}`} />
+                  <Legend />
+                  <Line type="monotone" dataKey="Bruto" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="Deduções" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
