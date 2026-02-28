@@ -21,7 +21,7 @@ export default function UserManagement({ currentUser }) {
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRoles, setInviteRoles] = useState(['pending']);
+  const [inviteRoles, setInviteRoles] = useState(['driver']);
   const [showInvite, setShowInvite] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState([]);
   const qc = useQueryClient();
@@ -57,11 +57,11 @@ export default function UserManagement({ currentUser }) {
   };
 
   const handleInvite = async () => {
-    const role = inviteRoles.join(',') || 'pending';
+    const role = inviteRoles[0] || 'driver';
     await base44.users.inviteUser(inviteEmail, role === 'admin' ? 'admin' : 'user');
     setShowInvite(false);
     setInviteEmail('');
-    setInviteRoles(['user']);
+    setInviteRoles(['driver']);
   };
 
   const getRoleBadges = (roleStr) => {
