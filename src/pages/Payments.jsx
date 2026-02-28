@@ -33,10 +33,18 @@ export default function Payments({ currentUser }) {
     queryFn: () => base44.entities.WeeklyPayment.list('-week_start', 100),
   });
 
-  const { data: drivers = [] } = useQuery({
+  const { data: allDrivers = [] } = useQuery({
     queryKey: ['drivers'],
     queryFn: () => base44.entities.Driver.list(),
   });
+
+  // Filter drivers by fleet manager if applicable
+  const drivers = isFleetManager
+    ? allDrivers.filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email)
+    : allDrivers;
+
+  // For fleet managers, restrict visible payments to their drivers
+  const allowedDriverIds = isFleetManager ? new Set(drivers.map(d => d.id)) : null;
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.WeeklyPayment.create(d),
