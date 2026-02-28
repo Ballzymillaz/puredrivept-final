@@ -59,7 +59,8 @@ export default function Sidebar({ currentPage, userRole }) {
   const filteredNav = NAV_ITEMS.map(section => ({
     ...section,
     items: section.items.filter(item => {
-      if (hasRole('admin')) return true;
+    if (item.adminOnly && !hasRole('admin')) return false;
+    if (hasRole('admin')) return true;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
         return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
       }
