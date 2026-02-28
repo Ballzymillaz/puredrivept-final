@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
-export default function DriverForm({ driver, onSubmit, isLoading, vehicles, commercials, fleetManagers }) {
+export default function DriverForm({ driver, onSubmit, isLoading, vehicles, fleetManagers }) {
   const [form, setForm] = useState({
     full_name: driver?.full_name || '',
     email: driver?.email || '',
@@ -16,7 +16,6 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
     status: driver?.status || 'pending',
     contract_type: driver?.contract_type || '',
     assigned_vehicle_id: driver?.assigned_vehicle_id || '',
-    commercial_id: driver?.commercial_id || '',
     fleet_manager_id: driver?.fleet_manager_id || '',
     iva_regime: driver?.iva_regime || 'exempt',
     irs_retention_rate: driver?.irs_retention_rate || '',
@@ -28,7 +27,6 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
     notes: driver?.notes || '',
   });
 
-  // Frais et commission automatiques selon le type de contrat
   const CONTRACT_CONFIG = {
     slot_standard: { slot_fee: 35, commission_rate: 0 },
     slot_premium: { slot_fee: 45, commission_rate: 0 },
@@ -42,34 +40,20 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = { ...form };
-    
-    // Auto-assign slot_fee et commission_rate selon contract_type
+
     if (data.contract_type && CONTRACT_CONFIG[data.contract_type]) {
       data.slot_fee = CONTRACT_CONFIG[data.contract_type].slot_fee;
       data.commission_rate = CONTRACT_CONFIG[data.contract_type].commission_rate;
     }
 
-    // Assign vehicle info and update vehicle status
     if (data.assigned_vehicle_id) {
       const vehicle = vehicles?.find(v => v.id === data.assigned_vehicle_id);
-      if (vehicle) {
-        data.assigned_vehicle_plate = vehicle.license_plate;
-      }
+      if (vehicle) data.assigned_vehicle_plate = vehicle.license_plate;
     } else {
       data.assigned_vehicle_id = null;
       data.assigned_vehicle_plate = null;
     }
 
-    // Assign commercial info
-    if (data.commercial_id) {
-      const commercial = commercials?.find(c => c.id === data.commercial_id);
-      if (commercial) data.commercial_name = commercial.full_name;
-    } else {
-      data.commercial_id = null;
-      data.commercial_name = null;
-    }
-
-    // Assign fleet manager info
     if (data.fleet_manager_id) {
       const fm = fleetManagers?.find(f => f.id === data.fleet_manager_id);
       if (fm) data.fleet_manager_name = fm.full_name;
@@ -77,11 +61,10 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
       data.fleet_manager_id = null;
       data.fleet_manager_name = null;
     }
-    
-    // Supprimer les champs numériques vides
+
     if (!data.irs_retention_rate) delete data.irs_retention_rate;
     else data.irs_retention_rate = parseFloat(data.irs_retention_rate);
-    
+
     onSubmit(data);
   };
 
@@ -138,7 +121,7 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
           </Select>
           {form.contract_type && CONTRACT_CONFIG[form.contract_type] && (
             <p className="text-xs text-gray-500 mt-1">
-              {CONTRACT_CONFIG[form.contract_type].slot_fee > 0 
+              {CONTRACT_CONFIG[form.contract_type].slot_fee > 0
                 ? `Taxa de slot: ${CONTRACT_CONFIG[form.contract_type].slot_fee}€/semana`
                 : `Sem comissão - preço aluguer semanal do veículo`}
             </p>
@@ -158,20 +141,7 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
           </Select>
         </div>
 
-        <div className="space-y-1.5">
-          <Label className="text-xs">Comercial (opcional)</Label>
-          <Select value={form.commercial_id} onValueChange={(v) => handleChange('commercial_id', v)}>
-            <SelectTrigger><SelectValue placeholder="Nenhum..." /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value={null}>Nenhum</SelectItem>
-              {commercials?.map(c => (
-                <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 sm:col-span-2">
           <Label className="text-xs">Gestor de frota (opcional)</Label>
           <Select value={form.fleet_manager_id} onValueChange={(v) => handleChange('fleet_manager_id', v)}>
             <SelectTrigger><SelectValue placeholder="Nenhum..." /></SelectTrigger>
@@ -183,6 +153,7 @@ export default function DriverForm({ driver, onSubmit, isLoading, vehicles, comm
             </SelectContent>
           </Select>
         </div>
+
         <div className="space-y-1.5">
           <Label className="text-xs">Regime IVA</Label>
           <Select value={form.iva_regime} onValueChange={(v) => handleChange('iva_regime', v)}>

@@ -19,7 +19,6 @@ const NAV_ITEMS = [
     { name: 'Veículos', icon: Car, page: 'Vehicles' },
     { name: 'Frotas', icon: Building2, page: 'Fleets' },
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
-    { name: 'Comerciais', icon: HandCoins, page: 'Commercials' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
     { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
