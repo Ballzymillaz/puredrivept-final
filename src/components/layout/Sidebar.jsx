@@ -21,6 +21,7 @@ const NAV_ITEMS = [
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
     { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
+
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
   ]},
   { section: 'Finanças', items: [

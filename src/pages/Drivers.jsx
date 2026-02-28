@@ -10,12 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Search, Users, AlertTriangle, Car, ShieldAlert, MoreVertical, UserCircle, CarFront, Ban, Plus } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 
-const CONTRACT_LABELS = {
-  slot_standard: 'Slot Standard',
-  slot_premium: 'Slot Premium',
-  slot_black: 'Slot Black',
-  location: 'Location',
-};
+
 
 const STATUS_LABELS = {
   active: 'Ativo', pending: 'Pendente', inactive: 'Inativo',
@@ -225,9 +220,7 @@ export default function Drivers({ currentUser }) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <span className="text-sm text-gray-600">{CONTRACT_LABELS[driver.contract_type] || '—'}</span>
-                  </td>
+
                   <td className="px-4 py-3 hidden lg:table-cell">
                     {driver.assigned_vehicle_plate ? (
                       <span className="text-sm font-mono text-gray-700">{driver.assigned_vehicle_plate}</span>

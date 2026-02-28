@@ -45,8 +45,6 @@ export default function Applications() {
           await base44.entities.Driver.create({ ...entityData, vehicle_deposit: 0, vehicle_deposit_paid: false, upi_balance: 0 });
         } else if (application.applicant_type === 'fleet_manager') {
           await base44.entities.FleetManager.create({ ...entityData, total_drivers: 0, total_earnings: 0 });
-        } else if (application.applicant_type === 'commercial') {
-          await base44.entities.Commercial.create({ ...entityData, total_drivers: 0, total_earnings: 0 });
         }
 
         // Update User role if user account exists with this email
