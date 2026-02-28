@@ -28,7 +28,9 @@ export default function VehicleDetail({ currentUser }) {
   const urlParams = new URLSearchParams(window.location.search);
   const vehicleId = urlParams.get('id');
   const qc = useQueryClient();
-  const isAdmin = currentUser?.role?.includes('admin');
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.hasRole?.('admin');
+  const isFleetManager = currentUser?.role === 'fleet_manager' || currentUser?.hasRole?.('fleet_manager');
+  const canEditMaintenance = isAdmin || isFleetManager;
 
   const [showMaintForm, setShowMaintForm] = useState(false);
   const [editingMaint, setEditingMaint] = useState(null);
@@ -61,6 +63,15 @@ export default function VehicleDetail({ currentUser }) {
   const totalMaintCost = maintenances.reduce((s, m) => s + (m.cost || 0), 0);
   const today = new Date();
   const upcomingMaint = maintenances.filter(m => m.next_service_date && differenceInDays(new Date(m.next_service_date), today) <= 30 && differenceInDays(new Date(m.next_service_date), today) >= 0);
+
+  // Custos analytics
+  const avgMonthlyCost = useMemo(() => {
+    if (!vehicle?.first_registration_date || maintenances.length === 0) return 0;
+    const months = Math.max(1, differenceInDays(today, new Date(vehicle.first_registration_date)) / 30);
+    return totalMaintCost / months;
+  }, [vehicle, maintenances, totalMaintCost, today]);
+
+  const lastMaintenance = maintenances.length > 0 ? maintenances[0] : null;
 
   const createMaintMutation = useMutation({
     mutationFn: (d) => base44.entities.MaintenanceRecord.create({ ...d, vehicle_id: vehicleId, vehicle_info: `${vehicle?.brand} ${vehicle?.model} - ${vehicle?.license_plate}` }),
@@ -163,48 +174,76 @@ export default function VehicleDetail({ currentUser }) {
         <Card><CardContent className="pt-4"><p className="text-xs text-gray-500">Seguro até</p><p className="font-semibold text-sm mt-0.5">{fmtDate(vehicle.insurance_expiry)}</p></CardContent></Card>
       </div>
 
-      <Tabs defaultValue="maintenance">
+      <Tabs defaultValue="custos">
         <TabsList>
-          <TabsTrigger value="maintenance">Manutenção ({maintenances.length})</TabsTrigger>
+          <TabsTrigger value="custos">Custos & Manutenção</TabsTrigger>
           <TabsTrigger value="payments">Pagamentos ({vehiclePayments.length})</TabsTrigger>
           <TabsTrigger value="info">Informações</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="maintenance">
+        <TabsContent value="custos" className="space-y-4">
+          {/* KPI summary */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card><CardContent className="pt-4">
+              <p className="text-xs text-gray-500">Custo total acumulado</p>
+              <p className="text-xl font-bold text-red-600 mt-0.5">{fmt(totalMaintCost)}</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-4">
+              <p className="text-xs text-gray-500">Custo médio mensal</p>
+              <p className="text-xl font-bold text-orange-600 mt-0.5">{fmt(avgMonthlyCost)}</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-4">
+              <p className="text-xs text-gray-500">Total intervenções</p>
+              <p className="text-xl font-bold text-gray-800 mt-0.5">{maintenances.length}</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-4">
+              <p className="text-xs text-gray-500">Última manutenção</p>
+              <p className="text-sm font-semibold text-gray-700 mt-0.5">{lastMaintenance ? fmtDate(lastMaintenance.service_date) : '—'}</p>
+              {lastMaintenance && <p className="text-xs text-gray-400">{MAINT_LABELS[lastMaintenance.type]}</p>}
+            </CardContent></Card>
+          </div>
+
+          {/* Full history table */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
-              <CardTitle className="text-sm font-semibold">Registos de Manutenção</CardTitle>
-              {isAdmin && <Button size="sm" onClick={() => openMaintForm(null)} className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"><Plus className="w-3.5 h-3.5" /> Adicionar</Button>}
+              <CardTitle className="text-sm font-semibold">Histórico completo</CardTitle>
+              {canEditMaintenance && <Button size="sm" onClick={() => openMaintForm(null)} className="bg-indigo-600 hover:bg-indigo-700 gap-1.5"><Plus className="w-3.5 h-3.5" /> Adicionar</Button>}
             </CardHeader>
             <CardContent className="p-0">
               {maintLoading ? <p className="text-center py-8 text-sm text-gray-400">A carregar...</p> : maintenances.length === 0 ? (
                 <p className="text-center py-8 text-sm text-gray-400">Nenhum registo de manutenção</p>
               ) : (
-                maintenances.map(m => (
-                  <div key={m.id} className="flex items-center justify-between p-4 border-b last:border-0 hover:bg-gray-50">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <Badge className="text-xs bg-blue-100 text-blue-700 border-0">{MAINT_LABELS[m.type]}</Badge>
-                        <span className="text-xs text-gray-400">{fmtDate(m.service_date)}</span>
-                      </div>
-                      <p className="text-sm text-gray-700">{m.description || m.type}</p>
-                      {m.performed_by && <p className="text-xs text-gray-400">{m.performed_by}</p>}
-                      {m.next_service_date && <p className="text-xs text-amber-600 mt-0.5">Próxima: {fmtDate(m.next_service_date)}</p>}
-                    </div>
-                    <div className="text-right flex items-center gap-3">
-                      <div>
-                        <p className="font-semibold text-sm">{fmt(m.cost)}</p>
-                        {m.mileage_at_service && <p className="text-xs text-gray-400">{m.mileage_at_service.toLocaleString()} km</p>}
-                      </div>
-                      {isAdmin && (
-                        <div className="flex gap-1">
-                          <button onClick={() => openMaintForm(m)} className="p-1.5 text-gray-400 hover:text-indigo-600 rounded"><Wrench className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => { if (confirm('Eliminar?')) deleteMaintMutation.mutate(m.id); }} className="p-1.5 text-gray-400 hover:text-red-500 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead><tr className="bg-gray-50 border-y">
+                      <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Data</th>
+                      <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Tipo</th>
+                      <th className="text-left py-2.5 px-4 text-xs font-medium text-gray-500">Descrição</th>
+                      <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Valor</th>
+                      <th className="text-right py-2.5 px-4 text-xs font-medium text-gray-500">Km</th>
+                      {canEditMaintenance && <th className="py-2.5 px-4"></th>}
+                    </tr></thead>
+                    <tbody className="divide-y">
+                      {maintenances.map(m => (
+                        <tr key={m.id} className="hover:bg-gray-50">
+                          <td className="py-2.5 px-4 text-xs text-gray-500">{fmtDate(m.service_date)}</td>
+                          <td className="py-2.5 px-4"><Badge className="text-xs bg-blue-100 text-blue-700 border-0">{MAINT_LABELS[m.type]}</Badge></td>
+                          <td className="py-2.5 px-4 text-xs text-gray-700">{m.description || '—'}</td>
+                          <td className="py-2.5 px-4 text-right font-semibold text-red-600">{fmt(m.cost)}</td>
+                          <td className="py-2.5 px-4 text-right text-xs text-gray-500">{m.mileage_at_service ? `${m.mileage_at_service.toLocaleString()} km` : '—'}</td>
+                          {canEditMaintenance && (
+                            <td className="py-2.5 px-4 text-right">
+                              <div className="flex gap-1 justify-end">
+                                <button onClick={() => openMaintForm(m)} className="p-1 text-gray-400 hover:text-indigo-600 rounded"><Wrench className="w-3.5 h-3.5" /></button>
+                                {isAdmin && <button onClick={() => { if (confirm('Eliminar?')) deleteMaintMutation.mutate(m.id); }} className="p-1 text-gray-400 hover:text-red-500 rounded"><Trash2 className="w-3.5 h-3.5" /></button>}
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </CardContent>
           </Card>
