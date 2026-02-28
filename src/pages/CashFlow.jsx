@@ -125,7 +125,7 @@ export default function CashFlow({ currentUser }) {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Fluxo de caixa" actionLabel="Adicionar despesa" onAction={() => { setEditing(null); setShowForm(true); }} />
+      <PageHeader title="Fluxo de caixa" actionLabel={isAdmin ? "Adicionar despesa" : undefined} onAction={isAdmin ? () => { setEditing(null); setShowForm(true); } : undefined} />
       
       <div className="flex gap-3">
         <Select value={driverFilter} onValueChange={setDriverFilter}>
