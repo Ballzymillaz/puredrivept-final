@@ -185,7 +185,12 @@ export default function Payments({ currentUser }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Pagamentos semanais" subtitle={`${filtered.length} pagamentos`} actionLabel={isAdmin ? "Novo pagamento" : undefined} onAction={isAdmin ? () => { setShowForm(true); } : undefined} />
+      {isSimulation && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-2 text-xs text-amber-800 font-medium">
+          🔒 Modo simulação — ações de criação/edição/eliminação desativadas
+        </div>
+      )}
+      <PageHeader title="Pagamentos semanais" subtitle={`${filtered.length} pagamentos`} actionLabel={isAdmin && !isSimulation ? "Novo pagamento" : undefined} onAction={isAdmin && !isSimulation ? () => { setShowForm(true); } : undefined} />
       
       <div className="flex flex-wrap gap-3">
         <Select value={driverFilter} onValueChange={setDriverFilter}>
