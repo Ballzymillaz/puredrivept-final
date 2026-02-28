@@ -201,7 +201,7 @@ export default function VehiclePurchases({ currentUser }) {
               {isDriver && (
                 <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                   <Info className="w-4 h-4 text-blue-600 shrink-0" />
-                  <p className="text-xs text-blue-800">Financiamento interno — aucune approbation bancaire requise</p>
+                  <p className="text-xs text-blue-800">Financiamento interno — sem aprovação bancária necessária</p>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -283,12 +283,14 @@ export default function VehiclePurchases({ currentUser }) {
               <Select value={form.duration_months?.toString()} onValueChange={(v) => setForm(f => ({...f, duration_months: v}))}>
                 <SelectTrigger><SelectValue placeholder="Escolher duração..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="6">6 meses</SelectItem>
-                  <SelectItem value="12">1 ano (12 meses)</SelectItem>
-                  <SelectItem value="18">18 meses</SelectItem>
-                  <SelectItem value="24">2 anos (24 meses)</SelectItem>
-                  <SelectItem value="30">30 meses</SelectItem>
-                  <SelectItem value="36">3 anos (36 meses)</SelectItem>
+                  {['6','12','18','24','30','36'].map(v => {
+                    const months = parseInt(v);
+                    const tp = selectedVehicle?.market_price ? Math.round(selectedVehicle.market_price * 1.25 * 100) / 100 : 0;
+                    const sched = tp > 0 ? computeQuarterlySchedule(tp, months) : null;
+                    if (tp > 0 && sched === null) return null; // T1=300 not enough, skip
+                    const label = v === '12' ? '1 ano (12 meses)' : v === '24' ? '2 anos (24 meses)' : v === '36' ? '3 anos (36 meses)' : `${v} meses`;
+                    return <SelectItem key={v} value={v}>{label}</SelectItem>;
+                  }).filter(Boolean)}
                 </SelectContent>
               </Select>
             </div>
@@ -296,7 +298,7 @@ export default function VehiclePurchases({ currentUser }) {
             {schedule && (
               <div className="space-y-2">
                 <div className="bg-indigo-50 p-3 rounded-lg space-y-1 text-sm">
-                  <p className="font-semibold text-indigo-900">Financiamento interno — aucune approbation bancaire requise</p>
+                  <p className="font-semibold text-indigo-900">Financiamento interno — sem aprovação bancária necessária</p>
                   <p>Preço total (com financiamento): <strong className="text-indigo-700">{fmt(totalPrice)}</strong></p>
                 </div>
                 <p className="text-xs font-semibold text-gray-700 flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5 text-indigo-500" /> Tabela degressiva por trimestre</p>

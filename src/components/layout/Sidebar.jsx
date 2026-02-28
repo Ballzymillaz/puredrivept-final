@@ -4,7 +4,7 @@ import { createPageUrl } from '@/utils';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Car, FileText, CreditCard, TrendingUp,
-  Target, Wallet, ShoppingCart, UserPlus, Coins, Receipt,
+  Wallet, ShoppingCart, UserPlus, Coins, Receipt,
   ChevronLeft, ChevronRight, Settings, Menu, X,
   Building2, HandCoins, FileBarChart, PieChart, MessageCircle, Bell
 } from 'lucide-react';
@@ -59,11 +59,12 @@ export default function Sidebar({ currentPage, userRole }) {
     items: section.items.filter(item => {
     if (item.adminOnly && !hasRole('admin')) return false;
     if (hasRole('admin')) return true;
+      if (item.adminDriverOnly && !hasRole('admin') && !hasRole('driver')) return false;
       if (hasRole('fleet_manager') && !hasRole('driver')) {
-        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Goals', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
+        return ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'RelatorioFrotas', 'RelatorioVeiculos', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications'].includes(item.page);
       }
       if (hasRole('driver')) {
-        return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Goals', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'].includes(item.page);
+        return ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications'].includes(item.page);
       }
       return true;
     })
