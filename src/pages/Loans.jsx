@@ -17,38 +17,49 @@ export default function Loans({ currentUser }) {
   const [selected, setSelected] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [driverFilter, setDriverFilter] = useState('all');
-  const [detailsDialog, setDetailsDialog] = useState(null);
   const qc = useQueryClient();
-  const isDriver = currentUser?.role === 'driver';
+
+  const isAdmin = currentUser?.roles?.includes('admin') || currentUser?.role === 'admin';
+  const isFleetManager = !isAdmin && (currentUser?.roles?.includes('fleet_manager') || currentUser?.role === 'fleet_manager');
+  const isDriver = !isAdmin && !isFleetManager && (currentUser?.roles?.includes('driver') || currentUser?.role === 'driver');
+
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: () => base44.entities.Driver.list(),
+  });
+
+  const myDriverRecord = isDriver
+    ? drivers.find(d => d.user_id === currentUser?.id || d.email === currentUser?.email)
+    : null;
+
+  const myFleetDriverIds = isFleetManager
+    ? new Set(drivers.filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email).map(d => d.id))
+    : null;
 
   const { data: loans = [], isLoading } = useQuery({
-    queryKey: ['loans', currentUser?.email],
+    queryKey: ['loans', currentUser?.id],
     queryFn: async () => {
       const all = await base44.entities.Loan.list('-created_date');
-      if (isDriver) {
-        // Find loans where driver email matches
-        return all.filter(l => l.driver_id && drivers.some(d => d.id === l.driver_id && d.email === currentUser?.email));
-      }
+      if (isDriver && myDriverRecord) return all.filter(l => l.driver_id === myDriverRecord.id);
+      if (isFleetManager) return all.filter(l => myFleetDriverIds.has(l.driver_id));
       return all;
     },
+    enabled: !isDriver || !!myDriverRecord,
   });
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.Loan.create(d),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['loans'] }); setShowForm(false); },
   });
+
   const updateMutation = useMutation({
     mutationFn: async ({ id, data, oldData }) => {
       const result = await base44.entities.Loan.update(id, data);
-      
-      // Si on change le montant payé, ajuster le restant et créer une recette
       if (data.paid_amount !== undefined && oldData) {
         const newRemaining = oldData.total_with_interest - data.paid_amount;
         if (newRemaining !== data.remaining_balance) {
           await base44.entities.Loan.update(id, { remaining_balance: Math.max(0, newRemaining) });
         }
-        
-        // Si le montant payé a augmenté, créer une recette
         const paidDiff = data.paid_amount - (oldData.paid_amount || 0);
         if (paidDiff > 0) {
           await base44.entities.Expense.create({
@@ -57,39 +68,23 @@ export default function Loans({ currentUser }) {
             amount: -paidDiff,
             date: new Date().toISOString().split('T')[0],
             driver_id: oldData.driver_id,
-            notes: `Loan ID: ${id} - Paiement anticipé`,
+            notes: `Loan ID: ${id}`,
           });
         }
       }
-      
       return result;
     },
-    onSuccess: () => { 
-      qc.invalidateQueries({ queryKey: ['loans'] }); 
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['loans'] });
       qc.invalidateQueries({ queryKey: ['expenses-all'] });
-      setSelected(null); 
-      setEditForm(null); 
+      setSelected(null);
+      setEditForm(null);
     },
   });
-  
-  const deleteMutation = useMutation({
-    mutationFn: async (loan) => {
-      // Supprimer les dépenses liées au prêt
-      await base44.functions.invoke('deleteLoanExpense', { loanId: loan.id });
-      return await base44.entities.Loan.delete(loan.id);
-    },
-    onSuccess: () => { 
-      qc.invalidateQueries({ queryKey: ['loans'] }); 
-      qc.invalidateQueries({ queryKey: ['expenses-all'] });
-      setSelected(null); 
-      setEditForm(null); 
-    },
-  });
-  
+
   const approveMutation = useMutation({
     mutationFn: async ({ id, data }) => {
       const result = await base44.entities.Loan.update(id, data);
-      // Créer une dépense pour le prêt accordé
       await base44.functions.invoke('createLoanExpense', { loanId: id });
       return result;
     },
@@ -100,25 +95,21 @@ export default function Loans({ currentUser }) {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (loan) => {
+      await base44.functions.invoke('deleteLoanExpense', { loanId: loan.id });
+      return await base44.entities.Loan.delete(loan.id);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['loans'] });
+      qc.invalidateQueries({ queryKey: ['expenses-all'] });
+      setSelected(null);
+      setEditForm(null);
+    },
+  });
+
   const [form, setForm] = useState({ driver_id: '', amount: '', duration_weeks: '' });
-
-  const { data: drivers = [] } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: () => base44.entities.Driver.list(),
-  });
-
-  const myDriverRecord = isDriver ? drivers.find(d => d.email === currentUser?.email) : null;
-
-  const { data: myLoans = [], isLoading: myLoansLoading } = useQuery({
-    queryKey: ['loans-driver', myDriverRecord?.id],
-    queryFn: () => base44.entities.Loan.filter({ driver_id: myDriverRecord.id }),
-    enabled: isDriver && !!myDriverRecord,
-  });
-
-  const displayLoans = isDriver ? myLoans : loans;
-  const displayLoading = isDriver ? myLoansLoading : isLoading;
-
-  const interestRate = 1; // 1% per week
+  const interestRate = 1;
   const calcTotal = (amount, weeks) => {
     const a = parseFloat(amount) || 0;
     const w = parseInt(weeks) || 0;
@@ -126,7 +117,25 @@ export default function Loans({ currentUser }) {
     return { total: a + totalInterest, weekly: w > 0 ? (a + totalInterest) / w : 0 };
   };
 
-  const handleSubmit = (e) => {
+  const handleDriverSubmit = (e) => {
+    e.preventDefault();
+    const { total, weekly } = calcTotal(form.amount, form.duration_weeks);
+    createMutation.mutate({
+      driver_id: myDriverRecord.id,
+      driver_name: myDriverRecord.full_name,
+      amount: parseFloat(form.amount),
+      duration_weeks: parseInt(form.duration_weeks),
+      interest_rate_weekly: interestRate,
+      total_with_interest: total,
+      weekly_installment: weekly,
+      remaining_balance: total,
+      status: 'requested',
+      requested_by: currentUser?.id || currentUser?.email,
+      request_date: new Date().toISOString().split('T')[0],
+    });
+  };
+
+  const handleAdminSubmit = (e) => {
     e.preventDefault();
     const { total, weekly } = calcTotal(form.amount, form.duration_weeks);
     const driver = drivers.find(d => d.id === form.driver_id);
@@ -140,22 +149,21 @@ export default function Loans({ currentUser }) {
       weekly_installment: weekly,
       remaining_balance: total,
       status: 'requested',
+      requested_by: currentUser?.id || currentUser?.email,
       request_date: new Date().toISOString().split('T')[0],
     });
   };
 
-  const filteredLoans = isDriver ? displayLoans : (
-    driverFilter === 'all' 
-      ? loans 
-      : driverFilter === 'none'
-      ? loans.filter(l => !l.driver_id)
-      : loans.filter(l => l.driver_id === driverFilter)
-  );
+  const filteredLoans = isAdmin
+    ? (driverFilter === 'all' ? loans : loans.filter(l => l.driver_id === driverFilter))
+    : loans;
 
   const fmt = (v) => `€${(v || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}`;
   const activeLoans = filteredLoans.filter(l => l.status === 'active');
   const completedLoans = filteredLoans.filter(l => l.status === 'completed');
   const totalOutstanding = activeLoans.reduce((s, l) => s + (l.remaining_balance || 0), 0);
+
+  const isLoanLocked = (loan) => ['approved', 'active', 'completed'].includes(loan?.status);
 
   const columns = [
     { header: 'Motorista', render: (r) => <span className="font-medium text-sm">{r.driver_name}</span> },
@@ -167,18 +175,23 @@ export default function Loans({ currentUser }) {
   ];
 
   const preview = calcTotal(form.amount, form.duration_weeks);
+  const availableDriversForLoan = isAdmin ? drivers : (isFleetManager ? drivers.filter(d => myFleetDriverIds?.has(d.id)) : []);
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Empréstimos & Adiantamentos" subtitle={`${filteredLoans.length} empréstimos`} actionLabel={isDriver ? undefined : "Novo empréstimo"} onAction={isDriver ? undefined : () => setShowForm(true)} />
-      
-      {!isDriver && (
+      <PageHeader
+        title="Empréstimos & Adiantamentos"
+        subtitle={`${filteredLoans.length} empréstimos`}
+        actionLabel={(isAdmin || isDriver) ? 'Novo pedido' : undefined}
+        onAction={(isAdmin || isDriver) ? () => setShowForm(true) : undefined}
+      />
+
+      {isAdmin && (
         <div className="flex gap-3">
           <Select value={driverFilter} onValueChange={setDriverFilter}>
             <SelectTrigger className="w-56"><SelectValue placeholder="Filtrar por motorista..." /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os motoristas</SelectItem>
-              <SelectItem value="none">Sem motorista</SelectItem>
               {drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -186,19 +199,21 @@ export default function Loans({ currentUser }) {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('active')}>
-          <StatCard title="Empréstimos ativos" value={activeLoans.length} icon={Clock} color="amber" />
-        </div>
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('outstanding')}>
-          <StatCard title="Saldo restante" value={fmt(totalOutstanding)} icon={Wallet} color="rose" />
-        </div>
-        <div className="cursor-pointer" onClick={() => setDetailsDialog('completed')}>
-          <StatCard title="Empréstimos quitados" value={completedLoans.length} icon={CheckCircle2} color="green" />
-        </div>
+        <StatCard title="Empréstimos ativos" value={activeLoans.length} icon={Clock} color="amber" />
+        <StatCard title="Saldo restante" value={fmt(totalOutstanding)} icon={Wallet} color="rose" />
+        <StatCard title="Empréstimos quitados" value={completedLoans.length} icon={CheckCircle2} color="green" />
       </div>
-      <DataTable columns={columns} data={filteredLoans} isLoading={displayLoading} onRowClick={isDriver ? undefined : setSelected} />
 
-      {/* Approve/Complete dialog */}
+      <DataTable
+        columns={columns}
+        data={filteredLoans}
+        isLoading={isLoading}
+        onRowClick={(r) => {
+          if (isAdmin || (isDriver && r.status === 'requested')) setSelected(r);
+        }}
+      />
+
+      {/* Detail / action dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditForm(null); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Empréstimo — {selected?.driver_name}</DialogTitle></DialogHeader>
@@ -210,42 +225,55 @@ export default function Loans({ currentUser }) {
                 <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Total</span><p className="font-medium">{fmt(selected.total_with_interest)}</p></div>
                 <div className="bg-gray-50 p-2 rounded"><span className="text-gray-500 text-xs">Restante</span><p className="font-medium text-red-600">{fmt(selected.remaining_balance)}</p></div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setEditForm({ ...selected })}>Editar</Button>
-                <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar empréstimo?')) deleteMutation.mutate(selected); }}>Eliminar</Button>
-                {selected.status === 'requested' && (
-                  <>
-                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => approveMutation.mutate({ id: selected.id, data: { status: 'active', approval_date: new Date().toISOString().split('T')[0] } })}>Aprovar</Button>
-                    <Button variant="outline" className="flex-1 text-red-600" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' }, oldData: selected })}>Rejeitar</Button>
-                  </>
-                )}
-                {selected.status === 'active' && (
-                  <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'completed', remaining_balance: 0 }, oldData: selected })}>Finalizar</Button>
-                )}
-              </div>
+              {isAdmin && (
+                <div className="flex gap-2 flex-wrap">
+                  {!isLoanLocked(selected) && (
+                    <Button variant="outline" className="flex-1" onClick={() => setEditForm({ ...selected })}>Editar</Button>
+                  )}
+                  {!isLoanLocked(selected) && (
+                    <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar empréstimo?')) deleteMutation.mutate(selected); }}>Eliminar</Button>
+                  )}
+                  {selected.status === 'requested' && (
+                    <>
+                      <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => approveMutation.mutate({ id: selected.id, data: { status: 'active', approval_date: new Date().toISOString().split('T')[0], approved_by: currentUser?.email } })}>Aprovar</Button>
+                      <Button variant="outline" className="flex-1 text-red-600" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'rejected' }, oldData: selected })}>Rejeitar</Button>
+                    </>
+                  )}
+                  {selected.status === 'active' && (
+                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => updateMutation.mutate({ id: selected.id, data: { status: 'completed', remaining_balance: 0 }, oldData: selected })}>Finalizar</Button>
+                  )}
+                </div>
+              )}
             </div>
           )}
-          {selected && editForm && <LoanEditForm loan={editForm} onSave={(data) => { updateMutation.mutate({ id: selected.id, data, oldData: selected }); setEditForm(null); }} onCancel={() => setEditForm(null)} />}
+          {selected && editForm && (
+            <LoanEditForm
+              loan={editForm}
+              onSave={(data) => { updateMutation.mutate({ id: selected.id, data, oldData: selected }); setEditForm(null); }}
+              onCancel={() => setEditForm(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
       {/* New loan form */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Novo empréstimo</DialogTitle></DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5"><Label className="text-xs">Motorista</Label>
-              <Select value={form.driver_id} onValueChange={(v) => setForm(f => ({...f, driver_id: v}))}>
-                <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
-                <SelectContent>
-                  {drivers.map(d => (
-                    <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5"><Label className="text-xs">Montante (€)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm(f => ({...f, amount: e.target.value}))} required /></div>
-            <div className="space-y-1.5"><Label className="text-xs">Duração (semanas)</Label><Input type="number" value={form.duration_weeks} onChange={(e) => setForm(f => ({...f, duration_weeks: e.target.value}))} required /></div>
+          <DialogHeader><DialogTitle>Novo pedido de empréstimo</DialogTitle></DialogHeader>
+          <form onSubmit={isDriver ? handleDriverSubmit : handleAdminSubmit} className="space-y-4">
+            {!isDriver && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Motorista</Label>
+                <Select value={form.driver_id} onValueChange={(v) => setForm(f => ({ ...f, driver_id: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Escolher motorista..." /></SelectTrigger>
+                  <SelectContent>
+                    {availableDriversForLoan.map(d => <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-1.5"><Label className="text-xs">Montante (€)</Label><Input type="number" step="0.01" value={form.amount} onChange={(e) => setForm(f => ({ ...f, amount: e.target.value }))} required /></div>
+            <div className="space-y-1.5"><Label className="text-xs">Duração (semanas)</Label><Input type="number" value={form.duration_weeks} onChange={(e) => setForm(f => ({ ...f, duration_weeks: e.target.value }))} required /></div>
             {form.amount && form.duration_weeks && (
               <div className="bg-indigo-50 p-3 rounded-lg space-y-1 text-sm">
                 <p className="text-gray-600">Taxa: <span className="font-semibold">{interestRate}%/semana</span></p>
@@ -253,128 +281,40 @@ export default function Loans({ currentUser }) {
                 <p className="text-gray-600">Pagamento semanal: <span className="font-bold text-indigo-700">{fmt(preview.weekly)}</span></p>
               </div>
             )}
-            <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">Criar pedido</Button>
+            <Button type="submit" disabled={createMutation.isPending} className="w-full bg-indigo-600 hover:bg-indigo-700">
+              {createMutation.isPending ? 'A enviar...' : 'Criar pedido'}
+            </Button>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!detailsDialog} onOpenChange={(open) => !open && setDetailsDialog(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {detailsDialog === 'active' && 'Detalhes: Empréstimos Ativos'}
-              {detailsDialog === 'outstanding' && 'Detalhes: Saldo Restante'}
-              {detailsDialog === 'completed' && 'Detalhes: Empréstimos Quitados'}
-            </DialogTitle>
-          </DialogHeader>
-          <LoanDetailsContent type={detailsDialog} activeLoans={activeLoans} completedLoans={completedLoans} fmt={fmt} />
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function LoanDetailsContent({ type, activeLoans, completedLoans, fmt }) {
-  if (type === 'active') {
-    return (
-      <div className="space-y-2">
-        {activeLoans.length === 0 ? (
-          <p className="text-center py-4 text-gray-400">Nenhum empréstimo ativo</p>
-        ) : (
-          activeLoans.map(l => (
-            <div key={l.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
-              <div>
-                <p className="font-medium">{l.driver_name}</p>
-                <p className="text-sm text-gray-500">Duração: {l.duration_weeks} semanas</p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium">{fmt(l.amount)}</p>
-                <p className="text-sm text-gray-500">Total: {fmt(l.total_with_interest)}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    );
-  }
-
-  if (type === 'outstanding') {
-    const total = activeLoans.reduce((s, l) => s + (l.remaining_balance || 0), 0);
-    return (
-      <div className="space-y-3">
-        <div className="p-3 bg-rose-50 rounded-lg">
-          <p className="text-sm font-semibold">Total: {fmt(total)}</p>
-        </div>
-        <div className="space-y-2">
-          {activeLoans.map(l => (
-            <div key={l.id} className="flex justify-between items-center p-3 border-b">
-              <div>
-                <p className="font-medium">{l.driver_name}</p>
-                <p className="text-sm text-gray-500">Pago: {fmt(l.paid_amount || 0)}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium text-red-600">{fmt(l.remaining_balance)}</p>
-                <p className="text-sm text-gray-500">Semanal: {fmt(l.weekly_installment)}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (type === 'completed') {
-    return (
-      <div className="space-y-2">
-        {completedLoans.length === 0 ? (
-          <p className="text-center py-4 text-gray-400">Nenhum empréstimo quitado</p>
-        ) : (
-          completedLoans.map(l => (
-            <div key={l.id} className="flex justify-between items-center p-3 border-b hover:bg-gray-50">
-              <div>
-                <p className="font-medium">{l.driver_name}</p>
-                <p className="text-sm text-gray-500">Duração: {l.duration_weeks} semanas</p>
-              </div>
-              <div className="text-right">
-                <p className="font-medium text-green-600">{fmt(l.total_with_interest)}</p>
-                <p className="text-sm text-gray-500">Quitado</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    );
-  }
-
-  return null;
-}
-
 function LoanEditForm({ loan, onSave, onCancel }) {
-  const [form, setForm] = useState({ 
+  const [form, setForm] = useState({
     remaining_balance: loan?.remaining_balance || 0,
     paid_amount: loan?.paid_amount || 0,
-    status: loan?.status || 'active'
+    status: loan?.status || 'active',
   });
-  
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ 
-      remaining_balance: parseFloat(form.remaining_balance) || 0, 
+    onSave({
+      remaining_balance: parseFloat(form.remaining_balance) || 0,
       paid_amount: parseFloat(form.paid_amount) || 0,
-      status: form.status
+      status: form.status,
     });
   };
-  
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5"><Label className="text-xs">Restante</Label><Input type="number" step="0.01" value={form.remaining_balance || 0} onChange={(e) => setForm(f => ({ ...f, remaining_balance: e.target.value }))} /></div>
       <div className="space-y-1.5"><Label className="text-xs">Pagamento antecipado</Label><Input type="number" step="0.01" value={form.paid_amount || 0} onChange={(e) => setForm(f => ({ ...f, paid_amount: e.target.value }))} /></div>
-      <div className="space-y-1.5"><Label className="text-xs">Estado</Label>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Estado</Label>
         <Select value={form.status} onValueChange={(v) => setForm(f => ({ ...f, status: v }))}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="requested">Solicitado</SelectItem>
-            <SelectItem value="approved">Aprovado</SelectItem>
             <SelectItem value="active">Ativo</SelectItem>
             <SelectItem value="completed">Concluído</SelectItem>
             <SelectItem value="rejected">Rejeitado</SelectItem>
@@ -386,18 +326,5 @@ function LoanEditForm({ loan, onSave, onCancel }) {
         <Button type="submit" className="flex-1 bg-indigo-600 hover:bg-indigo-700">Guardar</Button>
       </div>
     </form>
-  );
-}
-
-function LoanDeleteButton({ loanId, onDelete }) {
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      className="text-red-600"
-      onClick={() => { if (confirm('Eliminar empréstimo?')) onDelete(loanId); }}
-    >
-      Eliminar
-    </Button>
   );
 }
