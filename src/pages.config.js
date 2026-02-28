@@ -77,6 +77,7 @@ import UserManagement from './pages/UserManagement';
 import VehicleDetail from './pages/VehicleDetail';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
+import ContaValidacao from './pages/ContaValidacao';
 import __Layout from './Layout.jsx';
 
 
@@ -111,6 +112,7 @@ export const PAGES = {
     "VehicleDetail": VehicleDetail,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
+    "ContaValidacao": ContaValidacao,
 }
 
 export const pagesConfig = {
