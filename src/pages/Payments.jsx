@@ -302,18 +302,21 @@ export default function Payments({ currentUser }) {
                 <span>{fmt(selected.net_amount)}</span>
               </div>
               {!isSimulation && (
-                <div className="flex gap-2">
-                  <Button onClick={() => setEditMode(true)} variant="outline" className="flex-1">Editar</Button>
-                  <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar pagamento?')) deleteMutation.mutate(selected); }}>Eliminar</Button>
-                  {isAdmin && (
-                    <Select value={selected.status} onValueChange={(v) => updateMutation.mutate({ id: selected.id, data: { status: v }, oldPayment: selected })}>
+                <div className="flex gap-2 flex-wrap">
+                  {canEdit && selected.status === 'draft' && (
+                    <Button onClick={() => setEditMode(true)} variant="outline" className="flex-1">Editar</Button>
+                  )}
+                  {canDelete && (
+                    <Button variant="outline" className="flex-1 text-red-600" onClick={() => { if (confirm('Eliminar pagamento?')) deleteMutation.mutate(selected); }}>Eliminar</Button>
+                  )}
+                  {/* Status transition */}
+                  {getAllowedTransitions(currentUser?.role, selected.status).length > 1 && (
+                    <Select value={selected.status} onValueChange={(v) => updateMutation.mutate({ id: selected.id, data: { status: v, ...(v === 'submitted' ? { submitted_by: currentUser?.email } : {}), ...(v === 'approved' || v === 'paid' ? { approved_by: currentUser?.email } : {}) }, oldPayment: selected })}>
                       <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="draft">Rascunho</SelectItem>
-                        <SelectItem value="processing">Processando</SelectItem>
-                        <SelectItem value="approved">Aprovado</SelectItem>
-                        <SelectItem value="paid">Pago</SelectItem>
-                        <SelectItem value="disputed">Contestado</SelectItem>
+                        {getAllowedTransitions(currentUser?.role, selected.status).map(s => (
+                          <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   )}
