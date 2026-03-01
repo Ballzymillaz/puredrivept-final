@@ -130,7 +130,7 @@ function LayoutInner({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-gray-50/80">
-      <Sidebar currentPage={currentPageName} userRole={user?.role || 'admin'} currentUser={user} />
+      <Sidebar currentPage={currentPageName} userRole={sidebarRole} currentUser={user} />
       <div className="lg:ml-60 min-h-screen flex flex-col">
         <TopBar user={user} pageTitle={PAGE_TITLES[currentPageName] || currentPageName} />
         <SimulationBanner />
