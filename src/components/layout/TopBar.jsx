@@ -50,8 +50,8 @@ export default function TopBar({ user, pageTitle }) {
     : 'PD';
 
   const roleLabels = {
-    pt: { admin: 'Administrador', fleet_manager: 'Gestor de frota', commercial: 'Comercial', driver: 'Motorista' },
-    fr: { admin: 'Administrateur', fleet_manager: 'Gestionnaire de flotte', commercial: 'Commercial', driver: 'Chauffeur' }
+    pt: { admin: 'Administrador', fleet_manager: 'Gestor de frota', driver: 'Motorista' },
+    fr: { admin: 'Administrateur', fleet_manager: 'Gestionnaire de flotte', driver: 'Chauffeur' }
   };
 
   const toggleLang = (newLang) => {
