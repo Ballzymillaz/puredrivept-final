@@ -23,7 +23,6 @@ const ADMIN_MENU = [
     { name: 'Veículos', icon: Car, page: 'Vehicles' },
     { name: 'Frotas', icon: Building2, page: 'Fleets' },
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
-    { name: 'Comerciais', icon: Users, page: 'Commercials' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
     { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
@@ -181,7 +180,7 @@ export default function Sidebar({ currentPage, userRole, currentUser }) {
 
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setMobileOpen(false)}>
-          <div className="w-64 h-full bg-gradient-to-b from-indigo-950 to-slate-900" onClick={e => e.stopPropagation()}>
+          <div className="w-64 h-full bg-gradient-to-b from-[#06081a] via-[#080e24] to-[#060816]" onClick={e => e.stopPropagation()}>
             <button onClick={() => setMobileOpen(false)} className="absolute top-4 right-4 text-white/60 hover:text-white">
               <X className="w-5 h-5" />
             </button>
@@ -191,7 +190,9 @@ export default function Sidebar({ currentPage, userRole, currentUser }) {
       )}
 
       <aside className={cn(
-        "hidden lg:flex flex-col h-screen bg-gradient-to-b from-indigo-950 to-slate-900 fixed left-0 top-0 z-40 transition-all duration-300",
+        "hidden lg:flex flex-col h-screen fixed left-0 top-0 z-40 transition-all duration-300",
+        // Electric dark blue theme
+        "bg-gradient-to-b from-[#06081a] via-[#080e24] to-[#060816]",
         collapsed ? "w-[68px]" : "w-60"
       )}>
         {sidebarContent}
