@@ -121,9 +121,12 @@ function LayoutInner({ children, currentPageName }) {
         _isSimulation: true,
         _simulatedTargetId: simulation.targetId,
         _simulatedTargetName: simulation.targetName,
-        _realRole: user?.role,
+        _realRole: 'admin', // real user is always admin when simulation is active
       }
     : user;
+
+  // Sidebar receives real role (always admin during simulation — sidebar shows admin menu)
+  const sidebarRole = user?.role || 'driver';
 
   return (
     <div className="min-h-screen bg-gray-50/80">
