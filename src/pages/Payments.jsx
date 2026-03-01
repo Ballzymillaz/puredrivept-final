@@ -15,10 +15,38 @@ import { CreditCard, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
 import { startOfWeek, endOfWeek, format, addWeeks } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 
+// Allowed status transitions per role
+function getAllowedTransitions(role, currentStatus) {
+  if (role === 'admin') {
+    if (currentStatus === 'submitted') return ['submitted', 'approved'];
+    if (currentStatus === 'approved') return ['approved', 'paid'];
+    return ['draft', 'submitted', 'approved', 'paid'];
+  }
+  if (role === 'fleet_manager') {
+    if (currentStatus === 'draft') return ['draft', 'submitted'];
+    return [currentStatus]; // can't change if submitted or later
+  }
+  return [];
+}
+
+const STATUS_LABELS = {
+  draft: 'Rascunho',
+  submitted: 'Submetido',
+  approved: 'Aprovado',
+  paid: 'Pago',
+};
+
 export default function Payments({ currentUser }) {
   const isAdmin = currentUser?.role === 'admin' || currentUser?._realRole === 'admin';
   const isFleetManager = currentUser?.role === 'fleet_manager' && !isAdmin;
+  const isDriver = currentUser?.role === 'driver' && !isAdmin;
   const isSimulation = !!currentUser?._isSimulation;
+  // Can create payments: admin or fleet_manager (not in simulation)
+  const canCreate = (isAdmin || isFleetManager) && !isSimulation;
+  // Can edit draft payments: admin or fleet_manager
+  const canEdit = (isAdmin || isFleetManager) && !isSimulation;
+  // Can delete: admin only
+  const canDelete = isAdmin && !isSimulation;
 
   const [selected, setSelected] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
