@@ -244,6 +244,7 @@ export default function Payments({ currentUser }) {
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="draft">Rascunho</SelectItem>
+            <SelectItem value="submitted">Submetido</SelectItem>
             <SelectItem value="approved">Aprovado</SelectItem>
             <SelectItem value="paid">Pago</SelectItem>
           </SelectContent>
