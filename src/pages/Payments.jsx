@@ -218,7 +218,7 @@ export default function Payments({ currentUser }) {
           🔒 Modo simulação — ações de criação/edição/eliminação desativadas
         </div>
       )}
-      <PageHeader title="Pagamentos semanais" subtitle={`${filtered.length} pagamentos`} actionLabel={isAdmin && !isSimulation ? "Novo pagamento" : undefined} onAction={isAdmin && !isSimulation ? () => { setShowForm(true); } : undefined} />
+      <PageHeader title="Pagamentos semanais" subtitle={`${filtered.length} pagamentos`} actionLabel={canCreate ? "Novo pagamento" : undefined} onAction={canCreate ? () => { setShowForm(true); } : undefined} />
       
       <div className="flex flex-wrap gap-3">
         <Select value={driverFilter} onValueChange={setDriverFilter}>
