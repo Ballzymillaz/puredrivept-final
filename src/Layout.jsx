@@ -8,6 +8,7 @@ import { createPageUrl } from '@/utils';
 
 const PAGE_TITLES = {
   Dashboard: 'Painel de controlo',
+  DriverDashboard: 'Painel do Motorista',
   Drivers: 'Gestão de motoristas',
   Vehicles: 'Gestão de veículos',
   FleetManagers: 'Gestores de frota',
@@ -35,6 +36,19 @@ const PAGE_TITLES = {
   Apply: 'Candidatura',
   Fleets: 'Gestão de Frotas',
   RelatorioFrotas: 'Relatório de Desempenho de Frotas',
+};
+
+// ─── STRICT ROLE ACCESS RULES ──────────────────────────────────────────────
+const ROLE_ALLOWED_PAGES = {
+  admin: null, // null = all pages
+  fleet_manager: [
+    'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents',
+    'Payments', 'Referrals', 'RelatoriosFrota', 'Messaging', 'Notifications', 'Relatorios',
+  ],
+  driver: [
+    'DriverDashboard', 'Documents', 'Loans', 'Reimbursements',
+    'UPI', 'VehiclePurchases', 'Messaging', 'Notifications', 'Payments',
+  ],
 };
 
 const PUBLIC_PAGES = ['PublicSite', 'Apply', 'ContaValidacao'];
