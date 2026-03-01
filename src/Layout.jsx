@@ -75,26 +75,23 @@ function LayoutInner({ children, currentPageName }) {
         return;
       }
       const me = await base44.auth.me();
-      const userRoles = me?.role ? me.role.split(',').map(r => r.trim()) : [];
-      const hasRole = (r) => userRoles.includes(r);
-      setUser({ ...me, roles: userRoles, hasRole });
+      // Canonical single role: pick the highest-priority role
+      const rawRoles = me?.role ? me.role.split(',').map(r => r.trim()) : [];
+      const canonicalRole = rawRoles.includes('admin') ? 'admin'
+        : rawRoles.includes('fleet_manager') ? 'fleet_manager'
+        : 'driver';
+      const userWithRole = { ...me, role: canonicalRole, _rawRoles: rawRoles };
+      setUser(userWithRole);
       setLoading(false);
 
-      const DRIVER_ALLOWED_PAGES = ['DriverDashboard', 'Documents', 'Loans', 'Reimbursements', 'Rankings', 'UPI', 'VehiclePurchases', 'Messaging', 'Notifications', 'Dashboard'];
-      if (hasRole('driver') && !hasRole('admin') && !hasRole('fleet_manager')) {
-        if (currentPageName === 'Dashboard') {
-          window.location.href = createPageUrl('DriverDashboard');
+      // Access control: redirect if page not allowed for role
+      if (canonicalRole !== 'admin') {
+        const allowed = ROLE_ALLOWED_PAGES[canonicalRole] || [];
+        if (!allowed.includes(currentPageName)) {
+          const defaultPage = canonicalRole === 'driver' ? 'DriverDashboard' : 'Payments';
+          window.location.href = createPageUrl(defaultPage);
           return;
         }
-        if (!DRIVER_ALLOWED_PAGES.includes(currentPageName)) {
-          window.location.href = createPageUrl('DriverDashboard');
-          return;
-        }
-      }
-      const FLEET_ALLOWED_PAGES = ['DriverDashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Fleets', 'Documents', 'Payments', 'Referrals', 'RelatoriosFrota', 'Rankings', 'Messaging', 'FleetManagers', 'Notifications', 'Relatorios'];
-      if (hasRole('fleet_manager') && !hasRole('admin') && !hasRole('driver') && !FLEET_ALLOWED_PAGES.includes(currentPageName)) {
-        window.location.href = createPageUrl('RelatoriosFrota');
-        return;
       }
     };
     loadUser();
