@@ -38,6 +38,7 @@ const PAGE_TITLES = {
   RelatorioFrotas: 'Relatório de Desempenho de Frotas',
 };
 
+
 // ─── STRICT ROLE ACCESS RULES ──────────────────────────────────────────────
 const ROLE_ALLOWED_PAGES = {
   admin: null, // null = all pages
