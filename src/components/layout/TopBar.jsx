@@ -40,8 +40,7 @@ export default function TopBar({ user, pageTitle }) {
   });
 
   const unreadCount = notifications.filter(n => {
-    const roles = user?.role ? user.role.split(',').map(r => r.trim()) : [];
-    const isVisible = (n.recipient_email === myEmail) || (n.recipient_role === 'all') || roles.includes(n.recipient_role) || user?.role === 'admin';
+    const isVisible = (n.recipient_email === myEmail) || (n.recipient_role === 'all') || (n.recipient_role === user?.role) || user?.role === 'admin';
     return isVisible && !n.read_by?.includes(myEmail);
   }).length;
 
