@@ -4,8 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Car, Shield, TrendingUp, Clock, Target, ChevronRight, Award, Euro } from 'lucide-react';
+import { Zap, Car, Shield, TrendingUp, ChevronRight, Award, Star } from 'lucide-react';
 
 export default function PublicSite() {
   const [selectedRole, setSelectedRole] = useState(null);
@@ -18,59 +17,49 @@ export default function PublicSite() {
 
   const availableVehicles = vehicles.filter(v => v.status === 'available');
 
-  const features = [
-    { icon: Car, title: 'Veículos modernos', description: 'Frota recente e bem mantida' },
-    { icon: Shield, title: 'Seguro completo', description: 'Proteção máxima incluída' },
-    { icon: TrendingUp, title: 'Rendimentos atrativos', description: 'Várias fórmulas adaptadas' },
-    { icon: Clock, title: 'Suporte 24/7', description: 'Assistência a qualquer momento' },
+  const fleetManagerBenefits = [
+    { plan: 'Slot Standard', weekly: '5€/semana', description: 'Por cada motorista ativo' },
+    { plan: 'Slot Premium', weekly: '5€/semana', description: 'Por cada motorista ativo' },
+    { plan: 'Slot Black', weekly: '10€/semana', description: 'Por cada motorista ativo' },
+    { plan: 'Aluguer', weekly: '15€/semana', description: 'Por motorista ativo' },
+    { plan: 'Bónus 30 dias', weekly: '60€', description: 'Por motorista ativo após 30 dias', isBonus: true },
+    { plan: 'Opção de compra', weekly: '250€', description: 'Bónus por cada venda concluída', isBonus: true },
   ];
 
-  const driverOffers = [
-    { type: 'slot_standard', name: 'Slot Standard', price: '35€/semana', features: ['Veículo incluído da frota', 'Sem comissão', 'Seguro completo', 'Suporte 24/7', 'Formação incluída'] },
-    { type: 'slot_premium', name: 'Slot Premium', price: '45€/semana', features: ['Veículo premium', 'Sem comissão', 'Seguro todos os riscos', 'Suporte prioritário', 'Formação avançada', 'Manutenção prioritária'] },
-    { type: 'slot_black', name: 'Slot Black', price: '99€/semana', features: ['Veículo topo de gama', 'Sem comissão', 'Seguro premium', 'Suporte VIP', 'Coaching personalizado', 'Substituição imediata'] },
-    { type: 'location', name: 'Aluguer de Veículo', price: 'À medida', features: ['20% comissão', 'Aluguer longa duração', 'Flexibilidade total', 'Opção de compra', 'Assistência completa', 'Veículos disponíveis'] },
+  const driverBenefits = [
+    'Renda fixa semanal — sem surpresas',
+    '6% IVA obrigatório Uber & Bolt',
+    '4% convertidos em UPI (vesting anual 25%)',
+    'Sem comissões variáveis ocultas',
+    'Sem taxas administrativas',
+    'Opção de compra do veículo disponível',
   ];
-
-  const commercialOffer = {
-    title: 'Torne-se Comercial PureDrive',
-    benefits: [
-      { plan: 'Slot Standard', weekly: '5€/semana', description: 'Por cada motorista ativo' },
-      { plan: 'Slot Premium', weekly: '5€/semana', description: 'Por cada motorista ativo' },
-      { plan: 'Slot Black', weekly: '10€/semana', description: 'Por cada motorista ativo' },
-      { plan: 'Aluguer', weekly: '15€/semana', description: 'Por motorista + 60€ bónus após 30 dias' },
-      { plan: 'Venda Veículo', weekly: '250€', description: 'Bónus por venda em auto-financiamento', isBonus: true },
-    ],
-    extraBenefits: ['Sem limite de indicações', 'Pagamentos semanais', 'Rastreamento em tempo real', 'Suporte dedicado', 'Rendimento ilimitado']
-  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0a0e1a 0%, #0d1526 50%, #0a1020 100%)' }}>
+
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="sticky top-0 z-50 border-b border-white/10" style={{ background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(12px)' }}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <img 
-              src="/uploads/Logo%20PureDrive.png" 
-              alt="PureDrive" 
-              className="h-10 object-contain"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                const fallback = e.target.parentElement.querySelector('.fallback-logo');
-                if (fallback) fallback.style.display = 'block';
-              }}
-            />
-            <Car className="w-8 h-8 text-indigo-600 fallback-logo hidden" />
-            <h1 className="text-2xl font-bold text-gray-900">PureDrive<sup className="text-xs">PT</sup></h1>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1d4ed8, #06b6d4)' }}>
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-white font-bold text-lg leading-none">PureDrive<sup className="text-[10px] text-cyan-400">PT</sup></h1>
+              <p className="text-blue-400/70 text-[10px] tracking-widest uppercase">TVDE Fleet Management</p>
+            </div>
           </div>
-          <div className="flex gap-4">
-            {!selectedRole && (
-              <button onClick={() => window.scrollTo({ top: document.getElementById('choose-role')?.offsetTop - 100 || 600, behavior: 'smooth' })} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
-                Começar
-              </button>
-            )}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => document.getElementById('choose-role')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-5 py-2 text-sm font-medium text-white rounded-lg border border-blue-500/40 hover:border-cyan-400/60 transition-all"
+              style={{ background: 'rgba(29,78,216,0.2)' }}
+            >
+              Começar
+            </button>
             <Link to={createPageUrl('Dashboard')}>
-              <button className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+              <button className="px-5 py-2 text-sm font-medium rounded-lg transition-all text-white" style={{ background: 'linear-gradient(135deg, #1d4ed8, #06b6d4)', boxShadow: '0 0 16px rgba(6,182,212,0.3)' }}>
                 Login
               </button>
             </Link>
@@ -79,125 +68,233 @@ export default function PublicSite() {
       </header>
 
       {/* Hero */}
-      <section className="max-w-7xl mx-auto px-6 py-20 text-center">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-5xl font-bold text-gray-900 mb-6">Junte-se à frota TVDE líder em Portugal</h2>
-          <p className="text-xl text-gray-600 mb-8">Soluções flexíveis para motoristas profissionais e comerciais. Escolha o que se adapta a si.</p>
+      <section className="relative overflow-hidden">
+        {/* Glow effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-10 blur-3xl" style={{ background: '#1d4ed8' }} />
+          <div className="absolute top-1/3 right-1/4 w-80 h-80 rounded-full opacity-8 blur-3xl" style={{ background: '#06b6d4' }} />
+        </div>
+
+        <div className="relative max-w-5xl mx-auto px-6 py-28 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/30 mb-8" style={{ background: 'rgba(6,182,212,0.1)' }}>
+            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-cyan-400 text-xs font-semibold tracking-wider uppercase">Plataforma TVDE Premium</span>
+          </div>
+
+          <h2 className="text-5xl md:text-6xl font-black text-white mb-6 leading-tight">
+            Domina o mercado TVDE<br />
+            <span style={{ background: 'linear-gradient(90deg, #3b82f6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              com estrutura e potência.
+            </span>
+          </h2>
+
+          <p className="text-blue-200/70 text-lg md:text-xl mb-12 max-w-2xl mx-auto">
+            Modelo transparente. Veículos elétricos. Crescimento sustentável.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => { setSelectedRole('driver'); document.getElementById('role-content')?.scrollIntoView({ behavior: 'smooth' }); }}
+              className="px-8 py-4 rounded-xl font-bold text-white text-lg transition-all hover:scale-105"
+              style={{ background: 'linear-gradient(135deg, #1d4ed8, #06b6d4)', boxShadow: '0 0 24px rgba(6,182,212,0.4)' }}
+            >
+              🚗 Sou Motorista
+            </button>
+            <button
+              onClick={() => { setSelectedRole('fleet_manager'); document.getElementById('role-content')?.scrollIntoView({ behavior: 'smooth' }); }}
+              className="px-8 py-4 rounded-xl font-bold text-white text-lg transition-all hover:scale-105 border border-cyan-500/40"
+              style={{ background: 'rgba(29,78,216,0.3)', boxShadow: '0 0 24px rgba(29,78,216,0.3)' }}
+            >
+              💼 Sou Fleet Manager
+            </button>
+          </div>
         </div>
       </section>
 
       {/* Choose Role */}
-      <section id="choose-role" className="max-w-5xl mx-auto px-6 py-12">
-        <h3 className="text-3xl font-bold text-center mb-10 text-gray-900">Escolha o seu perfil</h3>
+      <section id="choose-role" className="max-w-4xl mx-auto px-6 py-16">
+        <p className="text-center text-blue-400/60 text-xs font-semibold tracking-widest uppercase mb-8">Qual é o seu perfil?</p>
         <div className="grid md:grid-cols-2 gap-6">
-          <Card className={`cursor-pointer transition-all hover:shadow-xl border-2 ${selectedRole === 'driver' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-200'}`} onClick={() => setSelectedRole('driver')}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-indigo-600 flex items-center justify-center"><Car className="w-6 h-6 text-white" /></div>
-                <div><CardTitle className="text-xl">Motorista TVDE</CardTitle><p className="text-sm text-gray-500">Comece a trabalhar connosco</p></div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>✓ Veículos disponíveis</li>
-                <li>✓ Várias opções de contrato</li>
-                <li>✓ Suporte completo</li>
-                <li>✓ Formação incluída</li>
-              </ul>
-            </CardContent>
-          </Card>
+          {/* Driver */}
+          <button
+            onClick={() => { setSelectedRole('driver'); document.getElementById('role-content')?.scrollIntoView({ behavior: 'smooth' }); }}
+            className={`p-6 rounded-2xl text-left transition-all hover:scale-[1.02] border ${selectedRole === 'driver' ? 'border-cyan-400/60' : 'border-white/10 hover:border-blue-500/40'}`}
+            style={{ background: selectedRole === 'driver' ? 'rgba(6,182,212,0.1)' : 'rgba(255,255,255,0.04)', boxShadow: selectedRole === 'driver' ? '0 0 24px rgba(6,182,212,0.2)' : 'none' }}
+          >
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg, #1d4ed8, #06b6d4)' }}>
+              <Car className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-white font-bold text-xl mb-2">Motorista TVDE</h3>
+            <p className="text-blue-300/70 text-sm mb-4">Conduza com estrutura e transparência</p>
+            <ul className="space-y-1.5 text-sm text-blue-200/60">
+              <li className="flex items-center gap-2"><ChevronRight className="w-3 h-3 text-cyan-400" />Veículos premium disponíveis</li>
+              <li className="flex items-center gap-2"><ChevronRight className="w-3 h-3 text-cyan-400" />Modelo de ganhos transparente</li>
+              <li className="flex items-center gap-2"><ChevronRight className="w-3 h-3 text-cyan-400" />UPI — moeda interna valorizada</li>
+              <li className="flex items-center gap-2"><ChevronRight className="w-3 h-3 text-cyan-400" />Opção de compra do veículo</li>
+            </ul>
+          </button>
 
-          <Card className={`cursor-pointer transition-all hover:shadow-xl border-2 ${selectedRole === 'commercial' ? 'border-emerald-600 bg-emerald-50' : 'border-gray-200'}`} onClick={() => setSelectedRole('commercial')}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-lg bg-emerald-600 flex items-center justify-center"><Target className="w-6 h-6 text-white" /></div>
-                <div><CardTitle className="text-xl">Comercial</CardTitle><p className="text-sm text-gray-500">Ganhe indicando motoristas</p></div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>✓ Rendimento passivo</li>
-                <li>✓ Sem limite de indicações</li>
-                <li>✓ Pagamentos semanais</li>
-                <li>✓ Bónus atrativos</li>
-              </ul>
-            </CardContent>
-          </Card>
+          {/* Fleet Manager */}
+          <button
+            onClick={() => { setSelectedRole('fleet_manager'); document.getElementById('role-content')?.scrollIntoView({ behavior: 'smooth' }); }}
+            className={`p-6 rounded-2xl text-left transition-all hover:scale-[1.02] border ${selectedRole === 'fleet_manager' ? 'border-blue-400/60' : 'border-white/10 hover:border-blue-500/40'}`}
+            style={{ background: selectedRole === 'fleet_manager' ? 'rgba(29,78,216,0.15)' : 'rgba(255,255,255,0.04)', boxShadow: selectedRole === 'fleet_manager' ? '0 0 24px rgba(29,78,216,0.3)' : 'none' }}
+          >
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: 'linear-gradient(135deg, #7c3aed, #1d4ed8)' }}>
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-white font-bold text-xl mb-2">Fleet Manager</h3>
+            <p className="text-blue-300/70 text-sm mb-4">Construa a sua estrutura com previsibilidade</p>
+            <ul className="space-y-1.5 text-sm text-blue-200/60">
+              <li className="flex items-center gap-2"><ChevronRight className="w-3 h-3 text-blue-400" />Rendimento semanal por motorista</li>
+              <li className="flex items-center gap-2"><ChevronRight className="w-3 h-3 text-blue-400" />Bónus por fidelização</li>
+              <li className="flex items-center gap-2"><ChevronRight className="w-3 h-3 text-blue-400" />Gestão da sua frota</li>
+              <li className="flex items-center gap-2"><ChevronRight className="w-3 h-3 text-blue-400" />250€ por venda em opção de compra</li>
+            </ul>
+          </button>
         </div>
       </section>
 
-      {/* Driver Offers */}
-      {selectedRole === 'driver' && (
-        <section className="max-w-7xl mx-auto px-6 py-16 bg-white rounded-2xl shadow-sm my-8">
-          <h3 className="text-3xl font-bold text-center mb-12 text-gray-900">Ofertas para Motoristas</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {driverOffers.map((offer, i) => (
-              <Card key={i} className="border-2 border-gray-200 hover:border-indigo-600 transition-all">
-                <CardHeader><CardTitle className="text-lg">{offer.name}</CardTitle><p className="text-2xl font-bold text-indigo-600">{offer.price}</p></CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-sm">
-                    {offer.features.map((f, j) => (
-                      <li key={j} className="flex items-start gap-2"><ChevronRight className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" /><span>{f}</span></li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      {/* Role Content */}
+      <div id="role-content">
 
-          {availableVehicles.length > 0 && (
-            <div><h4 className="text-2xl font-bold text-center mb-6">Veículos Disponíveis para Aluguer</h4>
-              <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {availableVehicles.slice(0, 8).map(v => (
-                  <Card key={v.id} className="border border-gray-200"><CardContent className="p-4"><p className="font-semibold text-gray-900">{v.brand} {v.model}</p><p className="text-sm text-gray-500">{v.year} • {v.license_plate}</p>{v.weekly_rental_price && (<p className="text-indigo-600 font-bold mt-2">{v.weekly_rental_price}€/semana</p>)}</CardContent></Card>
-                ))}
-              </div>
+        {/* Driver Section */}
+        {selectedRole === 'driver' && (
+          <section className="max-w-5xl mx-auto px-6 py-12 space-y-8">
+            <div className="text-center mb-8">
+              <h3 className="text-3xl font-black text-white mb-2">Estrutura Financeira Transparente</h3>
+              <p className="text-blue-300/70">Saiba exactamente o que recebe cada semana</p>
             </div>
-          )}
 
-          <div className="text-center mt-12"><Link to={createPageUrl('Apply')}><Button className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-lg">Candidatar como Motorista</Button></Link></div>
-        </section>
-      )}
+            {/* Financial model card */}
+            <div className="rounded-2xl border border-cyan-500/30 p-6" style={{ background: 'rgba(6,182,212,0.07)', boxShadow: '0 0 32px rgba(6,182,212,0.1)' }}>
+              <p className="text-xs font-semibold text-cyan-400 tracking-widest uppercase mb-4">Modelo financeiro</p>
+              <ul className="space-y-3">
+                {driverBenefits.map((b, i) => (
+                  <li key={i} className="flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0" />
+                    <span className="text-blue-100 text-sm">{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-      {/* Commercial Offer */}
-      {selectedRole === 'commercial' && (
-        <section className="max-w-5xl mx-auto px-6 py-16 bg-white rounded-2xl shadow-sm my-8">
-          <h3 className="text-3xl font-bold text-center mb-4 text-gray-900">{commercialOffer.title}</h3>
-          <p className="text-xl text-center text-gray-600 mb-12">Ganhe indicando motoristas</p>
-
-          <div className="space-y-4 mb-12">
-            {commercialOffer.benefits.map((b, i) => (
-              <Card key={i} className={`border-2 ${b.isBonus ? 'border-amber-200 bg-amber-50' : 'border-emerald-200'}`}><CardContent className="p-6 flex items-center justify-between"><div><p className="font-bold text-lg text-gray-900">{b.plan}</p><p className="text-sm text-gray-600">{b.description}</p></div><div className="text-right"><p className={`text-2xl font-bold ${b.isBonus ? 'text-amber-600' : 'text-emerald-600'}`}>{b.weekly}</p><p className="text-xs text-gray-500">{b.isBonus ? 'por venda' : 'por motorista'}</p></div></CardContent></Card>
-            ))}
-          </div>
-
-          <Card className="bg-emerald-50 border-2 border-emerald-200 mb-8"><CardHeader><CardTitle className="text-lg">Benefícios Adicionais</CardTitle></CardHeader><CardContent><ul className="space-y-2">{commercialOffer.extraBenefits.map((b, i) => (<li key={i} className="flex items-center gap-2"><Award className="w-4 h-4 text-emerald-600" /><span>{b}</span></li>))}</ul></CardContent></Card>
-
-          <div className="text-center"><Link to={createPageUrl('Apply')}><Button className="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-lg">Candidatar como Comercial</Button></Link></div>
-        </section>
-      )}
-
-      {/* Features */}
-      {!selectedRole && (
-        <section className="max-w-7xl mx-auto px-6 py-16">
-          <h3 className="text-3xl font-bold text-center mb-12 text-gray-900">Porquê PureDrive?</h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {features.map((feature, i) => (
-              <div key={i} className="text-center p-6">
-                <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4"><feature.icon className="w-8 h-8 text-indigo-600" /></div>
-                <h4 className="font-semibold text-lg mb-2 text-gray-900">{feature.title}</h4>
-                <p className="text-gray-600">{feature.description}</p>
+            {/* Available vehicles */}
+            {availableVehicles.length > 0 && (
+              <div>
+                <h4 className="text-xl font-bold text-white mb-4">Veículos Disponíveis</h4>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {availableVehicles.slice(0, 6).map(v => (
+                    <div
+                      key={v.id}
+                      className="rounded-xl p-4 border border-white/8 transition-all hover:border-cyan-500/40 hover:scale-[1.02]"
+                      style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'none' }}
+                    >
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-cyan-300 border border-cyan-500/30 mb-3" style={{ background: 'rgba(6,182,212,0.15)' }}>
+                        ● Disponível
+                      </div>
+                      <p className="text-white font-semibold">{v.brand} {v.model}</p>
+                      <p className="text-blue-400/60 text-xs mt-0.5">{v.license_plate}</p>
+                      {v.weekly_rental_price && (
+                        <p className="text-cyan-400 font-bold text-lg mt-2">{v.weekly_rental_price}€<span className="text-xs font-normal text-blue-400/60">/semana</span></p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+            )}
+
+            <div className="text-center pt-4">
+              <Link to={createPageUrl('Apply')}>
+                <button className="px-10 py-4 rounded-xl font-bold text-white text-lg transition-all hover:scale-105" style={{ background: 'linear-gradient(135deg, #1d4ed8, #06b6d4)', boxShadow: '0 0 28px rgba(6,182,212,0.4)' }}>
+                  Candidatar como Motorista
+                </button>
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {/* Fleet Manager Section */}
+        {selectedRole === 'fleet_manager' && (
+          <section className="max-w-4xl mx-auto px-6 py-12 space-y-8">
+            <div className="text-center mb-8">
+              <h3 className="text-3xl font-black text-white mb-2">Torne-se Fleet Manager PureDrive</h3>
+              <p className="text-blue-300/70">Construa a sua própria estrutura com potência e previsibilidade.</p>
+            </div>
+
+            <div className="space-y-3">
+              {fleetManagerBenefits.map((b, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center justify-between p-4 rounded-xl border transition-all ${b.isBonus ? 'border-amber-500/30' : 'border-white/8'}`}
+                  style={{ background: b.isBonus ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.04)' }}
+                >
+                  <div>
+                    <p className="text-white font-semibold text-sm">{b.plan}</p>
+                    <p className="text-blue-400/60 text-xs">{b.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-xl font-black ${b.isBonus ? 'text-amber-400' : 'text-cyan-400'}`}>{b.weekly}</p>
+                    {b.isBonus && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full text-amber-300 border border-amber-500/30" style={{ background: 'rgba(245,158,11,0.15)' }}>
+                        <Star className="w-2.5 h-2.5" /> BÓNUS
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-2xl border border-blue-500/30 p-6" style={{ background: 'rgba(29,78,216,0.1)' }}>
+              <p className="text-xs font-semibold text-blue-400 tracking-widest uppercase mb-4">Benefícios adicionais</p>
+              <ul className="space-y-2">
+                {['Sem limite de motoristas geridos', 'Pagamentos semanais garantidos', 'Dashboard exclusivo de gestão', 'Suporte dedicado Fleet Manager', 'Rendimento ilimitado e escalável'].map((b, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm text-blue-100">
+                    <Award className="w-4 h-4 text-blue-400 shrink-0" />{b}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="text-center pt-4">
+              <Link to={createPageUrl('Apply')}>
+                <button className="px-10 py-4 rounded-xl font-bold text-white text-lg transition-all hover:scale-105" style={{ background: 'linear-gradient(135deg, #7c3aed, #1d4ed8)', boxShadow: '0 0 28px rgba(124,58,237,0.4)' }}>
+                  Candidatar como Fleet Manager
+                </button>
+              </Link>
+            </div>
+          </section>
+        )}
+
+        {/* Default features */}
+        {!selectedRole && (
+          <section className="max-w-5xl mx-auto px-6 py-16">
+            <p className="text-center text-blue-400/60 text-xs font-semibold tracking-widest uppercase mb-12">Porquê PureDrive?</p>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { icon: Car, title: 'Veículos Elétricos', desc: 'Frota moderna e sustentável' },
+                { icon: Shield, title: 'Modelo Transparente', desc: 'Sem taxas ocultas' },
+                { icon: TrendingUp, title: 'UPI Valorizado', desc: '4% convertido em moeda interna' },
+                { icon: Zap, title: 'Suporte 24/7', desc: 'Assistência permanente' },
+              ].map((f, i) => (
+                <div key={i} className="p-6 rounded-2xl border border-white/8 text-center" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, #1d4ed8, #06b6d4)' }}>
+                    <f.icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h4 className="text-white font-bold mb-1">{f.title}</h4>
+                  <p className="text-blue-400/60 text-sm">{f.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
 
       {/* Footer */}
-      <footer className="border-t bg-gray-50 mt-20">
-        <div className="max-w-7xl mx-auto px-6 py-12 text-center text-gray-600">
-          <p className="mb-2">© 2025 PureDrive PT. Todos os direitos reservados.</p>
-          <p className="text-sm">Gestão profissional de frotas TVDE em Portugal</p>
+      <footer className="border-t border-white/8 mt-20">
+        <div className="max-w-7xl mx-auto px-6 py-10 text-center">
+          <p className="text-blue-400/60 text-sm">© 2025 PureDrive PT. Todos os direitos reservados.</p>
+          <p className="text-blue-400/40 text-xs mt-1">Gestão profissional de frotas TVDE em Portugal</p>
         </div>
       </footer>
     </div>
