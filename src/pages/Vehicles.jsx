@@ -18,8 +18,12 @@ export default function Vehicles({ currentUser }) {
   const [search, setSearch] = useState('');
   const qc = useQueryClient();
 
+  const isAdmin = currentUser?.role === 'admin' || currentUser?._realRole === 'admin';
+  const isFleetManager = currentUser?.role === 'fleet_manager';
+  const isSimulation = !!currentUser?._isSimulation;
+
   const { data: vehicles = [], isLoading } = useQuery({
-    queryKey: ['vehicles'],
+    queryKey: ['vehicles', currentUser?.role],
     queryFn: async () => {
       const res = await base44.functions.invoke('getVehiclesByFleet', {});
       return res.data.vehicles || [];
@@ -121,12 +125,17 @@ export default function Vehicles({ currentUser }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Veículos" subtitle={`${vehicles.length} veículos`} actionLabel="Adicionar" onAction={() => { setEditing(null); setShowForm(true); }} />
+      <PageHeader
+        title="Veículos"
+        subtitle={`${filtered.length} veículos`}
+        actionLabel={isAdmin && !isSimulation ? "Adicionar" : undefined}
+        onAction={isAdmin && !isSimulation ? () => { setEditing(null); setShowForm(true); } : undefined}
+      />
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <Input placeholder="Pesquisar..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
-      <DataTable columns={columns} data={filtered} isLoading={isLoading} onRowClick={(r) => { setEditing(r); setShowForm(true); }} />
+      <DataTable columns={columns} data={filtered} isLoading={isLoading} onRowClick={(r) => { if (isAdmin || isFleetManager) { setEditing(r); setShowForm(true); } }} />
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Editar veículo' : 'Novo veículo'}</DialogTitle></DialogHeader>
