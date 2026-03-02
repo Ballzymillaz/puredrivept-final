@@ -76,7 +76,6 @@ export default function PublicSite() {
 
         <div className="relative max-w-5xl mx-auto px-6 py-28 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/30 mb-8" style={{ background: 'rgba(6,182,212,0.1)' }}>
-            <Zap className="w-3.5 h-3.5 text-cyan-400" />
             <span className="text-cyan-400 text-xs font-semibold tracking-wider uppercase">Plataforma TVDE Premium</span>
           </div>
 
