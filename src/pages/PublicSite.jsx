@@ -288,7 +288,7 @@ export default function PublicSite() {
                 { icon: Car, title: 'Veículos Elétricos', desc: 'Frota moderna e sustentável' },
                 { icon: Shield, title: 'Modelo Transparente', desc: 'Sem taxas ocultas' },
                 { icon: TrendingUp, title: 'UPI Valorizado', desc: '4% convertido em moeda interna' },
-                { icon: Zap, title: 'Suporte 24/7', desc: 'Assistência permanente' },
+                { icon: Star, title: 'Suporte 24/7', desc: 'Assistência permanente' },
               ].map((f, i) => (
                 <div key={i} className="p-6 rounded-2xl border border-white/8 text-center" style={{ background: 'rgba(255,255,255,0.04)' }}>
                   <div className="w-14 h-14 rounded-xl flex items-center justify-center mx-auto mb-4" style={{ background: 'linear-gradient(135deg, #1d4ed8, #06b6d4)' }}>
