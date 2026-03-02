@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { Zap, Car, Shield, TrendingUp, ChevronRight, Award, Star } from 'lucide-react';
+import { Car, Shield, TrendingUp, ChevronRight, Award, Star } from 'lucide-react';
 
 export default function PublicSite() {
   const [selectedRole, setSelectedRole] = useState(null);
@@ -42,9 +42,12 @@ export default function PublicSite() {
       <header className="sticky top-0 z-50 border-b border-white/10" style={{ background: 'rgba(10,14,26,0.95)', backdropFilter: 'blur(12px)' }}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #1d4ed8, #06b6d4)' }}>
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="/uploads/Logo%20PureDrive.png"
+              alt="PureDrive"
+              className="h-10 object-contain"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
             <div>
               <h1 className="text-white font-bold text-lg leading-none">PureDrive<sup className="text-[10px] text-cyan-400">PT</sup></h1>
               <p className="text-blue-400/70 text-[10px] tracking-widest uppercase">TVDE Fleet Management</p>
