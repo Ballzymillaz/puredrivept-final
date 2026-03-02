@@ -41,10 +41,12 @@ function GlobalStatusBadge({ driver }) {
 
 export default function Drivers({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingDriver, setEditingDriver] = useState(null);
   const [search, setSearch] = useState('');
   const [quickFilter, setQuickFilter] = useState('all');
   const queryClient = useQueryClient();
+  const isFleetManager = currentUser?.role === 'fleet_manager';
 
   const { data: drivers = [], isLoading } = useQuery({
     queryKey: ['drivers'],
@@ -116,9 +118,15 @@ export default function Drivers({ currentUser }) {
           <h1 className="text-xl font-bold text-gray-900">Motoristas</h1>
           <p className="text-sm text-gray-500">{drivers.length} motoristas registados</p>
         </div>
-        <Button onClick={() => { setEditingDriver(null); setShowForm(true); }} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
-          <Plus className="w-4 h-4" /> Adicionar
-        </Button>
+        {isFleetManager ? (
+          <Button onClick={() => setShowCreateDialog(true)} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+            <Plus className="w-4 h-4" /> Adicionar Motorista
+          </Button>
+        ) : (
+          <Button onClick={() => { setEditingDriver(null); setShowForm(true); }} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+            <Plus className="w-4 h-4" /> Adicionar
+          </Button>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -280,6 +288,12 @@ export default function Drivers({ currentUser }) {
           </table>
         )}
       </div>
+
+      <CreateDriverDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ['drivers'] })}
+      />
 
       <Dialog open={showForm} onOpenChange={(open) => { setShowForm(open); if (!open) setEditingDriver(null); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
