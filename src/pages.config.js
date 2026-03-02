@@ -78,6 +78,7 @@ import UserManagement from './pages/UserManagement';
 import VehicleDetail from './pages/VehicleDetail';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
+import ChangePassword from './pages/ChangePassword';
 import __Layout from './Layout.jsx';
 
 
@@ -113,6 +114,7 @@ export const PAGES = {
     "VehicleDetail": VehicleDetail,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
+    "ChangePassword": ChangePassword,
 }
 
 export const pagesConfig = {
