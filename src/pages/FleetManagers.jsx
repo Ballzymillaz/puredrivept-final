@@ -16,6 +16,7 @@ import CreateFleetManagerDialog from '../components/fleet_managers/CreateFleetMa
 
 export default function FleetManagers({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editing, setEditing] = useState(null);
   const [search, setSearch] = useState('');
   const qc = useQueryClient();
@@ -98,7 +99,7 @@ export default function FleetManagers({ currentUser }) {
           <h1 className="text-xl font-bold text-gray-900">Gestores de Frota</h1>
           <p className="text-sm text-gray-500">Centro de controlo organizacional</p>
         </div>
-        <Button onClick={() => openForm(null)} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+        <Button onClick={() => setShowCreateDialog(true)} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
           <Plus className="w-4 h-4" /> Adicionar gestor
         </Button>
       </div>
@@ -242,7 +243,13 @@ export default function FleetManagers({ currentUser }) {
         </div>
       )}
 
-      {/* Form Dialog */}
+      <CreateFleetManagerDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSuccess={() => qc.invalidateQueries({ queryKey: ['fleet-managers'] })}
+      />
+
+      {/* Form Dialog (edit only) */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? 'Editar gestor' : 'Novo gestor de frota'}</DialogTitle></DialogHeader>
