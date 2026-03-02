@@ -52,7 +52,7 @@ const ROLE_ALLOWED_PAGES = {
   ],
 };
 
-const PUBLIC_PAGES = ['PublicSite', 'Apply', 'ContaValidacao'];
+const PUBLIC_PAGES = ['PublicSite', 'Apply', 'ContaValidacao', 'ChangePassword'];
 
 // Inner layout that has access to simulation context
 function LayoutInner({ children, currentPageName }) {
@@ -83,6 +83,13 @@ function LayoutInner({ children, currentPageName }) {
         : 'driver';
       const userWithRole = { ...me, role: canonicalRole, _rawRoles: rawRoles };
       setUser(userWithRole);
+
+      // Force password change if needed
+      if (me?.must_change_password && currentPageName !== 'ChangePassword') {
+        window.location.href = createPageUrl('ChangePassword');
+        return;
+      }
+
       setLoading(false);
 
       // Access control: redirect if page not allowed for role
