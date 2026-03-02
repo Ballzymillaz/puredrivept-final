@@ -69,11 +69,7 @@ export default function PublicSite() {
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        {/* Glow effects */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-10 blur-3xl" style={{ background: '#1d4ed8' }} />
-          <div className="absolute top-1/3 right-1/4 w-80 h-80 rounded-full opacity-8 blur-3xl" style={{ background: '#06b6d4' }} />
-        </div>
+        {/* subtle gradient only, no visible glow blobs */}
 
         <div className="relative max-w-5xl mx-auto px-6 py-28 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/30 mb-8" style={{ background: 'rgba(6,182,212,0.1)' }}>
@@ -98,14 +94,14 @@ export default function PublicSite() {
               className="px-8 py-4 rounded-xl font-bold text-white text-lg transition-all hover:scale-105"
               style={{ background: 'linear-gradient(135deg, #1d4ed8, #06b6d4)', boxShadow: '0 0 24px rgba(6,182,212,0.4)' }}
             >
-              🚗 Sou Motorista
+              Sou Motorista
             </button>
             <button
               onClick={() => { setSelectedRole('fleet_manager'); document.getElementById('role-content')?.scrollIntoView({ behavior: 'smooth' }); }}
               className="px-8 py-4 rounded-xl font-bold text-white text-lg transition-all hover:scale-105 border border-cyan-500/40"
               style={{ background: 'rgba(29,78,216,0.3)', boxShadow: '0 0 24px rgba(29,78,216,0.3)' }}
             >
-              💼 Sou Fleet Manager
+              Sou Fleet Manager
             </button>
           </div>
         </div>
@@ -177,6 +173,12 @@ export default function PublicSite() {
                   </li>
                 ))}
               </ul>
+              <div className="mt-5 pt-4 border-t border-cyan-500/20">
+                <p className="text-xs font-semibold text-cyan-400 tracking-widest uppercase mb-2">Opção de compra do veículo</p>
+                <p className="text-blue-200/70 text-sm leading-relaxed">
+                  A PureDrive dispõe do seu próprio sistema de financiamento interno para aquisição de veículos — sem banco, sem aprovação externa. O pagamento é deduzido diretamente do salário semanal com uma tabela degressiva por trimestre, tornando o custo progressivamente mais leve ao longo do contrato.
+                </p>
+              </div>
             </div>
 
             {/* Available vehicles */}
@@ -187,16 +189,25 @@ export default function PublicSite() {
                   {availableVehicles.slice(0, 6).map(v => (
                     <div
                       key={v.id}
-                      className="rounded-xl p-4 border border-white/8 transition-all hover:border-cyan-500/40 hover:scale-[1.02]"
-                      style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'none' }}
+                      className="rounded-xl p-4 border border-white/8 transition-all hover:border-cyan-500/40 hover:scale-[1.02] flex items-center justify-between gap-3"
+                      style={{ background: 'rgba(255,255,255,0.05)' }}
                     >
-                      <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-cyan-300 border border-cyan-500/30 mb-3" style={{ background: 'rgba(6,182,212,0.15)' }}>
-                        ● Disponível
+                      <div className="flex-1 min-w-0">
+                        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-cyan-300 border border-cyan-500/30 mb-2" style={{ background: 'rgba(6,182,212,0.15)' }}>
+                          ● Disponível
+                        </div>
+                        <p className="text-white font-semibold text-sm truncate">{v.brand} {v.model}</p>
+                        <p className="text-blue-400/60 text-xs mt-0.5">{v.license_plate}</p>
+                        {v.weekly_rental_price && (
+                          <p className="text-cyan-400 font-bold text-base mt-1">{v.weekly_rental_price}€<span className="text-xs font-normal text-blue-400/60">/semana</span></p>
+                        )}
                       </div>
-                      <p className="text-white font-semibold">{v.brand} {v.model}</p>
-                      <p className="text-blue-400/60 text-xs mt-0.5">{v.license_plate}</p>
-                      {v.weekly_rental_price && (
-                        <p className="text-cyan-400 font-bold text-lg mt-2">{v.weekly_rental_price}€<span className="text-xs font-normal text-blue-400/60">/semana</span></p>
+                      {v.photo_url ? (
+                        <img src={v.photo_url} alt={`${v.brand} ${v.model}`} className="w-20 h-14 object-cover rounded-lg shrink-0 opacity-90" />
+                      ) : (
+                        <div className="w-20 h-14 rounded-lg shrink-0 flex items-center justify-center border border-white/10" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                          <Car className="w-6 h-6 text-blue-400/40" />
+                        </div>
                       )}
                     </div>
                   ))}
