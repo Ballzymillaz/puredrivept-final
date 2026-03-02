@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Car, Building2, Plus, Edit, Power, Search, AlertTriangle } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { Link } from 'react-router-dom';
+import CreateFleetManagerDialog from '../components/fleet_managers/CreateFleetManagerDialog';
 
 export default function FleetManagers({ currentUser }) {
   const [showForm, setShowForm] = useState(false);
