@@ -7,14 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Car, Users, Building2, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Car, Users, Building2, Edit, Trash2, Search, Coins } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import PageHeader from '../components/shared/PageHeader';
 
 export default function Fleets({ currentUser }) {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingFleet, setEditingFleet] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', fleet_manager_id: '', fleet_manager_name: '', status: 'active', vehicle_ids: [], driver_ids: [], notes: '' });
+  const [form, setForm] = useState({ name: '', description: '', fleet_manager_id: '', fleet_manager_name: '', status: 'active', upi_enabled: true, vehicle_ids: [], driver_ids: [], notes: '' });
 
   const queryClient = useQueryClient();
 
@@ -41,7 +43,7 @@ export default function Fleets({ currentUser }) {
 
   const openCreate = () => {
     setEditingFleet(null);
-    setForm({ name: '', description: '', fleet_manager_id: '', fleet_manager_name: '', status: 'active', vehicle_ids: [], driver_ids: [], notes: '' });
+    setForm({ name: '', description: '', fleet_manager_id: '', fleet_manager_name: '', status: 'active', upi_enabled: true, vehicle_ids: [], driver_ids: [], notes: '' });
     setShowForm(true);
   };
 
