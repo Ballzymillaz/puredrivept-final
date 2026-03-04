@@ -122,7 +122,30 @@ function LayoutInner({ children, currentPageName }) {
           <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center animate-pulse">
             <span className="text-white font-bold text-sm">PD</span>
           </div>
-          <p className="text-sm text-gray-500">Chargement...</p>
+          <p className="text-sm text-gray-500">A carregar...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No valid role → pending validation screen
+  if (!user?.role) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white rounded-2xl border shadow-sm p-10 max-w-sm w-full text-center space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto">
+            <span className="text-3xl">⏳</span>
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Conta em validação</h2>
+            <p className="text-sm text-gray-500 mt-2">A sua candidatura está a ser analisada por um administrador. Receberá acesso assim que for aprovada.</p>
+          </div>
+          <button
+            onClick={() => base44.auth.logout()}
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            Terminar sessão
+          </button>
         </div>
       </div>
     );
