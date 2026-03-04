@@ -49,16 +49,10 @@ export default function Apply() {
             <h2 className="text-2xl font-bold text-gray-900">Candidatura enviada!</h2>
             <p className="text-gray-600">Obrigado, <strong>{form.full_name}</strong>! A sua candidatura foi recebida.</p>
             <div className="bg-indigo-50 rounded-xl p-4 text-left space-y-2 text-sm text-indigo-800">
-              <p>📋 A nossa equipa irá validar a sua candidatura em breve.</p>
-              <p>📧 Receberá um email de confirmação quando for aprovada.</p>
-              <p>🔐 Após aprovação, receberá um convite para aceder à plataforma.</p>
+              <p>📋 A sua candidatura foi recebida e aguarda validação por um administrador.</p>
+              <p>🔐 Após aprovação, pode aceder à plataforma com o email e palavra-passe que criou.</p>
+              <p>⚠️ Até ser validado, não terá acesso a nenhuma página da plataforma.</p>
             </div>
-            <Button
-              onClick={() => base44.auth.redirectToLogin()}
-              className="w-full bg-indigo-600 hover:bg-indigo-700"
-            >
-              Aceder à minha conta
-            </Button>
           </CardContent>
         </Card>
       </div>
