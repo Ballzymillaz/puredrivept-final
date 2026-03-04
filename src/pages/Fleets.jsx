@@ -195,6 +195,21 @@ export default function Fleets({ currentUser }) {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="col-span-2">
+                <div className="flex items-center justify-between p-3 bg-violet-50 rounded-lg border border-violet-200">
+                  <div className="flex items-center gap-2">
+                    <Coins className="w-4 h-4 text-violet-600" />
+                    <div>
+                      <Label className="text-xs font-semibold text-violet-800">Sistema UPI</Label>
+                      <p className="text-[11px] text-violet-600">Se ativado, UPI são gerados nos pagamentos semanais</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={form.upi_enabled !== false}
+                    onCheckedChange={v => setForm(p => ({ ...p, upi_enabled: v }))}
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
