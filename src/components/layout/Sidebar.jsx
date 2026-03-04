@@ -47,17 +47,25 @@ const ADMIN_MENU = [
 ];
 
 const FLEET_MANAGER_MENU = [
+  { section: 'Principal', items: [
+    { name: 'Painel', icon: LayoutDashboard, page: 'Dashboard' },
+  ]},
   { section: 'Gestão', items: [
     { name: 'Motoristas', icon: Users, page: 'Drivers' },
     { name: 'Veículos', icon: Car, page: 'Vehicles' },
-    { name: 'Frotas', icon: Building2, page: 'Fleets' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
   ]},
   { section: 'Finanças', items: [
     { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
+    { name: 'Fluxo de caixa', icon: TrendingUp, page: 'CashFlow' },
+    { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
+    { name: 'Ajustamentos', icon: Receipt, page: 'Reimbursements' },
     { name: 'Indicações', icon: HandCoins, page: 'Referrals' },
   ]},
-  { section: 'Comunicação', items: [
+  { section: 'Desempenho', items: [
+    { name: 'UPI', icon: Coins, page: 'UPI' },
+    { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
+    { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
     { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
     { name: 'Notificações', icon: Bell, page: 'Notifications' },
   ]},
@@ -68,7 +76,6 @@ const DRIVER_MENU = [
     { name: 'Painel do Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
   ]},
   { section: 'Finanças', items: [
-    { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
     { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
     { name: 'Ajustamentos', icon: Receipt, page: 'Reimbursements' },
     { name: 'UPI', icon: Coins, page: 'UPI' },
@@ -81,11 +88,14 @@ const DRIVER_MENU = [
   ]},
 ];
 
+// Users with no valid role see nothing
+const PENDING_MENU = [];
+
 function getMenuByRole(role) {
   if (role === 'admin') return ADMIN_MENU;
   if (role === 'fleet_manager') return FLEET_MANAGER_MENU;
   if (role === 'driver') return DRIVER_MENU;
-  return DRIVER_MENU; // fallback
+  return PENDING_MENU;
 }
 
 // ─────────────────────────────────────────────
@@ -94,8 +104,7 @@ export default function Sidebar({ currentPage, userRole, currentUser }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Determine effective role (single, canonical)
-  const role = userRole?.split(',').map(r => r.trim()).find(r => ['admin', 'fleet_manager', 'driver'].includes(r)) || 'driver';
+  const role = userRole?.split(',').map(r => r.trim()).find(r => ['admin', 'fleet_manager', 'driver'].includes(r)) || null;
   const nav = getMenuByRole(role);
 
   const sidebarContent = (
@@ -156,6 +165,13 @@ export default function Sidebar({ currentPage, userRole, currentUser }) {
             </div>
           </div>
         ))}
+
+        {/* No role — pending message */}
+        {nav.length === 0 && !collapsed && (
+          <div className="px-3 py-6 text-center">
+            <p className="text-indigo-300/60 text-xs">A sua conta aguarda validação por um administrador.</p>
+          </div>
+        )}
       </nav>
 
       <div className={cn("border-t border-indigo-500/20 p-3", collapsed && "flex justify-center")}>
@@ -191,7 +207,6 @@ export default function Sidebar({ currentPage, userRole, currentUser }) {
 
       <aside className={cn(
         "hidden lg:flex flex-col h-screen fixed left-0 top-0 z-40 transition-all duration-300",
-        // Electric dark blue theme
         "bg-gradient-to-b from-[#06081a] via-[#080e24] to-[#060816]",
         collapsed ? "w-[68px]" : "w-60"
       )}>
