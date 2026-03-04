@@ -80,7 +80,9 @@ function LayoutInner({ children, currentPageName }) {
       const rawRoles = me?.role ? me.role.split(',').map(r => r.trim()) : [];
       const canonicalRole = rawRoles.includes('admin') ? 'admin'
         : rawRoles.includes('fleet_manager') ? 'fleet_manager'
-        : 'driver';
+        : rawRoles.includes('driver') ? 'driver'
+        : null; // null = pending/no access
+
       const userWithRole = { ...me, role: canonicalRole, _rawRoles: rawRoles };
       setUser(userWithRole);
 
@@ -90,13 +92,19 @@ function LayoutInner({ children, currentPageName }) {
         return;
       }
 
+      // No valid role → show pending screen (no redirect needed, layout handles it)
+      if (!canonicalRole) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
 
       // Access control: redirect if page not allowed for role
       if (canonicalRole !== 'admin') {
         const allowed = ROLE_ALLOWED_PAGES[canonicalRole] || [];
         if (!allowed.includes(currentPageName)) {
-          const defaultPage = canonicalRole === 'driver' ? 'DriverDashboard' : 'Payments';
+          const defaultPage = canonicalRole === 'driver' ? 'DriverDashboard' : 'Dashboard';
           window.location.href = createPageUrl(defaultPage);
           return;
         }

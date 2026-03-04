@@ -50,6 +50,7 @@
 import Applications from './pages/Applications';
 import Apply from './pages/Apply';
 import CashFlow from './pages/CashFlow';
+import ChangePassword from './pages/ChangePassword';
 import Commercials from './pages/Commercials';
 import ContaValidacao from './pages/ContaValidacao';
 import Contracts from './pages/Contracts';
@@ -78,7 +79,6 @@ import UserManagement from './pages/UserManagement';
 import VehicleDetail from './pages/VehicleDetail';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import ChangePassword from './pages/ChangePassword';
 import __Layout from './Layout.jsx';
 
 
@@ -86,6 +86,7 @@ export const PAGES = {
     "Applications": Applications,
     "Apply": Apply,
     "CashFlow": CashFlow,
+    "ChangePassword": ChangePassword,
     "Commercials": Commercials,
     "ContaValidacao": ContaValidacao,
     "Contracts": Contracts,
@@ -114,7 +115,6 @@ export const PAGES = {
     "VehicleDetail": VehicleDetail,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "ChangePassword": ChangePassword,
 }
 
 export const pagesConfig = {

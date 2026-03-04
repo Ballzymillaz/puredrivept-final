@@ -6,27 +6,33 @@ import DataTable from '../components/shared/DataTable';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Shield, Users } from 'lucide-react';
+import { AlertTriangle, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ALL_ROLES = [
   { value: 'admin', label: 'Administrador', color: 'bg-red-100 text-red-700' },
   { value: 'fleet_manager', label: 'Gestor de frota', color: 'bg-blue-100 text-blue-700' },
   { value: 'driver', label: 'Motorista', color: 'bg-indigo-100 text-indigo-700' },
+  { value: 'user', label: 'Utilizador (pendente)', color: 'bg-gray-100 text-gray-600' },
 ];
 
 export default function UserManagement({ currentUser }) {
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRoles, setInviteRoles] = useState(['driver']);
-  const [showInvite, setShowInvite] = useState(false);
   const [selectedRoles, setSelectedRoles] = useState([]);
   const qc = useQueryClient();
 
-  const isAdmin = currentUser?.role?.includes('admin');
+  const isAdmin = currentUser?.role === 'admin';
+
+  if (!isAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-400">
+        <AlertTriangle className="w-12 h-12 mb-3 opacity-30" />
+        <p className="text-lg font-medium">Acesso restrito</p>
+        <p className="text-sm">Esta página é apenas para administradores.</p>
+      </div>
+    );
+  }
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
@@ -52,20 +58,13 @@ export default function UserManagement({ currentUser }) {
   };
 
   const handleSave = () => {
-    const role = selectedRoles.join(',') || 'pending';
+    // If no roles selected, user becomes "no role" (no access)
+    const role = selectedRoles.join(',') || '';
     updateMutation.mutate({ id: editing.id, role });
   };
 
-  const handleInvite = async () => {
-    const role = inviteRoles[0] || 'driver';
-    await base44.users.inviteUser(inviteEmail, role === 'admin' ? 'admin' : 'user');
-    setShowInvite(false);
-    setInviteEmail('');
-    setInviteRoles(['driver']);
-  };
-
   const getRoleBadges = (roleStr) => {
-    if (!roleStr) return <Badge className="text-xs bg-gray-100 text-gray-500 border-0">sem role</Badge>;
+    if (!roleStr) return <Badge className="text-xs bg-gray-100 text-gray-400 border-0">sem acesso</Badge>;
     const roles = roleStr.split(',').map(r => r.trim()).filter(Boolean);
     return roles.map(r => {
       const cfg = ALL_ROLES.find(ar => ar.value === r);
@@ -92,17 +91,9 @@ export default function UserManagement({ currentUser }) {
     { header: 'Membro desde', render: (r) => <span className="text-xs text-gray-500">{r.created_date ? format(new Date(r.created_date), 'dd/MM/yyyy') : '—'}</span> },
   ];
 
-  if (!isAdmin) {
-    return <div className="p-8 text-center text-gray-400">Acesso restrito a administradores.</div>;
-  }
-
   return (
     <div className="space-y-4">
-      <PageHeader title="Gestão de Utilizadores" subtitle={`${users.length} utilizadores`}>
-        <Button onClick={() => setShowInvite(true)} className="bg-indigo-600 hover:bg-indigo-700 gap-2">
-          <Users className="w-4 h-4" /> Convidar utilizador
-        </Button>
-      </PageHeader>
+      <PageHeader title="Gestão de Utilizadores" subtitle={`${users.length} utilizadores`} />
 
       <DataTable
         columns={columns}
@@ -118,11 +109,11 @@ export default function UserManagement({ currentUser }) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-indigo-500" />
-              Editar roles — {editing?.full_name}
+              Editar acessos — {editing?.full_name}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-gray-500">Seleciona os roles do utilizador. Múltiplos roles são permitidos.</p>
+            <p className="text-sm text-gray-500">Seleciona os roles do utilizador. Sem role = sem acesso à plataforma.</p>
             <div className="space-y-2">
               {ALL_ROLES.map(role => (
                 <label key={role.value} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedRoles.includes(role.value) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}>
@@ -138,51 +129,22 @@ export default function UserManagement({ currentUser }) {
                       {role.value === 'admin' && 'Acesso total à plataforma'}
                       {role.value === 'fleet_manager' && 'Gestão de motoristas e veículos'}
                       {role.value === 'driver' && 'Dashboard do motorista'}
+                      {role.value === 'user' && 'Aguarda validação — sem acesso'}
                     </p>
                   </div>
                   <Badge className={`${role.color} border-0 text-xs`}>{role.label}</Badge>
                 </label>
               ))}
             </div>
-            {selectedRoles.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-3 text-sm">
-                <p className="text-xs text-gray-500 mb-1">Roles resultantes:</p>
-                <p className="font-mono text-xs text-indigo-700">{selectedRoles.join(', ')}</p>
+            {selectedRoles.length === 0 && (
+              <div className="bg-orange-50 rounded-lg p-3 text-xs text-orange-700 border border-orange-200">
+                ⚠️ Sem roles atribuídos — o utilizador não terá acesso à plataforma.
               </div>
             )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowForm(false)}>Cancelar</Button>
               <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleSave} disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'A guardar...' : 'Guardar roles'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Invite dialog */}
-      <Dialog open={showInvite} onOpenChange={setShowInvite}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Convidar novo utilizador</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Email *</Label>
-              <Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="utilizador@email.com" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Roles iniciais</Label>
-              {ALL_ROLES.map(role => (
-                <label key={role.value} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${inviteRoles.includes(role.value) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200 hover:bg-gray-50'}`}>
-                  <input type="checkbox" checked={inviteRoles.includes(role.value)} onChange={() => setInviteRoles(prev => prev.includes(role.value) ? prev.filter(r => r !== role.value) : [...prev, role.value])} className="w-4 h-4 accent-indigo-600" />
-                  <span className="text-sm">{role.label}</span>
-                </label>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400">O utilizador receberá um email com link de acesso.</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowInvite(false)}>Cancelar</Button>
-              <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={handleInvite} disabled={!inviteEmail}>
-                Enviar convite
+                {updateMutation.isPending ? 'A guardar...' : 'Guardar acessos'}
               </Button>
             </div>
           </div>
