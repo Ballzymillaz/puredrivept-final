@@ -132,13 +132,19 @@ export default function Fleets({ currentUser }) {
                     </div>
                   </div>
                   {fleetVehicles.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {fleetVehicles.slice(0, 4).map(v => (
-                        <span key={v.id} className="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{v.license_plate}</span>
-                      ))}
-                      {fleetVehicles.length > 4 && <span className="text-[11px] text-gray-400">+{fleetVehicles.length - 4}</span>}
-                    </div>
+                  <div className="flex flex-wrap gap-1">
+                    {fleetVehicles.slice(0, 4).map(v => (
+                      <span key={v.id} className="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{v.license_plate}</span>
+                    ))}
+                    {fleetVehicles.length > 4 && <span className="text-[11px] text-gray-400">+{fleetVehicles.length - 4}</span>}
+                  </div>
                   )}
+                  <div className="flex items-center gap-1.5">
+                  <Coins className={`w-3.5 h-3.5 ${fleet.upi_enabled !== false ? 'text-violet-500' : 'text-gray-300'}`} />
+                  <span className={`text-xs ${fleet.upi_enabled !== false ? 'text-violet-600' : 'text-gray-400'}`}>
+                    UPI {fleet.upi_enabled !== false ? 'ativado' : 'desativado'}
+                  </span>
+                  </div>
                   <div className="flex gap-2 pt-1">
                     <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => openEdit(fleet)}>
                       <Edit className="w-3.5 h-3.5" /> Editar
