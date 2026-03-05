@@ -124,7 +124,7 @@ export default function Reimbursements({ currentUser }) {
     },
   ];
 
-  const canCreate = isDriver || isAdmin;
+  const canCreate = isAdmin;
 
   return (
     <div className="space-y-4">
