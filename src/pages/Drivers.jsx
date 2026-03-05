@@ -238,7 +238,13 @@ export default function Drivers({ currentUser }) {
 
                   <td className="px-4 py-3 hidden md:table-cell">
                     {driver.contract_type ? (
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{driver.contract_type.replace('_', ' ')}</span>
+                      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+                        {driver.contract_type === 'slot_standard' ? 'Slot Standard'
+                          : driver.contract_type === 'slot_premium' ? 'Slot Premium'
+                          : driver.contract_type === 'slot_black' ? 'Slot Black'
+                          : driver.contract_type === 'location' ? 'Locação'
+                          : driver.contract_type.replace('_', ' ')}
+                      </span>
                     ) : (
                       <span className="text-xs text-gray-400">—</span>
                     )}
