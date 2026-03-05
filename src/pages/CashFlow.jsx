@@ -36,11 +36,6 @@ export default function CashFlow({ currentUser }) {
     queryKey: ['expenses-all'],
     queryFn: () => base44.entities.Expense.list('-date', 200),
   });
-
-  // Fleet managers only see expenses linked to their drivers
-  const allExpenses = isFleetManager
-    ? allExpensesRaw.filter(e => !e.driver_id || fleetDriverIds?.has(e.driver_id))
-    : allExpensesRaw;
   const { data: allDrivers = [] } = useQuery({
     queryKey: ['drivers'],
     queryFn: () => base44.entities.Driver.list(),
@@ -50,6 +45,11 @@ export default function CashFlow({ currentUser }) {
   const fleetDriverIds = isFleetManager
     ? new Set(allDrivers.filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email).map(d => d.id))
     : null;
+
+  // Fleet managers only see expenses linked to their drivers
+  const allExpenses = isFleetManager
+    ? allExpensesRaw.filter(e => !e.driver_id || fleetDriverIds?.has(e.driver_id))
+    : allExpensesRaw;
 
   const drivers = isFleetManager
     ? allDrivers.filter(d => fleetDriverIds.has(d.id))
