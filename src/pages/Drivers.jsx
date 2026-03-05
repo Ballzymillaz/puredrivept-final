@@ -48,13 +48,19 @@ export default function Drivers({ currentUser }) {
   const queryClient = useQueryClient();
   const isFleetManager = currentUser?.role === 'fleet_manager';
 
-  const { data: drivers = [], isLoading } = useQuery({
+  const { data: allDriversRaw = [], isLoading } = useQuery({
     queryKey: ['drivers'],
-    queryFn: async () => {
-      const res = await base44.functions.invoke('getDriversByFleet', {});
-      return res.data.drivers || [];
-    },
+    queryFn: () => base44.entities.Driver.list(),
   });
+
+  // Fleet managers only see their affiliated drivers
+  const drivers = isFleetManager
+    ? allDriversRaw.filter(d =>
+        d.fleet_manager_id === currentUser?.id ||
+        d.fleet_manager_id === currentUser?.email ||
+        d.created_by === currentUser?.email
+      )
+    : allDriversRaw;
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ['vehicles'],
