@@ -11,11 +11,10 @@ Deno.serve(async (req) => {
     }
 
     // Get all data
-    const [drivers, vehicles, payments, upiTransactions, upiOrders] = await Promise.all([
+    const [drivers, vehicles, payments, upiOrders] = await Promise.all([
       base44.asServiceRole.entities.Driver.list(),
       base44.asServiceRole.entities.Vehicle.list(),
       base44.asServiceRole.entities.WeeklyPayment.list('-week_start', 200),
-      base44.asServiceRole.entities.UPITransaction.list('-created_date', 500),
       base44.asServiceRole.entities.UPIOrder.list('-created_date', 100),
     ]);
 
