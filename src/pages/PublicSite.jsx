@@ -76,7 +76,7 @@ export default function PublicSite() {
 
         <div className="relative max-w-5xl mx-auto px-6 py-28 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-500/30 mb-8" style={{ background: 'rgba(6,182,212,0.1)' }}>
-            <span className="text-cyan-400 text-xs font-semibold tracking-wider uppercase">PureDrive PT</span>
+            <h1 className="text-white font-bold text-lg leading-none">PureDrive<sup className="text-[10px] text-cyan-400">PT</sup></h1>
           </div>
 
           <h2 className="text-5xl md:text-6xl font-black text-white mb-6 leading-tight">
