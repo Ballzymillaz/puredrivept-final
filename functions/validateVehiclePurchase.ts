@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 const ALLOWED_DURATIONS = [6, 9, 12, 18, 20, 24, 30, 36, 40, 44, 48];
 
