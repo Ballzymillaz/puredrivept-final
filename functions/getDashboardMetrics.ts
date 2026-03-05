@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
-import { subWeeks, startOfMonth } from 'npm:date-fns@3';
+import { subWeeks, startOfMonth } from 'npm:date-fns';
 
 Deno.serve(async (req) => {
   try {
