@@ -23,10 +23,10 @@ const REFERRAL_RATES = {
 };
 
 const CONTRACT_LABELS = {
-slot_standard: 'Slot Standard',
-slot_premium: 'Slot Premium',
-slot_black: 'Slot Black',
-location: 'Locação',
+  slot_standard: 'Slot Standard',
+  slot_premium: 'Slot Premium',
+  slot_black: 'Slot Black',
+  location: 'Locação',
 };
 
 export default function Referrals({ currentUser }) {
