@@ -22,11 +22,26 @@ export default function Vehicles({ currentUser }) {
   const isFleetManager = currentUser?.role === 'fleet_manager';
   const isSimulation = !!currentUser?._isSimulation;
 
+  const { data: allDriversForFilter = [] } = useQuery({
+    queryKey: ['drivers-for-vehicles'],
+    queryFn: () => base44.entities.Driver.list(),
+    enabled: isFleetManager,
+  });
+
   const { data: vehicles = [], isLoading } = useQuery({
-    queryKey: ['vehicles', currentUser?.role],
+    queryKey: ['vehicles', currentUser?.role, currentUser?.id],
     queryFn: async () => {
-      const res = await base44.functions.invoke('getVehiclesByFleet', {});
-      return res.data.vehicles || [];
+      const all = await base44.entities.Vehicle.list();
+      if (isFleetManager) {
+        // Only vehicles assigned to fleet manager's drivers
+        const myDriverIds = new Set(
+          allDriversForFilter
+            .filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email)
+            .map(d => d.id)
+        );
+        return all.filter(v => v.fleet_manager_id === currentUser?.id || v.fleet_manager_id === currentUser?.email || myDriverIds.has(v.assigned_driver_id));
+      }
+      return all;
     },
   });
 
