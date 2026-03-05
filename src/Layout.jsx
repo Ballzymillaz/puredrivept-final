@@ -48,7 +48,7 @@ const ROLE_ALLOWED_PAGES = {
     'UPI', 'Relatorios', 'RelatoriosFrota', 'Messaging', 'Notifications',
   ],
   driver: [
-    'DriverDashboard', 'Documents', 'Loans', 'Reimbursements',
+    'DriverDashboard', 'Documents', 'Loans',
     'UPI', 'VehiclePurchases', 'Messaging', 'Notifications',
   ],
 };
