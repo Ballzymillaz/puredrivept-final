@@ -89,7 +89,7 @@ export default function Rankings({ currentUser }) {
   const visibleRanking = useMemo(() => {
     if (isAdmin) return globalRanking;
     if (isFleetManager) return globalRanking.filter(d => myDriverIds.includes(d.id));
-    if (isDriver && myDriverRecord) return globalRanking; // drivers see full ranking for context
+    if (isDriver && myDriverRecord) return globalRanking.filter(d => d.id === myDriverRecord.id); // driver sees only themselves
     return globalRanking;
   }, [globalRanking, isAdmin, isFleetManager, isDriver, myDriverIds, myDriverRecord]);
 
