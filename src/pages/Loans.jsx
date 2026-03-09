@@ -120,9 +120,10 @@ export default function Loans({ currentUser }) {
   const handleDriverSubmit = (e) => {
     e.preventDefault();
     const { total, weekly } = calcTotal(form.amount, form.duration_weeks);
+    const requester = isDriver ? myDriverRecord : { id: currentUser?.id, full_name: currentUser?.full_name };
     createMutation.mutate({
-      driver_id: myDriverRecord.id,
-      driver_name: myDriverRecord.full_name,
+      driver_id: requester.id,
+      driver_name: requester.full_name,
       amount: parseFloat(form.amount),
       duration_weeks: parseInt(form.duration_weeks),
       interest_rate_weekly: interestRate,
