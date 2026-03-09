@@ -58,15 +58,25 @@ export default function Documents({ currentUser }) {
   const qc = useQueryClient();
 
   const isDriver = currentUser?.role === 'driver';
+  const isFleetManager = currentUser?.role === 'fleet_manager';
 
-  const { data: drivers = [] } = useQuery({
+  const { data: allDrivers = [] } = useQuery({
     queryKey: ['drivers'],
     queryFn: () => base44.entities.Driver.list(),
   });
-  const { data: vehicles = [] } = useQuery({
+  const { data: allVehicles = [] } = useQuery({
     queryKey: ['vehicles'],
     queryFn: () => base44.entities.Vehicle.list(),
   });
+
+  // Fleet manager: only their affiliated drivers and vehicles
+  const drivers = isFleetManager
+    ? allDrivers.filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email)
+    : allDrivers;
+
+  const vehicles = isFleetManager
+    ? allVehicles.filter(v => v.fleet_manager_id === currentUser?.id || v.fleet_manager_id === currentUser?.email || drivers.some(d => d.id === v.assigned_driver_id))
+    : allVehicles;
   const { data: documents = [], isLoading: docsLoading } = useQuery({
     queryKey: ['documents'],
     queryFn: () => base44.entities.Document.list('-created_date'),
