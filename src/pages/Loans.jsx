@@ -178,7 +178,7 @@ export default function Loans({ currentUser }) {
   ];
 
   const preview = calcTotal(form.amount, form.duration_weeks);
-  const availableDriversForLoan = isAdmin ? drivers : (isFleetManager ? drivers.filter(d => myFleetDriverIds?.has(d.id)) : []);
+  const availableDriversForLoan = isAdmin ? drivers : [];
 
   return (
     <div className="space-y-4">
