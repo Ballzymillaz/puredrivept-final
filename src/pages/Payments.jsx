@@ -269,7 +269,10 @@ export default function Payments({ currentUser }) {
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditMode(false); } }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detalhe pagamento — {selected?.driver_name}</DialogTitle>
+            <DialogTitle className="flex items-center justify-between pr-6">
+              <span>Detalhe pagamento — {selected?.driver_name}</span>
+              {selected && <ExportPaymentPDF payment={selected} />}
+            </DialogTitle>
           </DialogHeader>
           {selected && !editMode && (
             <div className="space-y-3">
