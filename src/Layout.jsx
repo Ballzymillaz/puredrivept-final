@@ -79,10 +79,12 @@ function LayoutInner({ children, currentPageName }) {
       const me = await base44.auth.me();
       // Canonical single role: pick the highest-priority role
       const rawRoles = me?.role ? me.role.split(',').map(r => r.trim()) : [];
-      const canonicalRole = rawRoles.includes('admin') ? 'admin'
-        : rawRoles.includes('fleet_manager') ? 'fleet_manager'
-        : rawRoles.includes('driver') ? 'driver'
-        : null; // null = pending/no access
+      // 'user' alone = pending/no access. 'user' + another role = use that role.
+      const meaningfulRoles = rawRoles.filter(r => r !== 'user');
+      const canonicalRole = meaningfulRoles.includes('admin') ? 'admin'
+        : meaningfulRoles.includes('fleet_manager') ? 'fleet_manager'
+        : meaningfulRoles.includes('driver') ? 'driver'
+        : null; // null = pending/no access (includes 'user' alone)
 
       const userWithRole = { ...me, role: canonicalRole, _rawRoles: rawRoles };
       setUser(userWithRole);
