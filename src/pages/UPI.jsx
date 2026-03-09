@@ -81,6 +81,11 @@ export default function UPI({ currentUser }) {
     queryKey: ['drivers'],
     queryFn: () => base44.entities.Driver.list(),
   });
+  const { data: fleets = [] } = useQuery({
+    queryKey: ['fleets'],
+    queryFn: () => base44.entities.Fleet.list(),
+    enabled: isFleetManager || isDriver,
+  });
   const { data: orders = [] } = useQuery({
     queryKey: ['upi-orders'],
     queryFn: () => base44.entities.UPIOrder.list('-created_date'),
