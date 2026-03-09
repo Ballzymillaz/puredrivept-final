@@ -221,7 +221,8 @@ export function ExportLoanPDF({ loan }) {
       }
       doc.setFont('helvetica', isLast ? 'bold' : 'normal');
       doc.setFontSize(10);
-      doc.setTextColor(isLast ? ...primaryColor : ...darkGray);
+      const textColor = isLast ? primaryColor : darkGray;
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
       doc.text(label, 20, y);
       doc.text(value, 188, y, { align: 'right' });
       y += 10;
