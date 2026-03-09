@@ -93,9 +93,9 @@ export default function Referrals({ currentUser }) {
   // Bonus tracking per driver
   const bonusTrackers = useMemo(() => {
     return visibleDrivers.map(d => {
-      const startDate = d.start_date ? parseISO(d.start_date) : null;
+      const startDate = d.start_date ? parseISO(d.start_date) : (d.created_date ? new Date(d.created_date) : null);
       const today = new Date();
-      const daysSinceStart = startDate ? differenceInDays(today, startDate) : 0;
+      const daysSinceStart = startDate ? Math.max(0, differenceInDays(today, startDate)) : 0;
 
       const locationBonusTriggered = d.contract_type === 'location' && daysSinceStart >= 30;
       const locationDaysRemaining = Math.max(0, 30 - daysSinceStart);
