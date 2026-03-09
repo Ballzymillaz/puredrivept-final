@@ -213,7 +213,7 @@ export default function Loans({ currentUser }) {
         data={filteredLoans}
         isLoading={isLoading}
         onRowClick={(r) => {
-          if (isAdmin || (isDriver && r.status === 'requested')) setSelected(r);
+          if (isAdmin || (isDriver && r.status === 'requested') || isFleetManager) setSelected(r);
         }}
       />
 
