@@ -79,6 +79,7 @@ const DRIVER_MENU_BASE = [
   ]},
   { section: 'Finanças', items: [
     { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
+    { name: 'UPI', icon: Coins, page: 'UPI' },
     { name: 'Compra veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
     { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
