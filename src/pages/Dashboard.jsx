@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Rocket, TrendingUp, TrendingDown, Users, Zap, Award, BarChart3, Coins } from 'lucide-react';
+import AnalyticsCharts from '../components/dashboard/AnalyticsCharts';
 
 export default function Dashboard({ currentUser }) {
   const isSimulation = !!currentUser?._isSimulation;
