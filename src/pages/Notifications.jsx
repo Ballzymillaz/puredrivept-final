@@ -10,16 +10,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Bell, CheckCheck, CreditCard, Wrench, FileText, Coins, Settings, Plus, Trash2 } from 'lucide-react';
+import { Bell, CheckCheck, CreditCard, FileText, Coins, Settings, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 // Allowed notification types
 const NOTIF_TYPES = {
-  payment:     { icon: CreditCard, color: 'bg-green-100 text-green-700',  label: 'Pagamento' },
-  maintenance: { icon: Wrench,     color: 'bg-orange-100 text-orange-700', label: 'Manutenção' },
-  document:    { icon: FileText,   color: 'bg-blue-100 text-blue-700',    label: 'Documento' },
-  upi:         { icon: Coins,      color: 'bg-violet-100 text-violet-700', label: 'UPI' },
-  system:      { icon: Settings,   color: 'bg-gray-100 text-gray-700',    label: 'Sistema' },
+  payment:  { icon: CreditCard,    color: 'bg-green-100 text-green-700',  label: 'Pagamento' },
+  document: { icon: FileText,      color: 'bg-blue-100 text-blue-700',    label: 'Documento' },
+  upi:      { icon: Coins,         color: 'bg-violet-100 text-violet-700', label: 'UPI' },
+  alert:    { icon: AlertTriangle, color: 'bg-orange-100 text-orange-700', label: 'Alerta' },
+  system:   { icon: Settings,      color: 'bg-gray-100 text-gray-700',    label: 'Sistema' },
 };
 
 const EMPTY_FORM = { title: '', message: '', type: 'system', recipient_scope: 'all', recipient_fleet_id: '', recipient_email: '' };

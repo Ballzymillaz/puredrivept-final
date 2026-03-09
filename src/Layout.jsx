@@ -30,7 +30,6 @@ const PAGE_TITLES = {
   RelatorioVeiculos: 'Relatório de Veículos',
   Relatorios: 'Relatórios',
   Notifications: 'Notificações',
-  Maintenance: 'Manutenção de Veículos',
   VehicleDetail: 'Detalhe do Veículo',
   UserManagement: 'Gestão de Utilizadores',
   PublicSite: 'Site público',
