@@ -36,8 +36,7 @@ export default function Loans({ currentUser }) {
     ? new Set(drivers.filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email).map(d => d.id))
     : null;
 
-  // Fleet manager sees loans for themselves (using their user_id or email as driver_id proxy)
-  // Actually fleet managers' loans are stored with driver_id = their user id
+
 
   const { data: loans = [], isLoading } = useQuery({
     queryKey: ['loans', currentUser?.id],
