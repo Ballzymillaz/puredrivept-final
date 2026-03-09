@@ -182,8 +182,8 @@ export default function Loans({ currentUser }) {
       <PageHeader
         title="Empréstimos & Adiantamentos"
         subtitle={`${filteredLoans.length} empréstimos`}
-        actionLabel={(isAdmin || isDriver) ? 'Novo pedido' : undefined}
-        onAction={(isAdmin || isDriver) ? () => setShowForm(true) : undefined}
+        actionLabel={(isAdmin || isDriver || isFleetManager) ? 'Novo pedido' : undefined}
+        onAction={(isAdmin || isDriver || isFleetManager) ? () => setShowForm(true) : undefined}
       />
 
       {isAdmin && (
