@@ -44,7 +44,7 @@ export default function Loans({ currentUser }) {
     queryFn: async () => {
       const all = await base44.entities.Loan.list('-created_date');
       if (isDriver && myDriverRecord) return all.filter(l => l.driver_id === myDriverRecord.id);
-      if (isFleetManager) return all.filter(l => myFleetDriverIds.has(l.driver_id));
+      if (isFleetManager) return all.filter(l => l.driver_id === currentUser?.id || l.driver_name === currentUser?.full_name);
       return all;
     },
     enabled: !isDriver || !!myDriverRecord,
