@@ -127,8 +127,17 @@ export default function Documents({ currentUser }) {
       ? drivers.filter(d => !search || d.full_name?.toLowerCase().includes(search.toLowerCase()))
       : vehicles.filter(v => !search || `${v.brand} ${v.model} ${v.license_plate}`.toLowerCase().includes(search.toLowerCase()));
 
-  // KPIs (global, all documents)
-  const allDocs = documents;
+  // Filter documents to only show relevant ones
+  const visibleEntityIds = new Set([
+    ...drivers.map(d => d.id),
+    ...vehicles.map(v => v.id),
+    ...(myDriverRecord ? [myDriverRecord.id] : []),
+  ]);
+
+  // KPIs (scoped to visible entities)
+  const allDocs = (isDriver || isFleetManager)
+    ? documents.filter(d => visibleEntityIds.has(d.owner_id))
+    : documents;
   const expiredCount = allDocs.filter(d => d.expiry_date && differenceInDays(new Date(d.expiry_date), new Date()) < 0).length;
   const expiringCount = allDocs.filter(d => d.expiry_date && differenceInDays(new Date(d.expiry_date), new Date()) >= 0 && differenceInDays(new Date(d.expiry_date), new Date()) <= 30).length;
   const expectedDocTypes = tab === 'driver' ? DOC_TYPES_DRIVER : DOC_TYPES_VEHICLE;
