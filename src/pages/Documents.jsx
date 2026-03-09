@@ -120,15 +120,20 @@ export default function Documents({ currentUser }) {
     setUploading(false);
   };
 
+  // For driver: also show their assigned vehicle
+  const driverAssignedVehicleId = isDriver && myDriverRecord ? myDriverRecord.assigned_vehicle_id : null;
+  const driverVehicles = isDriver && driverAssignedVehicleId
+    ? allVehicles.filter(v => v.id === driverAssignedVehicleId)
+    : [];
+
   // Filtered entity list
   const entityList = isDriver
-    ? (myDriverRecord ? [myDriverRecord] : [])
+    ? tab === 'driver'
+      ? (myDriverRecord ? [myDriverRecord] : [])
+      : driverVehicles
     : tab === 'driver'
       ? drivers.filter(d => !search || d.full_name?.toLowerCase().includes(search.toLowerCase()))
       : vehicles.filter(v => !search || `${v.brand} ${v.model} ${v.license_plate}`.toLowerCase().includes(search.toLowerCase()));
-
-  // For driver: also show their assigned vehicle
-  const driverAssignedVehicleId = isDriver && myDriverRecord ? myDriverRecord.assigned_vehicle_id : null;
 
   // Filter documents to only show relevant ones
   const visibleEntityIds = new Set([
