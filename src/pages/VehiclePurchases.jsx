@@ -123,9 +123,36 @@ export default function VehiclePurchases({ currentUser }) {
     queryFn: () => base44.entities.Driver.list(),
   });
   const myDriverRecord = isDriver ? allDrivers.find(d => d.email === currentUser?.email) : null;
-  const myFleetDriverIds = isFleetManager
-    ? new Set(allDrivers.filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email).map(d => d.id))
-    : null;
+
+  const { data: allFleetManagers = [] } = useQuery({
+    queryKey: ['fleet-managers'],
+    queryFn: () => base44.entities.FleetManager.list(),
+    enabled: isFleetManager,
+  });
+
+  const { data: allFleets = [] } = useQuery({
+    queryKey: ['fleets-raw'],
+    queryFn: () => base44.entities.Fleet.list(),
+    enabled: isFleetManager,
+  });
+
+  const myFleetDriverIds = useMemo(() => {
+    if (!isFleetManager) return null;
+    const myFM = allFleetManagers.find(fm => fm.email === currentUser?.email || fm.user_id === currentUser?.id);
+    const myFMId = myFM?.id;
+    const myFleets = allFleets.filter(f =>
+      f.fleet_manager_id === myFMId ||
+      f.fleet_manager_id === currentUser?.id ||
+      f.fleet_manager_id === currentUser?.email
+    );
+    const ids = new Set(myFleets.flatMap(f => f.driver_ids || []));
+    allDrivers.forEach(d => {
+      if ((myFMId && d.fleet_manager_id === myFMId) || d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email) {
+        ids.add(d.id);
+      }
+    });
+    return ids;
+  }, [isFleetManager, allFleetManagers, allFleets, allDrivers, currentUser]);
 
   const { data: purchases = [], isLoading } = useQuery({
     queryKey: ['vehicle-purchases', isDriver ? myDriverRecord?.id : isFleetManager ? currentUser?.id : 'all'],
