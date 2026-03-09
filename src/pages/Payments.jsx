@@ -68,13 +68,48 @@ export default function Payments({ currentUser }) {
     queryFn: () => base44.entities.Driver.list(),
   });
 
+  const { data: allFleetManagers = [] } = useQuery({
+    queryKey: ['fleet-managers'],
+    queryFn: () => base44.entities.FleetManager.list(),
+    enabled: isFleetManager,
+  });
+
+  const { data: allFleets = [] } = useQuery({
+    queryKey: ['fleets-raw'],
+    queryFn: () => base44.entities.Fleet.list(),
+    enabled: isFleetManager,
+  });
+
+  // For fleet managers: find their FM entity then affiliated drivers via Fleet
+  const myFM = isFleetManager
+    ? allFleetManagers.find(fm => fm.email === currentUser?.email || fm.user_id === currentUser?.id)
+    : null;
+
+  const myFleetDriverIds = React.useMemo(() => {
+    if (!isFleetManager) return null;
+    const myFMId = myFM?.id;
+    const myFleets = allFleets.filter(f =>
+      f.fleet_manager_id === myFMId ||
+      f.fleet_manager_id === currentUser?.id ||
+      f.fleet_manager_id === currentUser?.email
+    );
+    const ids = new Set(myFleets.flatMap(f => f.driver_ids || []));
+    // also fallback on driver.fleet_manager_id
+    allDrivers.forEach(d => {
+      if ((myFMId && d.fleet_manager_id === myFMId) || d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email) {
+        ids.add(d.id);
+      }
+    });
+    return ids;
+  }, [isFleetManager, myFM, allFleets, allDrivers, currentUser]);
+
   // Filter drivers by fleet manager if applicable
   const drivers = isFleetManager
-    ? allDrivers.filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email)
+    ? allDrivers.filter(d => myFleetDriverIds?.has(d.id))
     : allDrivers;
 
   // For fleet managers, restrict visible payments to their drivers
-  const allowedDriverIds = isFleetManager ? new Set(drivers.map(d => d.id)) : null;
+  const allowedDriverIds = isFleetManager ? myFleetDriverIds : null;
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.WeeklyPayment.create(d),
