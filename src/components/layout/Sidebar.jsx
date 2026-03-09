@@ -24,6 +24,7 @@ const ADMIN_MENU = [
     { name: 'Frotas', icon: Building2, page: 'Fleets' },
     { name: 'Gestores', icon: Building2, page: 'FleetManagers' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
+    { name: 'Manutenção', icon: Wrench, page: 'Maintenance' },
     { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
   ]},
