@@ -26,6 +26,7 @@ const ADMIN_MENU = [
     { name: 'Documentos', icon: FileText, page: 'Documents' },
     { name: 'Candidaturas', icon: UserPlus, page: 'Applications' },
     { name: 'Utilizadores', icon: Settings, page: 'UserManagement' },
+    { name: 'Contratos', icon: FileText, page: 'Contracts' },
   ]},
   { section: 'Finanças', items: [
     { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
