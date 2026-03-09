@@ -46,7 +46,8 @@ const ADMIN_MENU = [
   ]},
 ];
 
-const FLEET_MANAGER_MENU = [
+// FLEET_MANAGER_MENU is now dynamic (UPI depends on fleet config), built in getMenuByRole
+const FLEET_MANAGER_MENU_BASE = [
   { section: 'Principal', items: [
     { name: 'Painel', icon: LayoutDashboard, page: 'Dashboard' },
   ]},
@@ -59,11 +60,11 @@ const FLEET_MANAGER_MENU = [
     { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
     { name: 'Fluxo de caixa', icon: TrendingUp, page: 'CashFlow' },
     { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
-    { name: 'Ajustamentos', icon: Receipt, page: 'Reimbursements' },
     { name: 'Indicações', icon: HandCoins, page: 'Referrals' },
+    { name: 'Compra veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
   ]},
   { section: 'Desempenho', items: [
-    { name: 'UPI', icon: Coins, page: 'UPI' },
+    { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
     { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
     { name: 'Relatório Frota', icon: PieChart, page: 'RelatoriosFrota' },
     { name: 'Mensagens', icon: MessageCircle, page: 'Messaging' },
@@ -71,14 +72,16 @@ const FLEET_MANAGER_MENU = [
   ]},
 ];
 
-const DRIVER_MENU = [
+// DRIVER_MENU is dynamic (UPI depends on fleet config), built in getMenuByRole
+const DRIVER_MENU_BASE = [
   { section: 'Principal', items: [
     { name: 'Painel do Motorista', icon: LayoutDashboard, page: 'DriverDashboard' },
   ]},
   { section: 'Finanças', items: [
     { name: 'Empréstimos', icon: Wallet, page: 'Loans' },
-    { name: 'UPI', icon: Coins, page: 'UPI' },
     { name: 'Compra veículos', icon: ShoppingCart, page: 'VehiclePurchases' },
+    { name: 'Classificação', icon: FileBarChart, page: 'Rankings' },
+    { name: 'Relatórios', icon: FileBarChart, page: 'Relatorios' },
   ]},
   { section: 'Outros', items: [
     { name: 'Documentos', icon: FileText, page: 'Documents' },
