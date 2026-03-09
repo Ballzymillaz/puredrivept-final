@@ -53,14 +53,45 @@ export default function Drivers({ currentUser }) {
     queryFn: () => base44.entities.Driver.list(),
   });
 
+  // Load fleets to find which drivers belong to this fleet manager
+  const { data: allFleets = [] } = useQuery({
+    queryKey: ['fleets-raw'],
+    queryFn: () => base44.entities.Fleet.list(),
+    enabled: isFleetManager,
+  });
+
+  const { data: fleetManagers = [] } = useQuery({
+    queryKey: ['fleetManagers'],
+    queryFn: () => base44.entities.FleetManager.list(),
+    enabled: isFleetManager,
+  });
+
   // Fleet managers only see their affiliated drivers
-  const drivers = isFleetManager
-    ? allDriversRaw.filter(d =>
-        d.fleet_manager_id === currentUser?.id ||
-        d.fleet_manager_id === currentUser?.email ||
-        d.created_by === currentUser?.email
-      )
-    : allDriversRaw;
+  const drivers = React.useMemo(() => {
+    if (!isFleetManager) return allDriversRaw;
+    // Find the FleetManager entity linked to this user
+    const myFM = fleetManagers.find(fm =>
+      fm.user_id === currentUser?.id ||
+      fm.email === currentUser?.email
+    );
+    const myFMId = myFM?.id;
+    // Find all fleets managed by this FM
+    const myFleets = allFleets.filter(f =>
+      f.fleet_manager_id === myFMId ||
+      f.fleet_manager_id === currentUser?.id ||
+      f.fleet_manager_id === currentUser?.email
+    );
+    // Collect all driver IDs from those fleets
+    const fleetDriverIds = new Set(myFleets.flatMap(f => f.driver_ids || []));
+    // Also fallback: direct fleet_manager_id on driver record
+    return allDriversRaw.filter(d =>
+      fleetDriverIds.has(d.id) ||
+      (myFMId && d.fleet_manager_id === myFMId) ||
+      d.fleet_manager_id === currentUser?.id ||
+      d.fleet_manager_id === currentUser?.email ||
+      d.created_by === currentUser?.email
+    );
+  }, [isFleetManager, allDriversRaw, allFleets, fleetManagers, currentUser]);
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ['vehicles'],

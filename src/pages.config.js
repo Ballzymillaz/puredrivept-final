@@ -63,6 +63,7 @@ import Fleets from './pages/Fleets';
 import Goals from './pages/Goals';
 import IVA from './pages/IVA';
 import Loans from './pages/Loans';
+import Maintenance from './pages/Maintenance';
 import Messaging from './pages/Messaging';
 import Notifications from './pages/Notifications';
 import Payments from './pages/Payments';
@@ -79,7 +80,6 @@ import UserManagement from './pages/UserManagement';
 import VehicleDetail from './pages/VehicleDetail';
 import VehiclePurchases from './pages/VehiclePurchases';
 import Vehicles from './pages/Vehicles';
-import Maintenance from './pages/Maintenance';
 import __Layout from './Layout.jsx';
 
 
@@ -100,6 +100,7 @@ export const PAGES = {
     "Goals": Goals,
     "IVA": IVA,
     "Loans": Loans,
+    "Maintenance": Maintenance,
     "Messaging": Messaging,
     "Notifications": Notifications,
     "Payments": Payments,
@@ -116,7 +117,6 @@ export const PAGES = {
     "VehicleDetail": VehicleDetail,
     "VehiclePurchases": VehiclePurchases,
     "Vehicles": Vehicles,
-    "Maintenance": Maintenance,
 }
 
 export const pagesConfig = {
