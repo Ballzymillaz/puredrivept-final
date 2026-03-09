@@ -93,10 +93,17 @@ const DRIVER_MENU_BASE = [
 // Users with no valid role see nothing
 const PENDING_MENU = [];
 
-function getMenuByRole(role) {
+function getMenuByRole(role, currentUser) {
   if (role === 'admin') return ADMIN_MENU;
-  if (role === 'fleet_manager') return FLEET_MANAGER_MENU;
-  if (role === 'driver') return DRIVER_MENU;
+  if (role === 'fleet_manager') {
+    // UPI: only show if fleet has upi_enabled (we don't have fleet data here, show by default)
+    // UPI visibility is handled at page level; always include in sidebar for fleet_manager
+    return FLEET_MANAGER_MENU_BASE;
+  }
+  if (role === 'driver') {
+    // UPI visibility: always include, page will handle empty state
+    return DRIVER_MENU_BASE;
+  }
   return PENDING_MENU;
 }
 
