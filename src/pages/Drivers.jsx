@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import DriverForm from '../components/drivers/DriverForm';
@@ -96,11 +96,6 @@ export default function Drivers({ currentUser }) {
   const { data: vehicles = [] } = useQuery({
     queryKey: ['vehicles'],
     queryFn: () => base44.entities.Vehicle.list(),
-  });
-
-  const { data: fleetManagers = [] } = useQuery({
-    queryKey: ['fleetManagers'],
-    queryFn: () => base44.entities.FleetManager.list(),
   });
 
   const createMutation = useMutation({
