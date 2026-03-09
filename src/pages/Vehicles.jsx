@@ -67,11 +67,11 @@ export default function Vehicles({ currentUser }) {
 
   const createMutation = useMutation({
     mutationFn: (d) => base44.entities.Vehicle.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicles'] }); setShowForm(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicles-raw'] }); setShowForm(false); },
   });
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Vehicle.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicles'] }); setShowForm(false); setEditing(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['vehicles-raw'] }); setShowForm(false); setEditing(null); },
   });
 
   const handleSubmit = (data) => {
