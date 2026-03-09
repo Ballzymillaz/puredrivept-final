@@ -229,6 +229,19 @@ export default function UPI({ currentUser }) {
     { header: 'Data', render: (r) => <span className="text-xs text-gray-500">{format(new Date(r.created_date), 'dd/MM/yyyy')}</span> },
   ];
 
+  // If UPI not enabled for this fleet, show message
+  if (!isAdmin && !upiEnabled) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center space-y-2">
+          <Coins className="w-10 h-10 text-gray-300 mx-auto" />
+          <p className="text-gray-500 font-medium">UPI não ativo para a sua frota</p>
+          <p className="text-gray-400 text-sm">O sistema UPI não está ativado para a sua frota.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader
