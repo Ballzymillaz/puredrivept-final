@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Users, Car, FileText, CreditCard, TrendingUp,
   Wallet, ShoppingCart, UserPlus, Coins, Receipt,
   ChevronLeft, ChevronRight, Settings, Menu, X,
-  Building2, HandCoins, FileBarChart, PieChart, MessageCircle, Bell
+  Building2, HandCoins, FileBarChart, PieChart, MessageCircle, Bell, Wrench
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
