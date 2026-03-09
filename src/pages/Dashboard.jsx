@@ -10,7 +10,19 @@ export default function Dashboard({ currentUser }) {
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['dashboard-metrics'],
     queryFn: () => base44.functions.invoke('getDashboardMetrics').then(res => res.data),
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
+  });
+  const { data: payments = [] } = useQuery({
+    queryKey: ['payments-analytics'],
+    queryFn: () => base44.entities.WeeklyPayment.list('-week_start', 200),
+  });
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ['vehicles-analytics'],
+    queryFn: () => base44.entities.Vehicle.list(),
+  });
+  const { data: drivers = [] } = useQuery({
+    queryKey: ['drivers-analytics'],
+    queryFn: () => base44.entities.Driver.list(),
   });
 
   if (isLoading) {
