@@ -43,7 +43,7 @@ const PAGE_TITLES = {
 const ROLE_ALLOWED_PAGES = {
   admin: null, // null = all pages
   fleet_manager: [
-    'Dashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Documents',
+    'Dashboard', 'Drivers', 'Vehicles', 'VehicleDetail', 'Documents', 'Maintenance',
     'Payments', 'CashFlow', 'Loans', 'Referrals', 'VehiclePurchases',
     'Rankings', 'UPI', 'Relatorios', 'RelatoriosFrota', 'Messaging', 'Notifications',
   ],
