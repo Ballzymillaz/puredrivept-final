@@ -32,8 +32,42 @@ export default function Fleets({ currentUser }) {
   const { data: fleetManagers = [] } = useQuery({ queryKey: ['fleet-managers'], queryFn: () => base44.entities.FleetManager.list() });
 
   const saveMutation = useMutation({
-    mutationFn: (data) => editingFleet ? base44.entities.Fleet.update(editingFleet.id, data) : base44.entities.Fleet.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['fleets'] }); closeForm(); },
+    mutationFn: async (data) => {
+      const result = editingFleet
+        ? await base44.entities.Fleet.update(editingFleet.id, data)
+        : await base44.entities.Fleet.create(data);
+
+      const selectedFMId = data.fleet_manager_id;
+
+      if (editingFleet) {
+        // Drivers removed from this fleet: clear their fleet_manager_id
+        const previousDriverIds = editingFleet.driver_ids || [];
+        const newDriverIds = data.driver_ids || [];
+        const removedDriverIds = previousDriverIds.filter(id => !newDriverIds.includes(id));
+        for (const did of removedDriverIds) {
+          await base44.entities.Driver.update(did, { fleet_manager_id: '', fleet_manager_name: '' });
+        }
+        // Drivers added: set fleet_manager_id
+        const addedDriverIds = newDriverIds.filter(id => !previousDriverIds.includes(id));
+        const fm = fleetManagers.find(f => f.id === selectedFMId);
+        for (const did of addedDriverIds) {
+          await base44.entities.Driver.update(did, { fleet_manager_id: selectedFMId, fleet_manager_name: fm?.full_name || '' });
+        }
+      } else if (selectedFMId) {
+        // New fleet: set fleet_manager_id on all selected drivers
+        const fm = fleetManagers.find(f => f.id === selectedFMId);
+        for (const did of (data.driver_ids || [])) {
+          await base44.entities.Driver.update(did, { fleet_manager_id: selectedFMId, fleet_manager_name: fm?.full_name || '' });
+        }
+      }
+
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fleets'] });
+      queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      closeForm();
+    },
   });
 
   const deleteMutation = useMutation({
