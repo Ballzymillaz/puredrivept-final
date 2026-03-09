@@ -225,16 +225,16 @@ export default function Documents({ currentUser }) {
       {!selectedEntity ? (
         <>
           {/* Tabs */}
-          {!isDriver && (
-            <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
-              <button onClick={() => { setTab('driver'); setQuickFilter('all'); }} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${tab === 'driver' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
-                Motoristas
-              </button>
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+            <button onClick={() => { setTab('driver'); setQuickFilter('all'); }} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${tab === 'driver' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
+              Motoristas
+            </button>
+            {(!isDriver || driverAssignedVehicleId) && (
               <button onClick={() => { setTab('vehicle'); setQuickFilter('all'); }} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${tab === 'vehicle' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}>
                 Veículos
               </button>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Quick filters */}
           <div className="flex flex-wrap gap-2">
