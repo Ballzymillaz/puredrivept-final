@@ -92,6 +92,12 @@ export default function UPI({ currentUser }) {
   });
 
   const myDriverRecord = isDriver ? drivers.find(d => d.email === currentUser?.email) : null;
+
+  // Check if UPI is enabled for the fleet
+  const myFleetId = myDriverRecord?.fleet_id || (isFleetManager ? drivers.find(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email)?.fleet_id : null);
+  const myFleet = fleets.find(f => f.id === myFleetId);
+  const upiEnabled = isAdmin || myFleet?.upi_enabled !== false; // default true if no fleet found
+
   const myTxs = useMemo(() => isDriver && myDriverRecord ? transactions.filter(t => t.driver_id === myDriverRecord.id) : [], [transactions, isDriver, myDriverRecord]);
   const myVesting = useMemo(() => isDriver && myDriverRecord ? aggregateVesting(myTxs) : null, [myTxs, isDriver, myDriverRecord]);
 
