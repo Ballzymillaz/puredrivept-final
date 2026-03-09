@@ -261,8 +261,8 @@ export default function Loans({ currentUser }) {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Novo pedido de empréstimo</DialogTitle></DialogHeader>
-          <form onSubmit={isDriver ? handleDriverSubmit : handleAdminSubmit} className="space-y-4">
-            {!isDriver && (
+          <form onSubmit={(isDriver || isFleetManager) ? handleDriverSubmit : handleAdminSubmit} className="space-y-4">
+            {!isDriver && !isFleetManager && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Motorista</Label>
                 <Select value={form.driver_id} onValueChange={(v) => setForm(f => ({ ...f, driver_id: v }))}>
