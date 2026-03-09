@@ -55,6 +55,7 @@ const FLEET_MANAGER_MENU_BASE = [
     { name: 'Motoristas', icon: Users, page: 'Drivers' },
     { name: 'Veículos', icon: Car, page: 'Vehicles' },
     { name: 'Documentos', icon: FileText, page: 'Documents' },
+    { name: 'Manutenção', icon: Wrench, page: 'Maintenance' },
   ]},
   { section: 'Finanças', items: [
     { name: 'Pagamentos', icon: CreditCard, page: 'Payments' },
