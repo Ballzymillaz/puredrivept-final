@@ -114,7 +114,7 @@ export default function Sidebar({ currentPage, userRole, currentUser }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const role = userRole?.split(',').map(r => r.trim()).find(r => ['admin', 'fleet_manager', 'driver'].includes(r)) || null;
-  const nav = getMenuByRole(role);
+  const nav = getMenuByRole(role, currentUser);
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
