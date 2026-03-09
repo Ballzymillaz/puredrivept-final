@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import StatCard from '../components/dashboard/StatCard';
 import { CreditCard, TrendingUp, TrendingDown, Wallet } from 'lucide-react';
+import { ExportPaymentPDF } from '../components/shared/PdfExport';
 import { startOfWeek, endOfWeek, format, addWeeks } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 
