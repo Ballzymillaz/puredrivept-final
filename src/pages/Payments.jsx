@@ -85,7 +85,7 @@ export default function Payments({ currentUser }) {
     ? allFleetManagers.find(fm => fm.email === currentUser?.email || fm.user_id === currentUser?.id)
     : null;
 
-  const myFleetDriverIds = React.useMemo(() => {
+  const myFleetDriverIds = useMemo(() => {
     if (!isFleetManager) return null;
     const myFMId = myFM?.id;
     const myFleets = allFleets.filter(f =>

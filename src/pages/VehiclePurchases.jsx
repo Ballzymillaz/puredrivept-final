@@ -264,7 +264,7 @@ export default function VehiclePurchases({ currentUser }) {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Compra de veículos" subtitle="Opção de compra — Financiamento interno" actionLabel={!isSimulation ? (isDriver ? "Fazer pedido" : "Novo pedido") : undefined} onAction={() => setShowForm(true)} />
+      <PageHeader title="Compra de veículos" subtitle="Opção de compra — Financiamento interno" actionLabel={!isSimulation && !isFleetManager ? (isDriver ? "Fazer pedido" : "Novo pedido") : undefined} onAction={!isSimulation && !isFleetManager ? () => setShowForm(true) : undefined} />
 
       {isDriver && (
         <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">

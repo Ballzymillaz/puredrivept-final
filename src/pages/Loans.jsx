@@ -47,7 +47,7 @@ export default function Loans({ currentUser }) {
     enabled: isFleetManager,
   });
 
-  const fleetDriverIds = React.useMemo(() => {
+  const fleetDriverIds = useMemo(() => {
     if (!isFleetManager) return null;
     const myFM = allFleetManagers.find(fm => fm.email === currentUser?.email || fm.user_id === currentUser?.id);
     const myFMId = myFM?.id;
