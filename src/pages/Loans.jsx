@@ -35,15 +35,45 @@ export default function Loans({ currentUser }) {
 
 
 
+  const { data: allFleetManagers = [] } = useQuery({
+    queryKey: ['fleet-managers'],
+    queryFn: () => base44.entities.FleetManager.list(),
+    enabled: isFleetManager,
+  });
+
+  const { data: allFleets = [] } = useQuery({
+    queryKey: ['fleets-raw'],
+    queryFn: () => base44.entities.Fleet.list(),
+    enabled: isFleetManager,
+  });
+
+  const fleetDriverIds = React.useMemo(() => {
+    if (!isFleetManager) return null;
+    const myFM = allFleetManagers.find(fm => fm.email === currentUser?.email || fm.user_id === currentUser?.id);
+    const myFMId = myFM?.id;
+    const myFleets = allFleets.filter(f =>
+      f.fleet_manager_id === myFMId ||
+      f.fleet_manager_id === currentUser?.id ||
+      f.fleet_manager_id === currentUser?.email
+    );
+    const ids = new Set(myFleets.flatMap(f => f.driver_ids || []));
+    drivers.forEach(d => {
+      if ((myFMId && d.fleet_manager_id === myFMId) || d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email) {
+        ids.add(d.id);
+      }
+    });
+    return ids;
+  }, [isFleetManager, allFleetManagers, allFleets, drivers, currentUser]);
+
   const { data: loans = [], isLoading } = useQuery({
     queryKey: ['loans', currentUser?.id],
     queryFn: async () => {
       const all = await base44.entities.Loan.list('-created_date');
       if (isDriver && myDriverRecord) return all.filter(l => l.driver_id === myDriverRecord.id);
-      if (isFleetManager) return all.filter(l => l.driver_id === currentUser?.id || l.driver_name === currentUser?.full_name);
+      if (isFleetManager) return all.filter(l => fleetDriverIds?.has(l.driver_id));
       return all;
     },
-    enabled: !isDriver || !!myDriverRecord,
+    enabled: (!isDriver || !!myDriverRecord) && (!isFleetManager || allFleetManagers.length > 0 || allFleets.length >= 0),
   });
 
   const createMutation = useMutation({
