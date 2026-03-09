@@ -73,7 +73,7 @@ export default function Loans({ currentUser }) {
       if (isFleetManager) return all.filter(l => fleetDriverIds?.has(l.driver_id));
       return all;
     },
-    enabled: (!isDriver || !!myDriverRecord) && (!isFleetManager || allFleetManagers.length > 0 || allFleets.length >= 0),
+    enabled: !isDriver || !!myDriverRecord,
   });
 
   const createMutation = useMutation({
