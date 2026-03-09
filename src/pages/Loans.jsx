@@ -32,10 +32,6 @@ export default function Loans({ currentUser }) {
     ? drivers.find(d => d.user_id === currentUser?.id || d.email === currentUser?.email)
     : null;
 
-  const myFleetDriverIds = isFleetManager
-    ? new Set(drivers.filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email).map(d => d.id))
-    : null;
-
 
 
   const { data: loans = [], isLoading } = useQuery({
