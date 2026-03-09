@@ -216,7 +216,12 @@ export default function Loans({ currentUser }) {
       {/* Detail / action dialog */}
       <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditForm(null); } }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Empréstimo — {selected?.driver_name}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between pr-6">
+              <span>Empréstimo — {selected?.driver_name}</span>
+              {selected && <ExportLoanPDF loan={selected} />}
+            </DialogTitle>
+          </DialogHeader>
           {selected && !editForm && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2 text-sm">
