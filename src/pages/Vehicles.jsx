@@ -22,28 +22,43 @@ export default function Vehicles({ currentUser }) {
   const isFleetManager = currentUser?.role === 'fleet_manager';
   const isSimulation = !!currentUser?._isSimulation;
 
-  const { data: allDriversForFilter = [] } = useQuery({
-    queryKey: ['drivers-for-vehicles'],
-    queryFn: () => base44.entities.Driver.list(),
+  const { data: allFleets = [] } = useQuery({
+    queryKey: ['fleets-raw'],
+    queryFn: () => base44.entities.Fleet.list(),
     enabled: isFleetManager,
   });
 
-  const { data: vehicles = [], isLoading } = useQuery({
-    queryKey: ['vehicles', currentUser?.role, currentUser?.id],
-    queryFn: async () => {
-      const all = await base44.entities.Vehicle.list();
-      if (isFleetManager) {
-        // Only vehicles assigned to fleet manager's drivers
-        const myDriverIds = new Set(
-          allDriversForFilter
-            .filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email)
-            .map(d => d.id)
-        );
-        return all.filter(v => v.fleet_manager_id === currentUser?.id || v.fleet_manager_id === currentUser?.email || myDriverIds.has(v.assigned_driver_id));
-      }
-      return all;
-    },
+  const { data: allFleetManagers = [] } = useQuery({
+    queryKey: ['fleet-managers-list'],
+    queryFn: () => base44.entities.FleetManager.list(),
+    enabled: isFleetManager,
   });
+
+  const { data: allVehiclesRaw = [], isLoading } = useQuery({
+    queryKey: ['vehicles-raw'],
+    queryFn: () => base44.entities.Vehicle.list(),
+  });
+
+  const vehicles = React.useMemo(() => {
+    if (!isFleetManager) return allVehiclesRaw;
+    const myFM = allFleetManagers.find(fm =>
+      fm.user_id === currentUser?.id ||
+      fm.email === currentUser?.email
+    );
+    const myFMId = myFM?.id;
+    const myFleets = allFleets.filter(f =>
+      f.fleet_manager_id === myFMId ||
+      f.fleet_manager_id === currentUser?.id ||
+      f.fleet_manager_id === currentUser?.email
+    );
+    const fleetVehicleIds = new Set(myFleets.flatMap(f => f.vehicle_ids || []));
+    return allVehiclesRaw.filter(v =>
+      fleetVehicleIds.has(v.id) ||
+      (myFMId && v.fleet_manager_id === myFMId) ||
+      v.fleet_manager_id === currentUser?.id ||
+      v.fleet_manager_id === currentUser?.email
+    );
+  }, [isFleetManager, allVehiclesRaw, allFleets, allFleetManagers, currentUser]);
 
   const { data: drivers = [] } = useQuery({
     queryKey: ['drivers'],
