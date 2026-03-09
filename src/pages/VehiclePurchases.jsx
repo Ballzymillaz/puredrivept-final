@@ -115,6 +115,7 @@ export default function VehiclePurchases({ currentUser }) {
 
   const isDriver = currentUser?.role === 'driver';
   const isAdmin = currentUser?.role === 'admin' || currentUser?._realRole === 'admin';
+  const isFleetManager = currentUser?.role === 'fleet_manager' && !isAdmin;
   const isSimulation = !!currentUser?._isSimulation;
 
   const { data: allDrivers = [] } = useQuery({
@@ -122,12 +123,17 @@ export default function VehiclePurchases({ currentUser }) {
     queryFn: () => base44.entities.Driver.list(),
   });
   const myDriverRecord = isDriver ? allDrivers.find(d => d.email === currentUser?.email) : null;
+  const myFleetDriverIds = isFleetManager
+    ? new Set(allDrivers.filter(d => d.fleet_manager_id === currentUser?.id || d.fleet_manager_id === currentUser?.email).map(d => d.id))
+    : null;
 
   const { data: purchases = [], isLoading } = useQuery({
-    queryKey: ['vehicle-purchases', isDriver ? myDriverRecord?.id : 'all'],
+    queryKey: ['vehicle-purchases', isDriver ? myDriverRecord?.id : isFleetManager ? currentUser?.id : 'all'],
     queryFn: async () => {
-      if (isDriver && myDriverRecord) return base44.entities.VehiclePurchase.filter({ driver_id: myDriverRecord.id });
-      return base44.entities.VehiclePurchase.list('-created_date');
+      const all = await base44.entities.VehiclePurchase.list('-created_date');
+      if (isDriver && myDriverRecord) return all.filter(p => p.driver_id === myDriverRecord.id);
+      if (isFleetManager) return all.filter(p => myFleetDriverIds?.has(p.driver_id));
+      return all;
     },
     enabled: !isDriver || !!myDriverRecord,
   });
