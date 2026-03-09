@@ -121,6 +121,9 @@ export default function Dashboard({ currentUser }) {
         </CardContent>
       </Card>
 
+      {/* BLOCO Analytics */}
+      <AnalyticsCharts payments={payments} vehicles={vehicles} drivers={drivers} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* BLOCO 3: Sistema UPI */}
         <Card className="border-0 shadow-sm">
