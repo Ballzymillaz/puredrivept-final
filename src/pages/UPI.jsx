@@ -70,6 +70,7 @@ export default function UPI({ currentUser }) {
   const qc = useQueryClient();
 
   const isAdmin = currentUser?.role === 'admin' || currentUser?.hasRole?.('admin');
+  const isFleetManager = (currentUser?.role === 'fleet_manager') && !isAdmin;
   const isDriver = (currentUser?.role === 'driver' || currentUser?.hasRole?.('driver')) && !isAdmin;
 
   const { data: transactions = [], isLoading } = useQuery({
