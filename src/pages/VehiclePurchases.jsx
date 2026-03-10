@@ -31,7 +31,7 @@ function getTvdeExpiry(firstRegDate) {
 }
 
 // ── DEGRESSIVE QUARTERLY SCHEDULE ─────────────────────────────────────────
-// T1 always €300/week, decreases linearly each quarter
+// T1 always €350/week, decreases linearly each quarter
 // Returns null if math would produce negative payments
 function computeQuarterlySchedule(totalPrice, durationMonths) {
   const totalWeeks = Math.round(durationMonths * 4.33);
@@ -44,7 +44,7 @@ function computeQuarterlySchedule(totalPrice, durationMonths) {
     return [{ quarter: 1, weeks: totalWeeks, weeklyAmount: weekly, total: totalPrice }];
   }
 
-  const M1 = 300;
+  const M1 = 350;
   const fullQ = 13;
   const lastQWeeks = totalWeeks - (numQuarters - 1) * fullQ;
 
@@ -56,7 +56,7 @@ function computeQuarterlySchedule(totalPrice, durationMonths) {
   }
   const step = denominator > 0 ? (M1 * totalWeeks - totalPrice) / denominator : 0;
 
-  // step < 0 means T1=300 is not enough to cover totalPrice
+  // step < 0 means T1=350 is not enough to cover totalPrice
   if (step < 0) return null;
 
   const quarters = [];
@@ -414,7 +414,7 @@ export default function VehiclePurchases({ currentUser }) {
                     </div>
                   ))}
                 </div>
-                <p className="text-[10px] text-gray-400 text-center">T1 sempre €300/sem · Total exato: {fmt(totalPrice)}</p>
+                <p className="text-[10px] text-gray-400 text-center">T1 sempre €350/sem · Total exato: {fmt(totalPrice)}</p>
               </div>
             )}
 
