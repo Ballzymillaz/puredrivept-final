@@ -26,7 +26,7 @@ function computeQuarterlySchedule(totalPrice, durationMonths) {
     return [{ quarter: 1, weeks: totalWeeks, weeklyAmount: weekly, total: totalPrice }];
   }
 
-  const M1 = 400;
+  const M1 = 300;
   const fullQ = 13;
   const lastQWeeks = totalWeeks - (numQuarters - 1) * fullQ;
 
