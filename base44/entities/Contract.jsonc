@@ -1,0 +1,74 @@
+{
+  "name": "Contract",
+  "type": "object",
+  "properties": {
+    "driver_id": {
+      "type": "string",
+      "description": "ID do motorista"
+    },
+    "driver_name": {
+      "type": "string",
+      "description": "Nome do motorista"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "description": "ID do ve\u00edculo atribu\u00eddo"
+    },
+    "vehicle_info": {
+      "type": "string",
+      "description": "Info do ve\u00edculo (marca modelo - matr\u00edcula)"
+    },
+    "contract_type": {
+      "type": "string",
+      "enum": [
+        "slot_standard",
+        "slot_premium",
+        "slot_black",
+        "location"
+      ],
+      "description": "Tipo de contrato"
+    },
+    "slot_fee": {
+      "type": "number",
+      "description": "Taxa de slot semanal (\u20ac)"
+    },
+    "weekly_rental_price": {
+      "type": "number",
+      "description": "Pre\u00e7o de aluguer semanal para location (\u20ac)"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio do contrato"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de fim do contrato (opcional)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "expired",
+        "cancelled"
+      ],
+      "default": "active",
+      "description": "Estado do contrato"
+    },
+    "contract_file_url": {
+      "type": "string",
+      "description": "URL do ficheiro do contrato (PDF)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es"
+    }
+  },
+  "required": [
+    "driver_id",
+    "driver_name",
+    "contract_type",
+    "start_date"
+  ]
+}

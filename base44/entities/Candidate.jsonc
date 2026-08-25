@@ -1,0 +1,52 @@
+{
+  "name": "Candidate",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "applicant_type": {
+      "type": "string",
+      "enum": [
+        "driver",
+        "fleet_manager"
+      ],
+      "default": "driver"
+    },
+    "message": {
+      "type": "string",
+      "description": "Motivation / additional info"
+    },
+    "referral_code": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "reviewed",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal admin notes"
+    },
+    "processed_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "full_name",
+    "email",
+    "phone"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "name": "UPITransaction",
+  "type": "object",
+  "properties": {
+    "driver_id": {
+      "type": "string"
+    },
+    "driver_name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "earned",
+        "credit",
+        "debit"
+      ],
+      "description": "earned=auto 4%, credit=admin add, debit=admin subtract"
+    },
+    "amount": {
+      "type": "number",
+      "description": "UPI amount"
+    },
+    "source": {
+      "type": "string",
+      "description": "e.g. uber, bolt, admin_adjustment"
+    },
+    "week_label": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "processed_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "driver_id",
+    "type",
+    "amount"
+  ]
+}

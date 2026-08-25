@@ -1,0 +1,79 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "owner_type": {
+      "type": "string",
+      "enum": [
+        "driver",
+        "fleet_manager",
+        "commercial",
+        "vehicle"
+      ],
+      "description": "Who this document belongs to"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "ID of the owner entity"
+    },
+    "owner_name": {
+      "type": "string",
+      "description": "Name of owner for display"
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "driving_license",
+        "tvde_certificate",
+        "id_card",
+        "iban_proof",
+        "insurance",
+        "periodic_inspection",
+        "vehicle_booklet"
+      ],
+      "description": "Type of document"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Uploaded file URL"
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Expiry date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "expired",
+        "requested"
+      ],
+      "default": "pending"
+    },
+    "rejection_reason": {
+      "type": "string",
+      "description": "Reason for rejection"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Who approved/rejected"
+    },
+    "version": {
+      "type": "number",
+      "default": 1,
+      "description": "Document version"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "owner_type",
+    "owner_id",
+    "document_type"
+  ],
+  "rls": {}
+}

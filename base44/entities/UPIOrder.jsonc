@@ -1,0 +1,51 @@
+{
+  "name": "UPIOrder",
+  "type": "object",
+  "properties": {
+    "seller_id": {
+      "type": "string",
+      "description": "Driver ID selling UPI"
+    },
+    "seller_name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "ask"
+      ],
+      "default": "ask",
+      "description": "Sell order"
+    },
+    "quantity": {
+      "type": "number",
+      "description": "Number of UPI for sale"
+    },
+    "price_per_upi": {
+      "type": "number",
+      "description": "Price in EUR per UPI"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "filled",
+        "cancelled"
+      ],
+      "default": "open"
+    },
+    "filled_by": {
+      "type": "string",
+      "description": "Buyer (admin email)"
+    },
+    "filled_at": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "seller_id",
+    "quantity",
+    "price_per_upi"
+  ]
+}

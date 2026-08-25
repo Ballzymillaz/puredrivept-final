@@ -1,0 +1,83 @@
+{
+  "name": "MaintenanceRecord",
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string"
+    },
+    "vehicle_info": {
+      "type": "string",
+      "description": "Brand Model - Plate"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "preventive",
+        "corrective",
+        "oil_change",
+        "tire",
+        "brake",
+        "inspection",
+        "repair",
+        "cleaning",
+        "other"
+      ],
+      "description": "Type of maintenance"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cost": {
+      "type": "number",
+      "description": "Cost in EUR"
+    },
+    "mileage_at_service": {
+      "type": "number",
+      "description": "Mileage at time of service (km)"
+    },
+    "service_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "next_service_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled next maintenance date"
+    },
+    "next_service_mileage": {
+      "type": "number",
+      "description": "Next service mileage threshold (km)"
+    },
+    "performed_by": {
+      "type": "string",
+      "description": "Garage/technician name"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "Receipt/invoice URL"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "done",
+        "overdue"
+      ],
+      "default": "done",
+      "description": "Status of this maintenance record"
+    },
+    "alert_triggered": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether an alert was sent for overdue"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "vehicle_id",
+    "type",
+    "service_date"
+  ]
+}

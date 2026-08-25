@@ -1,0 +1,108 @@
+{
+  "name": "Vehicle",
+  "type": "object",
+  "properties": {
+    "brand": {
+      "type": "string",
+      "description": "Vehicle brand"
+    },
+    "model": {
+      "type": "string",
+      "description": "Vehicle model"
+    },
+    "first_registration_date": {
+      "type": "string",
+      "format": "date",
+      "description": "1\u00e8re date d'immatriculation"
+    },
+    "license_plate": {
+      "type": "string",
+      "description": "License plate number"
+    },
+    "color": {
+      "type": "string",
+      "description": "Vehicle color"
+    },
+    "vin": {
+      "type": "string",
+      "description": "Vehicle identification number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "assigned",
+        "alugado",
+        "maintenance",
+        "inactive"
+      ],
+      "default": "available",
+      "description": "Current status"
+    },
+    "assigned_driver_id": {
+      "type": "string",
+      "description": "ID of assigned driver"
+    },
+    "assigned_driver_name": {
+      "type": "string",
+      "description": "Name of assigned driver"
+    },
+    "fleet_id": {
+      "type": "string",
+      "description": "ID of associated fleet"
+    },
+    "fleet_manager_id": {
+      "type": "string",
+      "description": "Fleet manager ID"
+    },
+    "weekly_rental_price": {
+      "type": "number",
+      "description": "Weekly rental price"
+    },
+    "base_purchase_price": {
+      "type": "number",
+      "description": "Base purchase price (real cost - admin only)"
+    },
+    "market_price": {
+      "type": "number",
+      "description": "Market price for selling (+25% = final price)"
+    },
+    "fuel_type": {
+      "type": "string",
+      "enum": [
+        "gasoline",
+        "diesel",
+        "hybrid",
+        "electric"
+      ],
+      "description": "Fuel type"
+    },
+    "mileage": {
+      "type": "number",
+      "description": "Current mileage in km"
+    },
+    "insurance_expiry": {
+      "type": "string",
+      "format": "date",
+      "description": "Insurance expiry date"
+    },
+    "inspection_expiry": {
+      "type": "string",
+      "format": "date",
+      "description": "Inspection expiry date"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Vehicle photo URL"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes"
+    }
+  },
+  "required": [
+    "brand",
+    "model",
+    "license_plate"
+  ]
+}

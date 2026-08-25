@@ -1,0 +1,73 @@
+{
+  "name": "FinancialAdjustment",
+  "type": "object",
+  "properties": {
+    "driver_id": {
+      "type": "string",
+      "description": "Driver ID"
+    },
+    "driver_name": {
+      "type": "string",
+      "description": "Driver name"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "credit",
+        "debit"
+      ],
+      "description": "credit = in favor of driver, debit = against driver"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "fuel",
+        "maintenance",
+        "cleaning",
+        "tolls",
+        "bonus",
+        "penalty",
+        "other"
+      ],
+      "description": "Adjustment category"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Amount in EUR"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "User email who created it"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Admin email who approved/rejected"
+    },
+    "applied_to_weekly_payment_id": {
+      "type": "string",
+      "description": "WeeklyPayment ID if applied"
+    },
+    "rejection_reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "driver_id",
+    "driver_name",
+    "type",
+    "category",
+    "amount"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "name": "Conversation",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "direct",
+        "group",
+        "support"
+      ],
+      "default": "direct"
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of participant user emails"
+    },
+    "participant_names": {
+      "type": "string",
+      "description": "Comma-separated names for display"
+    },
+    "created_by": {
+      "type": "string"
+    },
+    "last_message": {
+      "type": "string"
+    },
+    "last_message_at": {
+      "type": "string"
+    },
+    "fleet_manager_id": {
+      "type": "string",
+      "description": "If group for a fleet manager"
+    }
+  },
+  "required": [
+    "title",
+    "type"
+  ]
+}

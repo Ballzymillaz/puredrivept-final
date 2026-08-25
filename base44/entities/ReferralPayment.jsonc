@@ -1,0 +1,63 @@
+{
+  "name": "ReferralPayment",
+  "type": "object",
+  "properties": {
+    "referrer_type": {
+      "type": "string",
+      "enum": [
+        "fleet_manager",
+        "commercial"
+      ]
+    },
+    "referrer_id": {
+      "type": "string"
+    },
+    "referrer_name": {
+      "type": "string"
+    },
+    "driver_id": {
+      "type": "string"
+    },
+    "driver_name": {
+      "type": "string"
+    },
+    "driver_contract_type": {
+      "type": "string",
+      "enum": [
+        "slot_standard",
+        "slot_premium",
+        "slot_black",
+        "location"
+      ]
+    },
+    "weekly_amount": {
+      "type": "number",
+      "description": "Weekly referral payment (5/5/10/15\u20ac)"
+    },
+    "bonus_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "One-time bonus (60\u20ac for location after 30 days)"
+    },
+    "bonus_paid": {
+      "type": "boolean",
+      "default": false
+    },
+    "week_label": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "referrer_type",
+    "referrer_id",
+    "driver_id"
+  ]
+}

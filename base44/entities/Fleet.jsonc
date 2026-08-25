@@ -1,0 +1,57 @@
+{
+  "name": "Fleet",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Fleet name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Fleet description"
+    },
+    "fleet_manager_id": {
+      "type": "string",
+      "description": "ID of the fleet manager responsible"
+    },
+    "fleet_manager_name": {
+      "type": "string",
+      "description": "Name of the fleet manager"
+    },
+    "vehicle_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of vehicle IDs in this fleet",
+      "default": []
+    },
+    "driver_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of driver IDs associated",
+      "default": []
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "upi_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si activ\u00e9, les UPI sont g\u00e9n\u00e9r\u00e9s et inclus dans les pagamentos semanal"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

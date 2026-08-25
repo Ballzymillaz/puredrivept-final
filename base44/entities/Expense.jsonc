@@ -1,0 +1,60 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": [
+        "vehicle_rental",
+        "utilities",
+        "services",
+        "marketing",
+        "driver_payments",
+        "commercial_payments",
+        "vehicle_costs",
+        "insurance",
+        "taxes",
+        "maintenance",
+        "via_verde",
+        "loans",
+        "other"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "vehicle_id": {
+      "type": "string",
+      "description": "Related vehicle if applicable"
+    },
+    "driver_id": {
+      "type": "string",
+      "description": "Related driver if applicable"
+    },
+    "receipt_url": {
+      "type": "string"
+    },
+    "iva_rate": {
+      "type": "number",
+      "description": "IVA rate applied"
+    },
+    "iva_amount": {
+      "type": "number"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "category",
+    "amount",
+    "date"
+  ]
+}

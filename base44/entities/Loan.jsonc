@@ -1,0 +1,75 @@
+{
+  "name": "Loan",
+  "type": "object",
+  "properties": {
+    "driver_id": {
+      "type": "string",
+      "description": "Driver ID"
+    },
+    "driver_name": {
+      "type": "string",
+      "description": "Driver name"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Original loan amount"
+    },
+    "interest_rate_weekly": {
+      "type": "number",
+      "default": 1,
+      "description": "Weekly interest rate %"
+    },
+    "total_with_interest": {
+      "type": "number",
+      "description": "Total amount with interest"
+    },
+    "duration_weeks": {
+      "type": "number",
+      "description": "Duration in weeks"
+    },
+    "weekly_installment": {
+      "type": "number",
+      "description": "Weekly payment amount"
+    },
+    "remaining_balance": {
+      "type": "number",
+      "description": "Remaining balance"
+    },
+    "paid_amount": {
+      "type": "number",
+      "default": 0,
+      "description": "Total paid so far"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "requested",
+        "approved",
+        "active",
+        "completed",
+        "rejected"
+      ],
+      "default": "requested"
+    },
+    "request_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "approval_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "driver_id",
+    "driver_name",
+    "amount",
+    "duration_weeks"
+  ]
+}

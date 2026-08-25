@@ -1,0 +1,140 @@
+{
+  "name": "WeeklyPayment",
+  "type": "object",
+  "properties": {
+    "driver_id": {
+      "type": "string",
+      "description": "Driver ID"
+    },
+    "driver_name": {
+      "type": "string",
+      "description": "Driver name"
+    },
+    "fleet_manager_id": {
+      "type": "string",
+      "description": "Fleet manager ID (required)"
+    },
+    "week_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Start of the payment week"
+    },
+    "week_end": {
+      "type": "string",
+      "format": "date",
+      "description": "End of the payment week"
+    },
+    "period_label": {
+      "type": "string",
+      "description": "e.g. Semaine 08 - 2026"
+    },
+    "uber_gross": {
+      "type": "number",
+      "default": 0
+    },
+    "bolt_gross": {
+      "type": "number",
+      "default": 0
+    },
+    "other_platform_gross": {
+      "type": "number",
+      "default": 0
+    },
+    "total_gross": {
+      "type": "number",
+      "default": 0
+    },
+    "commission_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "slot_fee": {
+      "type": "number",
+      "default": 0
+    },
+    "vehicle_rental": {
+      "type": "number",
+      "default": 0
+    },
+    "via_verde_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "myprio_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "miio_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "loan_installment": {
+      "type": "number",
+      "default": 0
+    },
+    "vehicle_purchase_installment": {
+      "type": "number",
+      "default": 0
+    },
+    "reimbursement_credit": {
+      "type": "number",
+      "default": 0
+    },
+    "goal_bonus": {
+      "type": "number",
+      "default": 0
+    },
+    "iva_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "irs_retention": {
+      "type": "number",
+      "default": 0
+    },
+    "upi_earned": {
+      "type": "number",
+      "default": 0
+    },
+    "total_deductions": {
+      "type": "number",
+      "default": 0
+    },
+    "net_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "proof_document_url": {
+      "type": "string",
+      "description": "Proof document (Uber/Bolt export) uploaded by fleet manager"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "submitted",
+        "approved",
+        "paid"
+      ],
+      "default": "draft",
+      "description": "Workflow: draft \u2192 submitted (fleet_manager) \u2192 approved \u2192 paid (admin only)"
+    },
+    "submitted_by": {
+      "type": "string",
+      "description": "Fleet manager email who submitted"
+    },
+    "approved_by": {
+      "type": "string",
+      "description": "Admin email who approved"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "driver_id",
+    "driver_name",
+    "week_start",
+    "week_end"
+  ]
+}

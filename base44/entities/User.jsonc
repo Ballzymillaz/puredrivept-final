@@ -1,0 +1,21 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "fleet_manager",
+        "driver"
+      ],
+      "default": "driver"
+    },
+    "must_change_password": {
+      "type": "boolean",
+      "default": false,
+      "description": "Force password change on next login"
+    }
+  },
+  "required": []
+}

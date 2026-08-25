@@ -1,0 +1,67 @@
+{
+  "name": "FleetManager",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "Full name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "nif": {
+      "type": "string",
+      "description": "NIF"
+    },
+    "iban": {
+      "type": "string",
+      "description": "Bank IBAN"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "inactive"
+      ],
+      "default": "pending"
+    },
+    "referral_code": {
+      "type": "string",
+      "description": "Unique referral code"
+    },
+    "total_drivers": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of affiliated drivers"
+    },
+    "total_earnings": {
+      "type": "number",
+      "default": 0,
+      "description": "Total earnings from referrals"
+    },
+    "profile_photo_url": {
+      "type": "string",
+      "description": "Profile photo"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Linked user account ID"
+    }
+  },
+  "required": [
+    "full_name",
+    "email",
+    "phone"
+  ],
+  "rls": {}
+}

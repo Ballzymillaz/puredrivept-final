@@ -1,0 +1,71 @@
+{
+  "name": "Commercial",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "Full name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "nif": {
+      "type": "string",
+      "description": "NIF"
+    },
+    "iban": {
+      "type": "string",
+      "description": "Bank IBAN"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "inactive"
+      ],
+      "default": "pending"
+    },
+    "fleet_manager_id": {
+      "type": "string",
+      "description": "Parent fleet manager ID"
+    },
+    "fleet_manager_name": {
+      "type": "string",
+      "description": "Parent fleet manager name"
+    },
+    "referral_code": {
+      "type": "string",
+      "description": "Unique referral code"
+    },
+    "total_drivers": {
+      "type": "number",
+      "default": 0
+    },
+    "total_earnings": {
+      "type": "number",
+      "default": 0
+    },
+    "profile_photo_url": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Linked user account ID"
+    }
+  },
+  "required": [
+    "full_name",
+    "email",
+    "phone"
+  ],
+  "rls": {}
+}

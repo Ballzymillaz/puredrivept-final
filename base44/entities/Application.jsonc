@@ -1,0 +1,60 @@
+{
+  "name": "Application",
+  "type": "object",
+  "properties": {
+    "applicant_type": {
+      "type": "string",
+      "enum": [
+        "driver",
+        "fleet_manager",
+        "commercial"
+      ],
+      "description": "Type of application"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "nif": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string",
+      "description": "Motivation / additional info"
+    },
+    "referral_code": {
+      "type": "string",
+      "description": "Referral code used"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "reviewing",
+        "approved",
+        "rejected"
+      ],
+      "default": "new"
+    },
+    "processed_by": {
+      "type": "string"
+    },
+    "rejection_reason": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "applicant_type",
+    "full_name",
+    "email",
+    "phone"
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "name": "Driver",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "Full name of the driver"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "nif": {
+      "type": "string",
+      "description": "NIF (Tax identification number)"
+    },
+    "address": {
+      "type": "string",
+      "description": "Full address"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of birth"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "inactive",
+        "evaluation",
+        "suspended"
+      ],
+      "default": "pending",
+      "description": "Current status"
+    },
+    "contract_type": {
+      "type": "string",
+      "enum": [
+        "slot_standard",
+        "slot_premium",
+        "slot_black",
+        "location"
+      ],
+      "description": "Type of contract"
+    },
+    "slot_fee": {
+      "type": "number",
+      "description": "Weekly slot fee amount"
+    },
+    "commission_rate": {
+      "type": "number",
+      "description": "Commission rate percentage"
+    },
+    "assigned_vehicle_id": {
+      "type": "string",
+      "description": "ID of assigned vehicle"
+    },
+    "assigned_vehicle_plate": {
+      "type": "string",
+      "description": "License plate of assigned vehicle"
+    },
+    "fleet_id": {
+      "type": "string",
+      "description": "ID of associated fleet"
+    },
+    "fleet_manager_id": {
+      "type": "string",
+      "description": "ID of fleet manager"
+    },
+    "fleet_manager_name": {
+      "type": "string",
+      "description": "Name of fleet manager"
+    },
+    "commercial_id": {
+      "type": "string",
+      "description": "ID of the commercial/referrer"
+    },
+    "commercial_name": {
+      "type": "string",
+      "description": "Name of the commercial/referrer"
+    },
+    "referred_by": {
+      "type": "string",
+      "description": "Referral code used during application"
+    },
+    "iva_regime": {
+      "type": "string",
+      "enum": [
+        "exempt",
+        "6_percent",
+        "23_percent"
+      ],
+      "default": "exempt",
+      "description": "IVA/TVA regime"
+    },
+    "irs_retention_rate": {
+      "type": "number",
+      "description": "IRS retention rate %"
+    },
+    "vehicle_deposit": {
+      "type": "number",
+      "default": 500,
+      "description": "Cau\u00e7\u00e3o do ve\u00edculo (500\u20ac)"
+    },
+    "vehicle_deposit_paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Cau\u00e7\u00e3o paga"
+    },
+    "iban": {
+      "type": "string",
+      "description": "Bank IBAN"
+    },
+    "uber_uuid": {
+      "type": "string",
+      "description": "Uber driver UUID"
+    },
+    "bolt_id": {
+      "type": "string",
+      "description": "Bolt driver ID"
+    },
+    "upi_balance": {
+      "type": "number",
+      "default": 0,
+      "description": "UPI internal currency balance"
+    },
+    "profile_photo_url": {
+      "type": "string",
+      "description": "Profile photo URL"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Internal notes"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Start date of activity"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Linked user account ID"
+    }
+  },
+  "required": [
+    "full_name",
+    "email",
+    "phone"
+  ]
+}

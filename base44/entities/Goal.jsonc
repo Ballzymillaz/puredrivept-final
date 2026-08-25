@@ -1,0 +1,68 @@
+{
+  "name": "Goal",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Goal title"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "weekly_revenue",
+        "monthly_revenue",
+        "trip_count",
+        "passenger_rating"
+      ],
+      "description": "Type of goal"
+    },
+    "target_value": {
+      "type": "number",
+      "description": "Target value to reach"
+    },
+    "bonus_amount": {
+      "type": "number",
+      "description": "Bonus when goal is met"
+    },
+    "driver_id": {
+      "type": "string",
+      "description": "Specific driver or empty for all"
+    },
+    "driver_name": {
+      "type": "string"
+    },
+    "period_start": {
+      "type": "string",
+      "format": "date"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date"
+    },
+    "current_value": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "achieved",
+        "failed",
+        "cancelled"
+      ],
+      "default": "active"
+    },
+    "is_global": {
+      "type": "boolean",
+      "default": false,
+      "description": "Applies to all drivers"
+    }
+  },
+  "required": [
+    "title",
+    "type",
+    "target_value",
+    "bonus_amount"
+  ]
+}

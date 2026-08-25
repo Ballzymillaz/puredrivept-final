@@ -1,0 +1,62 @@
+{
+  "name": "Reimbursement",
+  "type": "object",
+  "properties": {
+    "driver_id": {
+      "type": "string",
+      "description": "Driver ID"
+    },
+    "driver_name": {
+      "type": "string",
+      "description": "Driver name"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "fuel",
+        "maintenance",
+        "cleaning",
+        "tolls",
+        "other"
+      ],
+      "description": "Expense category"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Amount requested"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of expense"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "Receipt/proof file URL"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "rejection_reason": {
+      "type": "string"
+    },
+    "processed_by": {
+      "type": "string"
+    },
+    "payment_week": {
+      "type": "string",
+      "description": "Week when credited"
+    }
+  },
+  "required": [
+    "driver_id",
+    "driver_name",
+    "category",
+    "amount"
+  ]
+}
